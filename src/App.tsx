@@ -1,5 +1,15 @@
-import { Button } from "./components/ui/button";
+import { useGetUserLocation } from "./hooks/useGetUserLocation";
 
 export default function App() {
-  return <Button>Click me</Button>;
+  const userLocation = useGetUserLocation();
+
+  if (!userLocation) {
+    return null;
+  }
+
+  return (
+    <div>
+      <code>{userLocation.lat}</code>
+    </div>
+  );
 }
