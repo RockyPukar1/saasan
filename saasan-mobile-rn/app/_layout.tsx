@@ -1,29 +1,18 @@
 import "~/global.css";
 
-import {
-  DarkTheme,
-  DefaultTheme,
-  Theme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DefaultTheme, Theme, ThemeProvider } from "@react-navigation/native";
 import { Redirect, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as React from "react";
-import { Appearance, Platform, View } from "react-native";
+import { Platform, View } from "react-native";
 import { NAV_THEME } from "~/lib/constants";
-import { useColorScheme } from "~/lib/useColorScheme";
 import { PortalHost } from "@rn-primitives/portal";
-import { ThemeToggle } from "~/components/ThemeToggle";
 import { setAndroidNavigationBar } from "~/lib/android-navigation-bar";
 import { AuthProvider, useAuthContext } from "~/contexts/AuthContext";
 
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
   colors: NAV_THEME.light,
-};
-const DARK_THEME: Theme = {
-  ...DarkTheme,
-  colors: NAV_THEME.dark,
 };
 
 export {
@@ -39,15 +28,20 @@ const usePlatformSpecificSetup = Platform.select({
 
 export default function RootLayout() {
   usePlatformSpecificSetup();
-  const { isDarkColorScheme } = useColorScheme();
 
   return (
     <AuthProvider>
       <ThemeProvider value={LIGHT_THEME}>
-        <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+        <StatusBar style="dark" />
         <Stack>
           <Stack.Screen
             name="(auth)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="(tabs)"
             options={{
               headerShown: false,
             }}
@@ -79,7 +73,7 @@ function useSetWebBackgroundClassName() {
 
 function useSetAndroidNavigationBar() {
   React.useLayoutEffect(() => {
-    setAndroidNavigationBar(Appearance.getColorScheme() ?? "light");
+    setAndroidNavigationBar("light");
   }, []);
 }
 

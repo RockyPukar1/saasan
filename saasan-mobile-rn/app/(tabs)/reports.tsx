@@ -424,18 +424,34 @@ const ReportsScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white pt-14 pb-4 px-5 border-b border-gray-200">
-        <Text className="text-2xl font-bold text-gray-800">
-          Report Corruption
-        </Text>
-        <Text className="text-gray-600 text-sm mt-1">
-          Help fight corruption in Nepal
-        </Text>
-      </View>
-
       {/* Tab Selector */}
-      <View className="bg-white border-b border-gray-200">
+      <View className="bg-white border-b border-gray-200 pt-16">
+        {/* Reports Summary */}
+        <View className="px-4 py-3 border-b border-gray-100">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <FileText className="text-red-600 mr-2" size={16} />
+              <Text className="text-sm font-medium text-gray-700">
+                {mockReports?.length || 0} total reports
+              </Text>
+            </View>
+            <View className="flex-row items-center space-x-3">
+              <View className="flex-row items-center">
+                <View className="w-2 h-2 bg-yellow-500 rounded-full mr-1" />
+                <Text className="text-xs text-gray-600">
+                  {mockReports?.filter(r => r.status === 'under_review').length || 0} pending
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <View className="w-2 h-2 bg-green-500 rounded-full mr-1" />
+                <Text className="text-xs text-gray-600">
+                  {mockReports?.filter(r => r.status === 'resolved').length || 0} resolved
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        
         <View className="flex-row px-4 py-2">
           <TouchableOpacity
             onPress={() => setActiveTab("new")}

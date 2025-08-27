@@ -13,6 +13,7 @@ export class AuthController {
     );
 
     if (error) {
+      console.log(error);
       res
         .status(400)
         .json(ResponseHelper.error("Validate failed", 400, error.details));

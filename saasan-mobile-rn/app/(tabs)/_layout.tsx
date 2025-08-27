@@ -22,6 +22,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
@@ -29,6 +30,7 @@ export default function TabLayout() {
         name="politicians"
         options={{
           title: "Leaders",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
         }}
       />
@@ -36,6 +38,7 @@ export default function TabLayout() {
         name="reports"
         options={{
           title: "Reports",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <FileText color={color} size={size} />
           ),
@@ -45,6 +48,7 @@ export default function TabLayout() {
         name="polling"
         options={{
           title: "Polling",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Vote color={color} size={size} />,
         }}
       />

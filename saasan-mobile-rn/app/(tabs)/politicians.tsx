@@ -55,18 +55,26 @@ const PoliticiansScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white pt-14 pb-4 px-5 border-b border-gray-200">
-        <Text className="text-2xl font-bold text-gray-800">
-          Political Leaders
-        </Text>
-        <Text className="text-gray-600 text-sm mt-1">
-          Track performance & promises
-        </Text>
-      </View>
-
       {/* Search Bar */}
-      <View className="px-4 py-3 bg-white border-b border-gray-200">
+      <View className="px-4 py-3 pt-16 bg-white border-b border-gray-200">
+        {/* Active Filter Indicator */}
+        {selectedLevel && (
+          <View className="mb-3 flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <Users className="text-red-600 mr-2" size={16} />
+              <Text className="text-sm font-medium text-gray-700">
+                Showing {selectedLevel} level politicians
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setSelectedLevel("")}
+              className="bg-red-100 px-2 py-1 rounded-full"
+            >
+              <Text className="text-xs text-red-600 font-medium">Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
           <Search className="text-gray-500" size={20} />
           <TextInput

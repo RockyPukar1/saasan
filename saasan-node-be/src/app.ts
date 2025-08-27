@@ -9,8 +9,21 @@ import { ResponseHelper } from "./lib/helpers/ResponseHelper";
 dotenv.config();
 const app = express();
 
-// Middleware
-app.use(cors());
+// CORS configuration for mobile access
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:8081",
+      "http://192.168.1.74:3000",
+      "http://192.168.1.74:8081",
+      "exp://192.168.1.74:8081",
+      "exp://localhost:8081",
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -16,7 +16,7 @@ import {
 } from "~/types/polling";
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.74:5000/api/v1";
 
 interface ApiResponse<T> {
   success: boolean;

@@ -219,7 +219,23 @@ const PollScreen = () => {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Search and Filter */}
-      <View className="bg-white px-4 py-3 border-b border-gray-200">
+      <View className="bg-white px-4 py-3 pt-16 border-b border-gray-200">
+        {/* Active Polls Status */}
+        <View className="mb-3 flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <BarChart3 className="text-blue-600 mr-2" size={16} />
+            <Text className="text-sm font-medium text-gray-700">
+              {polls.filter((p) => p.status === "active").length} active polls
+            </Text>
+          </View>
+          <View className="flex-row items-center">
+            <CheckCircle2 className="text-green-600 mr-1" size={14} />
+            <Text className="text-xs text-gray-600">
+              {polls.filter((p) => p.user_vote !== undefined).length} voted
+            </Text>
+          </View>
+        </View>
+
         <View className="flex-row space-x-2">
           <TextInput
             placeholder="Search polls..."

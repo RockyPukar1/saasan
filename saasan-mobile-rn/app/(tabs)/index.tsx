@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { format, differenceInDays, parseISO } from "date-fns";
 import {
   AlertTriangle,
@@ -63,6 +64,7 @@ interface LiveElectricityStats {
 const DashboardScreen = () => {
   const router = useRouter();
   const [currentDate] = useState(new Date());
+  const insets = useSafeAreaInsets();
 
   const { dashboardStats, error, loading, majorCases, refresh, serviceStatus } =
     useDashboard();
@@ -150,22 +152,47 @@ const DashboardScreen = () => {
         <RefreshControl refreshing={loading} onRefresh={refresh} />
       }
     >
-      {/* Header */}
-      <View className="bg-red-600 pt-5 pb-6 px-5">
-        <Text className="text-white text-xl font-bold">
-          Political Transparency
-        </Text>
-        <Text className="text-red-100 text-sm mt-1">
-          {format(currentDate, "EEEE, MMMM dd, yyyy")}
-        </Text>
-        <Text className="text-red-200 text-xs mt-1">
-          Live tracking of corruption cases & political accountability
-        </Text>
-      </View>
-
       {/* Live Stats Cards */}
       {dashboardStats?.overview && (
-        <View className="px-4 -mt-4 mb-6">
+        <View className="px-4 mb-6" style={{ paddingTop: insets.top + 16 }}>
+          {/* Red Banner */}
+          <View className="bg-red-600 rounded-lg p-4 mb-4">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-white text-lg font-bold mb-1">
+                  Saasan Dashboard
+                </Text>
+                <Text className="text-red-100 text-sm">
+                  Monitor corruption cases, track politicians, and stay informed
+                </Text>
+              </View>
+              <View className="bg-red-500 rounded-full p-2">
+                <Gavel className="text-white" size={24} />
+              </View>
+            </View>
+          </View>
+
+          {/* Quick Status */}
+          <View className="mb-4">
+            <Text className="text-lg font-semibold text-gray-800 mb-2">
+              System Status
+            </Text>
+            <View className="flex-row items-center space-x-4">
+              <View className="flex-row items-center">
+                <View className="w-3 h-3 bg-green-500 rounded-full mr-2" />
+                <Text className="text-sm text-gray-600">
+                  All systems operational
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <Clock className="text-gray-500 mr-1" size={16} />
+                <Text className="text-sm text-gray-600">
+                  {format(currentDate, "MMM dd, yyyy")}
+                </Text>
+              </View>
+            </View>
+          </View>
+
           <View className="flex-row flex-wrap justify-between">
             <Card className="w-[48%] mb-4 border-l-4 border-red-500">
               <CardContent className="p-4">
@@ -350,14 +377,18 @@ const DashboardScreen = () => {
                       >
                         {caseItem.description}
                       </Text>
-                      {caseItem.amountInvolved && caseItem.amountInvolved > 0 && (
-                        <View className="flex-row items-center mb-2">
-                          <DollarSign className="text-red-500 mr-1" size={16} />
-                          <Text className="text-red-600 text-sm font-bold">
-                            {formatCurrency(caseItem.amountInvolved)}
-                          </Text>
-                        </View>
-                      )}
+                      {caseItem.amountInvolved &&
+                        caseItem.amountInvolved > 0 && (
+                          <View className="flex-row items-center mb-2">
+                            <DollarSign
+                              className="text-red-500 mr-1"
+                              size={16}
+                            />
+                            <Text className="text-red-600 text-sm font-bold">
+                              {formatCurrency(caseItem.amountInvolved)}
+                            </Text>
+                          </View>
+                        )}
                     </View>
                     <View
                       className={`px-3 py-1 rounded-full ${getStatusColor(
@@ -373,7 +404,10 @@ const DashboardScreen = () => {
                   {/* Days Counter */}
                   <View className="bg-gray-100 p-3 rounded-lg">
                     <Text className="text-2xl font-bold text-red-600 text-center">
-                      {caseItem.createdAt ? calculateDaysSince(caseItem.createdAt) : 0} DAYS
+                      {caseItem.createdAt
+                        ? calculateDaysSince(caseItem.createdAt)
+                        : 0}{" "}
+                      DAYS
                     </Text>
                     <Text className="text-gray-600 text-center text-sm">
                       since reported
@@ -399,7 +433,7 @@ const DashboardScreen = () => {
                         caseItem.priority
                       )}`}
                     >
-                      {caseItem.priority?.toUpperCase() || 'MEDIUM'} PRIORITY
+                      {caseItem.priority?.toUpperCase() || "MEDIUM"} PRIORITY
                     </Text>
                   </View>
                 </CardContent>
