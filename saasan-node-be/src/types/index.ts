@@ -29,21 +29,16 @@ export enum ReportPriority {
 export interface User {
   id: string;
   email: string;
-  phone: string;
-  passwordHash: string;
-  fullName: string;
-  isAnonymousPreferred: boolean;
-  citizenshipNumber: string;
-  district: string;
-  municipality: string;
-  wardNumber: number;
+  phone?: string | null;
+  password_hash: string;
+  full_name: string;
+  district?: string | null;
+  municipality?: string | null;
+  ward_number?: number | null;
   role: UserRole;
-  emailVerifiedAt: Date;
-  phoneVerifiedAt: Date;
-  lastActiveAt: Date;
-  fcmToken: string;
-  createdAt: Date;
-  updatedAt: Date;
+  last_active_at: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Politician {
@@ -95,6 +90,33 @@ export interface CorruptionReport {
   viewsCount: number;
   sharesCount: number;
   resolvedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Poll {
+  id: string;
+  title: string;
+  description: string;
+  options: PollOption[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PollOption {
+  id: string;
+  pollId: string;
+  option: string;
+  votes: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PollVote {
+  id: string;
+  pollId: string;
+  userId: string;
+  optionId: string;
   createdAt: Date;
   updatedAt: Date;
 }

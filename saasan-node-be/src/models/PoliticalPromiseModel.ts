@@ -1,31 +1,17 @@
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
 
-export enum PromiseStatus {
-  NOT_STARTED = "not_started",
-  IN_PROGRESS = "in_progress",
-  COMPLETED = "completed",
-  BROKEN = "broken",
-  MODIFIED = "modified",
-}
-
 export interface PoliticalPromise {
   id: string;
-  politicianId: string;
+  politician_id: string;
   title: string;
   description: string;
   category: string;
-  promiseDate: Date;
-  targetCompletionDate?: Date;
-  actualCompletionDate?: Date;
-  status: PromiseStatus;
-  progressPercentage: number;
-  budgetAllocated: number;
-  budgetSpent: number;
-  sourceUrl: string;
-  verificationStatus: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  status: 'not_started' | 'in_progress' | 'completed' | 'failed';
+  target_date: Date;
+  progress_percentage: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export class PoliticalPromiseModel {
@@ -33,68 +19,64 @@ export class PoliticalPromiseModel {
     promiseData: Partial<PoliticalPromise>
   ): Promise<PoliticalPromise> {
     const id = generateUUID();
-
     const [promise] = await db("political_promises")
       .insert({
         ...promiseData,
         id,
-        progressPercentage: 0,
-        verificationStatus: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       })
       .returning("*");
-
     return promise;
   }
 
-  static async findByPolitician(
-    politicianId: string
-  ): Promise<PoliticalPromise[]> {
+  static async findByPolitician(politicianId: string): Promise<PoliticalPromise[]> {
     return db("political_promises")
-      .where({ politicianId })
-      .orderBy("promiseDate", "desc");
+      .where({ politician_id: politicianId })
+      .orderBy("created_at", "desc");
   }
 
-  static async updateProgress(
-    id: string,
-    progressPercentage: number,
-    status?: PromiseStatus
-  ): Promise<PoliticalPromise> {
-    const updateData: any = {
-      progressPercentage,
-      updatedAt: new Date(),
-    };
-
-    if (status) updateData.status = status;
-    if (status === PromiseStatus.COMPLETED)
-      updateData.actualCompletionDate = new Date();
-
-    const [promise] = await db("political_promises")
-      .where({ id })
-      .update(updateData)
-      .returning("*");
-
-    return promise;
-  }
-
-  static async getStatsByPolitician(politicalId: string): Promise<any> {
+  static async getStatsByPolitician(politicianId: string): Promise<any> {
     const stats = await db("political_promises")
-      .where({ politicalId })
+      .where({ politician_id: politicianId })
       .select("status")
       .count("* as count")
       .groupBy("status");
 
-    const summary = await db("political_promises")
-      .where({ politicalId })
-      .select(
-        db.raw("COUNT(*) as total"),
-        db.raw("AVG(progress_percentage) as avgProgress"),
-        db.raw("SUM(budget_allocated) as totalBudgetAllocated"),
-        db.raw("SUM(budget_spent) as totalBudgetSpent")
-      )
+    const total = await db("political_promises")
+      .where({ politician_id: politicianId })
+      .count("* as total")
       .first();
 
-    return { breakdown: stats, summary };
+    const completed = stats.find(s => s.status === 'completed')?.count || 0;
+    const inProgress = stats.find(s => s.status === 'in_progress')?.count || 0;
+    const notStarted = stats.find(s => s.status === 'not_started')?.count || 0;
+    const failed = stats.find(s => s.status === 'failed')?.count || 0;
+
+    return {
+      total: parseInt(total?.total as string) || 0,
+      completed: parseInt(completed as string) || 0,
+      inProgress: parseInt(inProgress as string) || 0,
+      notStarted: parseInt(notStarted as string) || 0,
+      failed: parseInt(failed as string) || 0,
+      completionRate: total?.total ? Math.round((parseInt(completed as string) / parseInt(total.total as string)) * 100) : 0
+    };
+  }
+
+  static async update(
+    id: string,
+    updates: Partial<PoliticalPromise>
+  ): Promise<PoliticalPromise> {
+    const [promise] = await db("political_promises")
+      .where({ id })
+      .update({ ...updates, updated_at: new Date() })
+      .returning("*");
+
+    return promise;
+  }
+
+  static async delete(id: string): Promise<boolean> {
+    const deletedCount = await db("political_promises").where({ id }).del();
+    return deletedCount > 0;
   }
 }

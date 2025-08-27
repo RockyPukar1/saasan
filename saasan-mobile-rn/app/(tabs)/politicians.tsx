@@ -1,11 +1,11 @@
-// src/screens/PoliticiansScreen.tsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   TextInput,
+  RefreshControl,
 } from "react-native";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -21,108 +21,37 @@ import {
   Clock,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
-
-interface Politician {
-  id: string;
-  name: string;
-  position: string;
-  level: "ward" | "municipality" | "district" | "province" | "federal";
-  party: string;
-  constituency: string;
-  rating: number;
-  totalVotes: number;
-  promisesFulfilled: number;
-  totalPromises: number;
-  avatar?: string;
-  trends: "up" | "down" | "stable";
-}
-
-interface GovernmentLevel {
-  id: string;
-  name: string;
-  description: string;
-  count: number;
-}
+import { usePoliticians, Politician } from "~/hooks/usePoliticians";
+import Loading from "~/components/Loading";
+import Error from "~/components/Error";
 
 const PoliticiansScreen = () => {
-  const [selectedLevel, setSelectedLevel] = useState<string>("federal");
   const [searchQuery, setSearchQuery] = useState("");
+  const {
+    politicians,
+    governmentLevels,
+    selectedLevel,
+    setSelectedLevel,
+    loading,
+    error,
+    refresh,
+  } = usePoliticians();
 
-  const governmentLevels: GovernmentLevel[] = [
-    {
-      id: "federal",
-      name: "Federal",
-      description: "Prime Minister, Ministers",
-      count: 89,
-    },
-    {
-      id: "province",
-      name: "Province",
-      description: "Chief Ministers, Provincial MPs",
-      count: 550,
-    },
-    {
-      id: "district",
-      name: "District",
-      description: "District Coordinators",
-      count: 77,
-    },
-    {
-      id: "municipality",
-      name: "Local",
-      description: "Mayors, Deputy Mayors",
-      count: 753,
-    },
-    { id: "ward", name: "Ward", description: "Ward Chairpersons", count: 6743 },
-  ];
-
-  const mockPoliticians: Politician[] = [
-    {
-      id: "1",
-      name: "KP Sharma Oli",
-      position: "Prime Minister",
-      level: "federal",
-      party: "CPN-UML",
-      constituency: "Jhapa-5",
-      rating: 3.2,
-      totalVotes: 45234,
-      promisesFulfilled: 12,
-      totalPromises: 45,
-      trends: "down",
-    },
-    {
-      id: "2",
-      name: "Sher Bahadur Deuba",
-      position: "Former PM",
-      level: "federal",
-      party: "Nepali Congress",
-      constituency: "Dadeldhura-1",
-      rating: 2.8,
-      totalVotes: 38291,
-      promisesFulfilled: 8,
-      totalPromises: 32,
-      trends: "stable",
-    },
-    {
-      id: "3",
-      name: "Rabi Lamichhane",
-      position: "Party President",
-      level: "federal",
-      party: "RSP",
-      constituency: "Chitwan-2",
-      rating: 4.1,
-      totalVotes: 52341,
-      promisesFulfilled: 18,
-      totalPromises: 25,
-      trends: "up",
-    },
-  ];
-
-  const filteredPoliticians = mockPoliticians.filter(
-    (politician) =>
-      politician.level === selectedLevel &&
-      politician.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPoliticians = useMemo(
+    () =>
+      politicians.filter((politician) =>
+        politician.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [politicians, searchQuery]
   );
+
+  if (loading && !politicians.length) {
+    return <Loading />;
+  }
+
+  if (error) {
+    return <Error error={error} refresh={refresh} />;
+  }
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -149,48 +78,57 @@ const PoliticiansScreen = () => {
         </View>
       </View>
 
-      <View className="bg-white border-b border-gray-200">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="px-2"
-        >
-          <View className="flex-row py-2">
-            {governmentLevels.map((level) => (
-              <TouchableOpacity
-                key={level.id}
-                onPress={() => setSelectedLevel(level.id)}
-                className={`mx-1 px-3 py-2 rounded-lg ${
-                  selectedLevel === level.id
-                    ? "bg-red-100 border-b-2 border-red-600"
-                    : "bg-transparent"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium text-center ${
-                    selectedLevel === level.id
-                      ? "text-red-600"
-                      : "text-gray-600"
+      {/* Government Level Filter */}
+      {governmentLevels.length > 0 && (
+        <View className="bg-white border-b border-gray-200">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="px-2"
+          >
+            <View className="flex-row py-2">
+              {governmentLevels.map((level) => (
+                <TouchableOpacity
+                  key={level.id}
+                  onPress={() => setSelectedLevel(level.name)}
+                  className={`mx-1 px-3 py-2 rounded-lg ${
+                    selectedLevel === level.name
+                      ? "bg-red-100 border-b-2 border-red-600"
+                      : "bg-transparent"
                   }`}
                 >
-                  {level.name}
-                </Text>
-                <Text
-                  className={`text-xs text-center mt-0.5 ${
-                    selectedLevel === level.id
-                      ? "text-red-500"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {level.count}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
+                  <Text
+                    className={`text-sm font-medium text-center ${
+                      selectedLevel === level.name
+                        ? "text-red-600"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {level.name.charAt(0).toUpperCase() + level.name.slice(1)}
+                  </Text>
+                  <Text
+                    className={`text-xs text-center mt-0.5 ${
+                      selectedLevel === level.name
+                        ? "text-red-500"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {level.count}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
       {/* Politicians List */}
-      <ScrollView className="flex-1 px-4 py-4">
+      <ScrollView
+        className="flex-1 px-4 py-4"
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refresh} />
+        }
+      >
         {filteredPoliticians.length > 0 ? (
           filteredPoliticians.map((politician) => (
             <PoliticianCard key={politician.id} politician={politician} />
@@ -199,10 +137,12 @@ const PoliticiansScreen = () => {
           <View className="flex-1 justify-center items-center py-20">
             <Users className="text-gray-400" size={64} />
             <Text className="text-gray-600 text-lg font-medium mt-4">
-              No politicians found
+              {loading ? "Loading politicians..." : "No politicians found"}
             </Text>
             <Text className="text-gray-500 text-sm text-center mt-2">
-              Try adjusting your search or government level filter
+              {loading
+                ? "Please wait while we fetch the data..."
+                : "Try adjusting your search or government level filter"}
             </Text>
           </View>
         )}
@@ -220,12 +160,16 @@ export default PoliticiansScreen;
 
 const PoliticianCard = ({ politician }: { politician: Politician }) => {
   const router = useRouter();
+
   const getPartyColor = (party: string) => {
     const colors: { [key: string]: string } = {
       "CPN-UML": "bg-red-500",
       "Nepali Congress": "bg-green-500",
       RSP: "bg-purple-500",
       "CPN-MC": "bg-yellow-500",
+      RPP: "bg-blue-500",
+      JSP: "bg-green-600",
+      LSP: "bg-yellow-600",
     };
     return colors[party] || "bg-gray-500";
   };
@@ -241,42 +185,49 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
+        return "bg-green-500";
+      case "inactive":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
   return (
     <TouchableOpacity
       onPress={() => router.push(`/politician/${politician.id}`)}
     >
       <Card className="mb-4">
         <CardContent className="p-4">
-          {/* Header */}
-          <View className="flex-row justify-between items-start mb-3">
-            <View className="flex-1">
-              <Text className="text-lg font-bold text-gray-800">
-                {politician.name}
+          {/* Header - Name and Position */}
+          <View className="mb-3">
+            <Text className="text-lg font-bold text-gray-800 mb-1">
+              {politician.name}
+            </Text>
+            <Text className="text-gray-600 text-sm mb-2">
+              {politician.position}
+            </Text>
+
+            {/* Location */}
+            <View className="flex-row items-center mb-2">
+              <MapPin className="text-gray-500" size={12} />
+              <Text className="text-gray-500 text-xs ml-1">
+                {politician.constituency}
               </Text>
-              <Text className="text-gray-600 text-sm">
-                {politician.position}
-              </Text>
-              <View className="flex-row items-center mt-1">
-                <MapPin className="text-gray-500" size={12} />
-                <Text className="text-gray-500 text-xs ml-1">
-                  {politician.constituency}
-                </Text>
-              </View>
             </View>
 
-            <View className="items-end">
-              <View
-                className={`px-2 py-1 rounded-full ${getPartyColor(
-                  politician.party
-                )}`}
-              >
-                <Text className="text-white text-xs font-bold">
-                  {politician.party}
-                </Text>
-              </View>
-              <View className="flex-row items-center mt-2">
-                {getTrendIcon(politician.trends)}
-              </View>
+            {/* Party Badge - Full width */}
+            <View
+              className={`px-3 py-2 rounded-lg ${getPartyColor(
+                politician.party
+              )} self-start`}
+            >
+              <Text className="text-white text-xs font-bold text-center">
+                {politician.party}
+              </Text>
             </View>
           </View>
 
@@ -284,7 +235,7 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
           <View className="flex-row items-center mb-3">
             <Star className="text-yellow-500" size={16} fill="#EAB308" />
             <Text className="text-gray-800 font-bold ml-1">
-              {politician.rating}
+              {politician.rating.toFixed(1)}
             </Text>
             <Text className="text-gray-500 text-sm ml-1">
               ({politician.totalVotes.toLocaleString()} votes)
@@ -292,54 +243,58 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
           </View>
 
           {/* Promise Tracker */}
-          <View className="bg-gray-50 p-3 rounded-lg mb-3">
-            <Text className="text-gray-700 font-medium mb-2">
-              Promise Tracker
-            </Text>
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-sm text-gray-600">
-                {politician.promisesFulfilled} of {politician.totalPromises}{" "}
-                fulfilled
+          {politician.totalPromises > 0 && (
+            <View className="bg-gray-50 p-3 rounded-lg mb-3">
+              <Text className="text-gray-700 font-medium mb-2">
+                Promise Tracker
               </Text>
-              <Text className="text-sm font-bold text-gray-800">
-                {Math.round(
-                  (politician.promisesFulfilled / politician.totalPromises) *
-                    100
-                )}
-                %
-              </Text>
-            </View>
-
-            {/* Progress Bar */}
-            <View className="bg-gray-300 h-2 rounded-full">
-              <View
-                className="bg-green-500 h-2 rounded-full"
-                style={{
-                  width: `${
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-sm text-gray-600">
+                  {politician.promisesFulfilled} of {politician.totalPromises}{" "}
+                  fulfilled
+                </Text>
+                <Text className="text-sm font-bold text-gray-800">
+                  {Math.round(
                     (politician.promisesFulfilled / politician.totalPromises) *
-                    100
-                  }%`,
-                }}
-              />
-            </View>
+                      100
+                  )}
+                  %
+                </Text>
+              </View>
 
-            {/* Status Icons */}
-            <View className="flex-row justify-between mt-2">
-              <View className="flex-row items-center">
-                <CheckCircle className="text-green-600" size={14} />
-                <Text className="text-xs text-gray-600 ml-1">
-                  {politician.promisesFulfilled} Kept
-                </Text>
+              {/* Progress Bar */}
+              <View className="bg-gray-300 h-2 rounded-full">
+                <View
+                  className="bg-green-500 h-2 rounded-full"
+                  style={{
+                    width: `${Math.min(
+                      (politician.promisesFulfilled /
+                        politician.totalPromises) *
+                        100,
+                      100
+                    )}%`,
+                  }}
+                />
               </View>
-              <View className="flex-row items-center">
-                <XCircle className="text-red-600" size={14} />
-                <Text className="text-xs text-gray-600 ml-1">
-                  {politician.totalPromises - politician.promisesFulfilled}{" "}
-                  Pending
-                </Text>
+
+              {/* Status Icons */}
+              <View className="flex-row justify-between mt-2">
+                <View className="flex-row items-center">
+                  <CheckCircle className="text-green-600" size={14} />
+                  <Text className="text-xs text-gray-600 ml-1">
+                    {politician.promisesFulfilled} Kept
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <XCircle className="text-red-600" size={14} />
+                  <Text className="text-xs text-gray-600 ml-1">
+                    {politician.totalPromises - politician.promisesFulfilled}{" "}
+                    Pending
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
           {/* Action Buttons */}
           <View className="flex-row space-x-2">

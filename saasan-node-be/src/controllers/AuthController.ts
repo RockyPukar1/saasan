@@ -3,11 +3,13 @@ import { ValidationHelper } from "../lib/helpers/ValidationHelper";
 import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 import { UserModel } from "../models/UserModel";
 import { AuthHelper } from "../lib/helpers/AuthHelper";
+import { UserRole } from "../types";
 
 export class AuthController {
   static async register(req: Request, res: Response): Promise<void> {
     const { error, value } = ValidationHelper.userRegistration.validate(
-      req.body
+      req.body,
+      { abortEarly: false }
     );
 
     if (error) {
@@ -24,10 +26,20 @@ export class AuthController {
       return;
     }
 
+    // Hash the password
+    const hashedPassword = await AuthHelper.hashPassword(value.password);
+
     // Create user
     const user = await UserModel.create({
-      ...value,
-      passwordHash: value.passwordHash,
+      email: value.email,
+      password_hash: hashedPassword,
+      full_name: value.fullName,
+      phone: value.phone || null,
+      district: value.district || null,
+      municipality: value.municipality || null,
+      ward_number: value.wardNumber || null,
+      role: UserRole.CITIZEN,
+      last_active_at: new Date(),
     });
 
     // Generate token
@@ -35,7 +47,7 @@ export class AuthController {
     const refreshToken = AuthHelper.generateRefreshToken(user.id);
 
     // Remove password from response
-    const { passwordHash, ...userResponse } = user;
+    const { password_hash: _, ...userResponse } = user;
 
     res.status(201).json(
       ResponseHelper.success(
@@ -68,7 +80,10 @@ export class AuthController {
       }
 
       // Validate password
-      const isValid = await UserModel.validatePassword(user, password);
+      const isValid = await AuthHelper.comparePassword(
+        password,
+        user.password_hash
+      );
       if (!isValid) {
         res.status(401).json(ResponseHelper.error("Invalid credentials"));
         return;
@@ -82,7 +97,7 @@ export class AuthController {
       const refreshToken = AuthHelper.generateRefreshToken(user.id);
 
       // Remove password from response
-      const { passwordHash, ...userResponse } = user;
+      const { password_hash, ...userResponse } = user;
 
       res.json(
         ResponseHelper.success(
@@ -95,6 +110,7 @@ export class AuthController {
         )
       );
     } catch (error) {
+      console.error("Login error:", error);
       res.status(500).json(ResponseHelper.error("Login failed"));
     }
   }
@@ -120,6 +136,7 @@ export class AuthController {
 
       res.json(ResponseHelper.success({ token: newToken }));
     } catch (error) {
+      console.error("Refresh token error:", error);
       res.status(401).json(ResponseHelper.error("Invalid refresh token"));
     }
   }
@@ -133,10 +150,11 @@ export class AuthController {
         return;
       }
 
-      const { passwordHash, ...userResponse } = user;
+      const { password_hash, ...userResponse } = user;
 
       res.json(ResponseHelper.success(userResponse));
     } catch (error) {
+      console.error("Get profile error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch profile"));
     }
   }

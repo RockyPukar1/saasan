@@ -350,7 +350,7 @@ const DashboardScreen = () => {
                       >
                         {caseItem.description}
                       </Text>
-                      {caseItem.amountInvolved && (
+                      {caseItem.amountInvolved && caseItem.amountInvolved > 0 && (
                         <View className="flex-row items-center mb-2">
                           <DollarSign className="text-red-500 mr-1" size={16} />
                           <Text className="text-red-600 text-sm font-bold">
@@ -373,7 +373,7 @@ const DashboardScreen = () => {
                   {/* Days Counter */}
                   <View className="bg-gray-100 p-3 rounded-lg">
                     <Text className="text-2xl font-bold text-red-600 text-center">
-                      {calculateDaysSince(caseItem.createdAt)} DAYS
+                      {caseItem.createdAt ? calculateDaysSince(caseItem.createdAt) : 0} DAYS
                     </Text>
                     <Text className="text-gray-600 text-center text-sm">
                       since reported
@@ -385,7 +385,7 @@ const DashboardScreen = () => {
                     <View className="flex-row items-center">
                       <TrendingUp className="text-green-600 mr-1" size={16} />
                       <Text className="text-green-600 text-sm font-bold">
-                        {caseItem.upvotesCount}
+                        {caseItem.upvotesCount || 0}
                       </Text>
                     </View>
                     <View className="flex-row items-center">
@@ -399,7 +399,7 @@ const DashboardScreen = () => {
                         caseItem.priority
                       )}`}
                     >
-                      {caseItem.priority.toUpperCase()} PRIORITY
+                      {caseItem.priority?.toUpperCase() || 'MEDIUM'} PRIORITY
                     </Text>
                   </View>
                 </CardContent>
@@ -432,10 +432,11 @@ const DashboardScreen = () => {
                       <View
                         className="bg-red-500 h-2 rounded-full"
                         style={{
-                          width: `${
+                          width: `${(
                             (category.count /
-                              dashboardStats.overview.totalReports || 0) * 100
-                          }%`,
+                              (dashboardStats.overview?.totalReports || 1)) *
+                            100
+                          ).toFixed(1)}%`,
                         }}
                       />
                     )}
@@ -453,7 +454,10 @@ const DashboardScreen = () => {
           Take Action
         </Text>
         <View className="flex-row justify-around">
-          <TouchableOpacity className="items-center p-4" onPress={() => {}}>
+          <TouchableOpacity
+            className="items-center p-4"
+            onPress={() => router.push("/(tabs)/reports")}
+          >
             <View className="bg-red-100 p-3 rounded-full mb-2">
               <AlertTriangle className="text-red-600" size={24} />
             </View>
@@ -462,7 +466,10 @@ const DashboardScreen = () => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity className="items-center p-4" onPress={() => {}}>
+          <TouchableOpacity
+            className="items-center p-4"
+            onPress={() => router.push("/(tabs)/politicians")}
+          >
             <View className="bg-blue-100 p-3 rounded-full mb-2">
               <Users className="text-blue-600" size={24} />
             </View>
@@ -471,9 +478,17 @@ const DashboardScreen = () => {
 
           <TouchableOpacity
             className="items-center p-4"
-            onPress={() =>
-              Alert.alert("Share", "Share app functionality coming soon!")
-            }
+            onPress={() => {
+              if (typeof navigator !== "undefined" && navigator.share) {
+                navigator.share({
+                  title: "Saasan App",
+                  text: "Help fight corruption in Nepal with Saasan App",
+                  url: "https://saasan.app",
+                });
+              } else {
+                Alert.alert("Share", "Share app functionality coming soon!");
+              }
+            }}
           >
             <View className="bg-green-100 p-3 rounded-full mb-2">
               <Share className="text-green-600" size={24} />
@@ -492,7 +507,10 @@ const DashboardScreen = () => {
           Call your local MP today and ask: "What have you done for our
           constituency this week?"
         </Text>
-        <Button className="bg-white" onPress={() => {}}>
+        <Button
+          className="bg-white"
+          onPress={() => router.push("/(tabs)/politicians")}
+        >
           <Text className="text-red-600 font-bold">Find My MP</Text>
         </Button>
       </View>

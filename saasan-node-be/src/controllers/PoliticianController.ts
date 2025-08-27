@@ -51,6 +51,7 @@ export class PoliticianController {
         )
       );
     } catch (error) {
+      console.error("Get all politicians error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch politicians"));
     }
   }
@@ -74,6 +75,7 @@ export class PoliticianController {
         })
       );
     } catch (error) {
+      console.error("Get politician by ID error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch politician"));
     }
   }
@@ -91,7 +93,59 @@ export class PoliticianController {
         })
       );
     } catch (error) {
+      console.error("Get politician promises error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch promises"));
+    }
+  }
+
+  static async getGovernmentLevels(req: Request, res: Response): Promise<void> {
+    try {
+      const levels = await PoliticianModel.getGovernmentLevels();
+      res.json(ResponseHelper.success(levels));
+    } catch (error) {
+      console.error("Get government levels error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch government levels"));
+    }
+  }
+
+  static async getByLevel(req: Request, res: Response): Promise<void> {
+    try {
+      const { level } = req.params;
+      const {
+        district,
+        municipality,
+        partyId,
+        positionId,
+        status,
+        page = 1,
+        limit = 20,
+        search,
+      } = req.query;
+
+      const offset = (Number(page) - 1) * Number(limit);
+
+      const result = await PoliticianModel.findByLevel(level, {
+        district: district as string,
+        municipality: municipality as string,
+        partyId: partyId ? Number(partyId) : undefined,
+        positionId: positionId ? Number(positionId) : undefined,
+        status: status as any,
+        limit: Number(limit),
+        offset,
+        search: search as string,
+      });
+
+      res.json(
+        ResponseHelper.paginated(
+          result.politicians,
+          result.total,
+          Number(page),
+          Number(limit)
+        )
+      );
+    } catch (error) {
+      console.error("Get politicians by level error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch politicians by level"));
     }
   }
 
@@ -141,6 +195,7 @@ export class PoliticianController {
 
       res.json(ResponseHelper.success(null, "Rating submitted successfully"));
     } catch (error) {
+      console.error("Rate politician error:", error);
       res.status(500).json(ResponseHelper.error("Failed to submit rating"));
     }
   }

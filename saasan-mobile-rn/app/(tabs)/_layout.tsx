@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Users, FileText, BarChart3 } from "lucide-react-native";
+import { Home, Users, FileText, Vote } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -44,10 +44,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="polling"
         options={{
-          title: "Polls",
-          tabBarIcon: ({ color, size }) => (
-            <BarChart3 color={color} size={size} />
-          ),
+          title: "Polling",
+          tabBarIcon: ({ color, size }) => <Vote color={color} size={size} />,
         }}
       />
     </Tabs>

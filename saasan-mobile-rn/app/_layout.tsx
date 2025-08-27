@@ -6,7 +6,7 @@ import {
   Theme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as React from "react";
 import { Appearance, Platform, View } from "react-native";
@@ -15,6 +15,7 @@ import { useColorScheme } from "~/lib/useColorScheme";
 import { PortalHost } from "@rn-primitives/portal";
 import { ThemeToggle } from "~/components/ThemeToggle";
 import { setAndroidNavigationBar } from "~/lib/android-navigation-bar";
+import { AuthProvider, useAuthContext } from "~/contexts/AuthContext";
 
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
@@ -39,22 +40,28 @@ const usePlatformSpecificSetup = Platform.select({
 export default function RootLayout() {
   usePlatformSpecificSetup();
   const { isDarkColorScheme } = useColorScheme();
+
   return (
-    <ThemeProvider value={LIGHT_THEME}>
-      <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
-      <Stack
-        screenOptions={{
-          headerShown: true,
-          headerTitle: "Saasan",
-          headerRight: () => <ThemeToggle />,
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="politician/[id]" />
-        <Stack.Screen name="report/[id]" />
-      </Stack>
-      <PortalHost />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={LIGHT_THEME}>
+        <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+        <Stack>
+          <Stack.Screen
+            name="(auth)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="(protected)"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack>
+        <PortalHost />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiService } from "~/services/mock";
+import { apiService } from "~/services/api";
 import { DashboardStats, MajorCase, ServiceStatus } from "~/types/dashboard";
 
 export const useDashboard = () => {
@@ -23,12 +23,44 @@ export const useDashboard = () => {
           apiService.getMajorCases(),
           apiService.getLiveServices(),
         ]);
+      
       if (statsResponse.success) {
         setDashboardStats(statsResponse.data);
+        // Extract major cases from the nested structure
+        if (statsResponse.data?.recentActivity) {
+          const cases = statsResponse.data.recentActivity.map((item: any) => ({
+            id: item.id,
+            referenceNumber: item.reference_number,
+            title: item.title,
+            description: item.description,
+            status: item.status === 'verified' ? 'ongoing' : 
+                   item.status === 'resolved' ? 'solved' : 'unsolved',
+            priority: item.priority,
+            amountInvolved: parseFloat(item.amount_involved) || 0,
+            upvotesCount: item.upvotes_count || 0,
+            createdAt: item.created_at,
+          }));
+          setMajorCases(cases);
+        }
       }
 
       if (casesResponse.success) {
-        setMajorCases(casesResponse.data);
+        // Fallback to direct cases response if available
+        if (casesResponse.data && Array.isArray(casesResponse.data)) {
+          const cases = casesResponse.data.map((item: any) => ({
+            id: item.id,
+            referenceNumber: item.reference_number,
+            title: item.title,
+            description: item.description,
+            status: item.status === 'verified' ? 'ongoing' : 
+                   item.status === 'resolved' ? 'solved' : 'unsolved',
+            priority: item.priority,
+            amountInvolved: parseFloat(item.amount_involved) || 0,
+            upvotesCount: item.upvotes_count || 0,
+            createdAt: item.created_at,
+          }));
+          setMajorCases(cases);
+        }
       }
 
       if (servicesResponse.success) {

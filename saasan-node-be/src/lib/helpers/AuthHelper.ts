@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 import { User } from "../../types";
 import { ResponseHelper } from "./ResponseHelper";
@@ -30,5 +31,17 @@ export class AuthHelper {
       process.env.JWT_REFRESH_TOKEN!,
       { expiresIn: "30d" }
     );
+  }
+
+  static async hashPassword(password: string): Promise<string> {
+    const salt = await bcrypt.genSalt(10);
+    return bcrypt.hash(password, salt);
+  }
+
+  static async comparePassword(
+    password: string,
+    hash: string
+  ): Promise<boolean> {
+    return bcrypt.compare(password, hash);
   }
 }

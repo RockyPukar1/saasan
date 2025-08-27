@@ -20,14 +20,14 @@ export class DashboardController {
         .count("* as count")
         .first();
       const activePoliticians = await db("politicians")
-        .where({ status: "active" })
+        .where({ is_active: true })
         .count("* as count")
         .first();
 
       // Recent Activity
       const recentReports = await db("corruption_reports")
         .select("*")
-        .orderBy("createdAt", "desc")
+        .orderBy("created_at", "desc")
         .limit(5);
 
       // Statistics by category
@@ -56,6 +56,7 @@ export class DashboardController {
 
       res.json(ResponseHelper.success(stats));
     } catch (error) {
+      console.error("Dashboard stats error:", error);
       res
         .status(500)
         .json(ResponseHelper.error("Failed to fetch dashboard stats"));
@@ -66,17 +67,18 @@ export class DashboardController {
     try {
       const majorCases = await db("corruption_reports")
         .select("*")
-        .where("publicVisibility", "public")
+        .where("is_public", true)
         .where(function () {
           this.where("priority", "urgent")
-            .orWhere("amountInvolved", ">", 1000000)
-            .orWhere("upvotesCount", ">", 50);
+            .orWhere("amount_involved", ">", 1000000)
+            .orWhere("upvotes_count", ">", 50);
         })
-        .orderBy("createdBy", "desc")
+        .orderBy("created_at", "desc")
         .limit(10);
 
       res.json(ResponseHelper.success(majorCases));
     } catch (error) {
+      console.error("Major cases error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch major cases"));
     }
   }
@@ -87,7 +89,7 @@ export class DashboardController {
 
       let query = db("service_status")
         .select("*")
-        .orderBy("lastUpdated", "desc");
+        .orderBy("last_updated", "desc");
 
       if (district) query = query.where("district", district);
       if (municipality) query = query.where("municipality", municipality);
@@ -95,6 +97,7 @@ export class DashboardController {
       const services = await query;
       res.json(ResponseHelper.success(services));
     } catch (error) {
+      console.error("Live services error:", error);
       res
         .status(500)
         .json(ResponseHelper.error("Failed to fetch service status"));

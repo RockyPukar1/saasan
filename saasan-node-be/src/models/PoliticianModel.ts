@@ -11,8 +11,8 @@ export class PoliticianModel {
       .insert({
         ...politicianData,
         id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       })
       .returning("*");
     return politician;
@@ -36,14 +36,14 @@ export class PoliticianModel {
   ): Promise<{ politicians: Politician[]; total: number }> {
     let query = db("politicians")
       .select(
-        "politician.*",
+        "politicians.*",
         "positions.title as positionTitle",
         "political_parties.name as partyName"
       )
-      .leftJoin("positions", "politicians.positionId", "positions.id")
+      .leftJoin("positions", "politicians.position_id", "positions.id")
       .leftJoin(
         "political_parties",
-        "politicians.partyId",
+        "politicians.party_id",
         "political_parties.id"
       );
     if (filters.district)
@@ -51,11 +51,14 @@ export class PoliticianModel {
     if (filters.municipality)
       query = query.where("politicians.municipality", filters.municipality);
     if (filters.partyId)
-      query = query.where("politicians.partyId", filters.partyId);
+      query = query.where("politicians.party_id", filters.partyId);
     if (filters.positionId)
-      query = query.where("politicians.positionId", filters.positionId);
+      query = query.where("politicians.position_id", filters.positionId);
     if (filters.status)
-      query = query.where("politicians.status", filters.status);
+      query = query.where(
+        "politicians.is_active",
+        filters.status === PoliticianStatus.ACTIVE
+      );
 
     const total = await query.clone().count("* as count").first();
 
@@ -70,12 +73,136 @@ export class PoliticianModel {
     };
   }
 
+  static async findByLevel(
+    level: string,
+    filters: {
+      district?: string;
+      municipality?: string;
+      partyId?: number;
+      positionId?: number;
+      status?: PoliticianStatus;
+      limit?: number;
+      offset?: number;
+      search?: string;
+    } = {}
+  ): Promise<{ politicians: Politician[]; total: number }> {
+    // Normalize level name to match database values
+    const levelMapping: { [key: string]: string } = {
+      'federal': 'Federal',
+      'provincial': 'Provincial', 
+      'district': 'District',
+      'municipal': 'Municipal',
+      'ward': 'Ward'
+    };
+    
+    const normalizedLevel = levelMapping[level.toLowerCase()] || level;
+    
+    // Build base query for filtering
+    let baseQuery = db("politicians")
+      .leftJoin("positions", "politicians.position_id", "positions.id")
+      .leftJoin(
+        "political_parties",
+        "politicians.party_id",
+        "political_parties.id"
+      )
+      .leftJoin("constituencies", "politicians.constituency_id", "constituencies.id")
+      .leftJoin("levels", "positions.level_id", "levels.id")
+      .where("levels.name", "ilike", `%${normalizedLevel}%`);
+
+    // Apply filters to base query
+    if (filters.district)
+      baseQuery = baseQuery.where("politicians.district", filters.district);
+    if (filters.municipality)
+      baseQuery = baseQuery.where("politicians.municipality", filters.municipality);
+    if (filters.partyId)
+      baseQuery = baseQuery.where("politicians.party_id", filters.partyId);
+    if (filters.positionId)
+      baseQuery = baseQuery.where("politicians.position_id", filters.positionId);
+    if (filters.status)
+      baseQuery = baseQuery.where(
+        "politicians.is_active",
+        filters.status === PoliticianStatus.ACTIVE
+      );
+    if (filters.search)
+      baseQuery = baseQuery.where("politicians.full_name", "ilike", `%${filters.search}%`);
+
+    // Get total count first
+    const totalResult = await baseQuery.clone().count("politicians.id as count").first();
+    const total = parseInt(totalResult?.count as string) || 0;
+
+    // Build main query for data
+    let mainQuery = baseQuery
+      .select(
+        "politicians.*",
+        "positions.title as positionTitle",
+        "political_parties.name as partyName",
+        "constituencies.name as constituencyName",
+        "levels.name as levelName"
+      );
+
+    // Apply pagination
+    if (filters.limit) mainQuery = mainQuery.limit(filters.limit);
+    if (filters.offset) mainQuery = mainQuery.offset(filters.offset);
+
+    const politicians = await mainQuery;
+
+    return {
+      politicians,
+      total,
+    };
+  }
+
+  static async getGovernmentLevels(): Promise<any[]> {
+    const levels = await db("levels")
+      .select(
+        "levels.id",
+        "levels.name",
+        "levels.description"
+      )
+      .orderBy("levels.id");
+
+    // Get counts for each level separately to avoid GROUP BY issues
+    const levelCounts = await db("levels")
+      .select(
+        "levels.id",
+        db.raw("COUNT(DISTINCT politicians.id) as count")
+      )
+      .leftJoin("positions", "levels.id", "positions.level_id")
+      .leftJoin("politicians", "positions.id", "politicians.position_id")
+      .where("politicians.is_active", true)
+      .groupBy("levels.id");
+
+    // Merge the data
+    return levels.map(level => {
+      const countData = levelCounts.find(lc => lc.id === level.id);
+      return {
+        id: level.id.toString(),
+        name: level.name,
+        description: level.description,
+        count: parseInt(countData?.count as string) || 0
+      };
+    });
+  }
+
   static async searchByName(
     searchTerm: string,
     limit = 10
   ): Promise<Politician[]> {
     return db("politicians")
-      .where("fullName", "ilike", `%${searchTerm}%`)
+      .select(
+        "politicians.*",
+        "positions.title as positionTitle",
+        "political_parties.name as partyName",
+        "constituencies.name as constituencyName"
+      )
+      .leftJoin("positions", "politicians.position_id", "positions.id")
+      .leftJoin(
+        "political_parties",
+        "politicians.party_id",
+        "political_parties.id"
+      )
+      .leftJoin("constituencies", "politicians.constituency_id", "constituencies.id")
+      .where("full_name", "ilike", `%${searchTerm}%`)
       .limit(limit);
   }
 
@@ -85,7 +212,7 @@ export class PoliticianModel {
   ): Promise<Politician> {
     const [politician] = await db("politicians")
       .where({ id })
-      .update({ ...updates, updatedAt: new Date() })
+      .update({ ...updates, updated_at: new Date() })
       .returning("*");
 
     return politician;
@@ -93,13 +220,13 @@ export class PoliticianModel {
 
   static async getPerformanceMetrics(id: string): Promise<any> {
     const promises = await db("political_promises")
-      .where({ politicianId: id })
+      .where({ politician_id: id })
       .select("status")
       .count("* as count")
       .groupBy("status");
 
     const ratings = await db("politician_ratings")
-      .where({ politicianId: id })
+      .where({ politician_id: id })
       .avg("rating as averageRating")
       .count("* as totalRatings")
       .first();

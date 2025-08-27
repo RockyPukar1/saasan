@@ -23,6 +23,9 @@ import {
   CheckCircle2,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
+import { Audio } from "expo-av";
 
 interface Report {
   id: string;
@@ -274,15 +277,74 @@ const ReportsScreen = () => {
           Evidence (Optional)
         </Text>
         <View className="flex-row space-x-2">
-          <Button className="flex-1 bg-blue-600 flex-row items-center justify-center">
+          <Button
+            className="flex-1 bg-blue-600 flex-row items-center justify-center"
+            onPress={async () => {
+              try {
+                const { status } =
+                  await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== "granted") {
+                  Alert.alert(
+                    "Permission needed",
+                    "Camera permission is required to take photos"
+                  );
+                  return;
+                }
+                const result = await ImagePicker.launchCameraAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  quality: 0.8,
+                });
+                if (!result.canceled) {
+                  // Handle photo
+                }
+              } catch (error) {
+                Alert.alert("Error", "Failed to take photo");
+              }
+            }}
+          >
             <Camera className="text-white mr-2" size={16} />
             <Text className="text-white">Photo</Text>
           </Button>
-          <Button className="flex-1 bg-green-600 flex-row items-center justify-center">
+          <Button
+            className="flex-1 bg-green-600 flex-row items-center justify-center"
+            onPress={async () => {
+              try {
+                const result = await DocumentPicker.getDocumentAsync({
+                  type: ["application/pdf", "image/*"],
+                });
+                if ("assets" in result && result.assets && result.assets[0]) {
+                  // Handle document
+                  const file = result.assets[0];
+                }
+              } catch (error) {
+                Alert.alert("Error", "Failed to pick document");
+              }
+            }}
+          >
             <FileText className="text-white mr-2" size={16} />
             <Text className="text-white">Document</Text>
           </Button>
-          <Button className="flex-1 bg-purple-600 flex-row items-center justify-center">
+          <Button
+            className="flex-1 bg-purple-600 flex-row items-center justify-center"
+            onPress={async () => {
+              try {
+                const { status } = await Audio.requestPermissionsAsync();
+                if (status !== "granted") {
+                  Alert.alert(
+                    "Permission needed",
+                    "Audio recording permission is required"
+                  );
+                  return;
+                }
+                const recording = new Audio.Recording();
+                await recording.prepareToRecordAsync();
+                await recording.startAsync();
+                // Handle recording
+              } catch (error) {
+                Alert.alert("Error", "Failed to start recording");
+              }
+            }}
+          >
             <Upload className="text-white mr-2" size={16} />
             <Text className="text-white">Audio</Text>
           </Button>
@@ -302,8 +364,11 @@ const ReportsScreen = () => {
   const MyReportsTab = () => (
     <ScrollView className="flex-1 px-4 py-4">
       {mockReports.map((report) => (
-        <TouchableOpacity onPress={() => router.push(`/report/${report.id}`)}>
-          <Card key={report.id} className="mb-4">
+        <TouchableOpacity
+          key={report.id}
+          onPress={() => router.push(`/report/${report.id}`)}
+        >
+          <Card className="mb-4">
             <CardContent className="p-4">
               <View className="flex-row justify-between items-start mb-3">
                 <View className="flex-1">

@@ -39,4 +39,23 @@ export class ValidationHelper {
       .required(),
     comment: Joi.string().max(1000).optional(),
   });
+
+  static pollCreation = Joi.object({
+    title: Joi.string().min(5).max(200).required(),
+    description: Joi.string().min(10).max(1000).required(),
+    options: Joi.array()
+      .items(Joi.string().min(1).max(100))
+      .min(2)
+      .max(10)
+      .required(),
+  });
+
+  static pollUpdate = Joi.object({
+    title: Joi.string().min(5).max(200).optional(),
+    description: Joi.string().min(10).max(1000).optional(),
+  });
+
+  static pollOption = Joi.object({
+    option: Joi.string().min(1).max(100).required(),
+  });
 }

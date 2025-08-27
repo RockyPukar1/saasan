@@ -9,17 +9,17 @@ export class CorruptionReportModel {
     const id = generateUUID();
     const referenceNumber = await this.generateReferenceNumber();
 
-    const [report] = await db("corruption_report")
+    const [report] = await db("corruption_reports")
       .insert({
         ...reportData,
         id,
-        referenceNumber,
-        upvotesCount: 0,
-        downvotesCount: 0,
-        viewsCount: 0,
-        sharesCount: 0,
-        createdAt: new Date(),
-        updateAt: new Date(),
+        reference_number: referenceNumber,
+        upvotes_count: 0,
+        downvotes_count: 0,
+        views_count: 0,
+        shares_count: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
       })
       .returning("*");
 
@@ -35,7 +35,7 @@ export class CorruptionReportModel {
     referenceNumber: string
   ): Promise<CorruptionReport | null> {
     const report = await db("corruption_reports")
-      .where({ referenceNumber })
+      .where({ reference_number: referenceNumber })
       .first();
     return report || null;
   }
@@ -60,7 +60,7 @@ export class CorruptionReportModel {
       .select("corruption_reports.*", "report_categories.name as categoryName")
       .leftJoin(
         "report_categories",
-        "corruption_reports.categoryId",
+        "corruption_reports.category_id",
         "report_categories.id"
       );
 
@@ -70,7 +70,7 @@ export class CorruptionReportModel {
     if (filters.priority)
       query = query.where("corruption_reports.priority", filters.priority);
     if (filters.categoryId)
-      query = query.where("corruption_reports.categoryId", filters.categoryId);
+      query = query.where("corruption_reports.category_id", filters.categoryId);
     if (filters.district)
       query = query.where("corruption_reports.district", filters.district);
     if (filters.municipality)
@@ -80,21 +80,21 @@ export class CorruptionReportModel {
       );
     if (filters.assignedToOfficerId)
       query = query.where(
-        "corruption_reports.assignedToOfficerId",
+        "corruption_reports.assigned_to_officer_id",
         filters.assignedToOfficerId
       );
     if (filters.reporterId)
-      query = query.where("corruption_reports.reportId", filters.reporterId);
+      query = query.where("corruption_reports.reporter_id", filters.reporterId);
     if (filters.publicVisibility)
       query = query.where(
-        "corruption_reports.publicVisibility",
-        filters.publicVisibility
+        "corruption_reports.is_public",
+        filters.publicVisibility === "true"
       );
 
     const total = await query.clone().count("* as count").first();
 
     // Sorting
-    const sortBy = filters.sortBy || "createdAt";
+    const sortBy = filters.sortBy || "created_at";
     const sortOrder = filters.sortOrder || "desc";
     query = query.orderBy(`corruption_reports.${sortBy}`, sortOrder);
 
@@ -117,15 +117,15 @@ export class CorruptionReportModel {
   ): Promise<CorruptionReport> {
     const updateData: any = {
       status,
-      updatedAt: new Date(),
+      updated_at: new Date(),
     };
 
     if (status === ReportStatus.RESOLVED) {
-      updateData.assignedToOfficerId = new Date();
+      updateData.resolved_at = new Date();
     }
 
     if (officerId) {
-      updateData.assignedToOfficerId = officerId;
+      updateData.assigned_to_officer_id = officerId;
     }
 
     const [report] = await db("corruption_reports")
@@ -137,7 +137,7 @@ export class CorruptionReportModel {
   }
 
   static async incrementViews(id: string): Promise<void> {
-    await db("corruption_reports").where({ id }).increment("viewCounts", 1);
+    await db("corruption_reports").where({ id }).increment("views_count", 1);
   }
 
   static async updateVotes(
@@ -146,14 +146,14 @@ export class CorruptionReportModel {
     downvotes: number
   ): Promise<void> {
     await db("corruption_reports").where({ id }).update({
-      upvotesCount: upvotes,
-      downvotesCount: downvotes,
+      upvotes_count: upvotes,
+      downvotes_count: downvotes,
     });
   }
 
   private static async generateReferenceNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    const count = await db("corruption_report")
+    const count = await db("corruption_reports")
       .whereRaw("EXTRACT(YEAR FROM created_at) = ?", [year])
       .count("* as count")
       .first();
@@ -166,7 +166,7 @@ export class CorruptionReportModel {
       .select("district")
       .count("* as totalReports")
       .countDistinct("corruption_reports.id", { as: "uniqueReports" })
-      .avg("amountInvolved as avgAmount")
+      .avg("amount_involved as avgAmount")
       .groupBy("district")
       .orderBy("totalReports", "desc");
   }
@@ -177,7 +177,7 @@ export class CorruptionReportModel {
       .count("* as count")
       .leftJoin(
         "report_categories",
-        "corruption_reports.categoryId",
+        "corruption_reports.category_id",
         "report_categories.id"
       )
       .groupBy("report_categories.name")

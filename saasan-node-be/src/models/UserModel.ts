@@ -7,15 +7,16 @@ import { generateUUID } from "../lib/utils";
 export class UserModel {
   static async create(userData: Partial<User>): Promise<User> {
     const id = generateUUID();
-    const hashedPassword = await bcrypt.hash(userData.passwordHash!, 12);
+    const hashedPassword = await bcrypt.hash(userData.password_hash!, 12);
 
     const [user] = await db("users")
       .insert({
         ...userData,
         id,
-        passwordHash: hashedPassword,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        password_hash: hashedPassword,
+        created_at: new Date(),
+        updated_at: new Date(),
+        last_active_at: new Date(),
       })
       .returning("*");
 
@@ -40,7 +41,7 @@ export class UserModel {
   static async update(id: string, updates: Partial<User>): Promise<User> {
     const [user] = await db("users")
       .where({ id })
-      .update({ ...updates, updatedAt: new Date() })
+      .update({ ...updates, updated_at: new Date() })
       .returning("*");
     return user;
   }
@@ -49,10 +50,10 @@ export class UserModel {
     user: User,
     password: string
   ): Promise<boolean> {
-    return bcrypt.compare(password, user.passwordHash);
+    return bcrypt.compare(password, user.password_hash);
   }
 
   static async updateLastActive(id: string): Promise<void> {
-    await db("users").where({ id }).update({ lastActiveAt: new Date() });
+    await db("users").where({ id }).update({ last_active_at: new Date() });
   }
 }

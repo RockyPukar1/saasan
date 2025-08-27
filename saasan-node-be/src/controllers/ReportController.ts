@@ -30,6 +30,7 @@ export class ReportController {
         .status(201)
         .json(ResponseHelper.success(report, "Report submitted successfully"));
     } catch (error) {
+      console.error("Create report error:", error);
       res.status(500).json(ResponseHelper.error("Failed to create report"));
     }
   }
@@ -72,7 +73,8 @@ export class ReportController {
         )
       );
     } catch (error) {
-      res.status(500).json(ResponseHelper.error("Report not found"));
+      console.error("Get all reports error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch reports"));
     }
   }
 
@@ -108,7 +110,8 @@ export class ReportController {
         })
       );
     } catch (error) {
-      res.status(500).json(ResponseHelper.error("Failed to fetch error"));
+      console.error("Get report by ID error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch report"));
     }
   }
 
@@ -132,6 +135,7 @@ export class ReportController {
         )
       );
     } catch (error) {
+      console.error("Get user reports error:", error);
       res
         .status(500)
         .json(ResponseHelper.error("Failed to fetch user reports"));
@@ -169,6 +173,7 @@ export class ReportController {
 
       res.json(ResponseHelper.success(report, "Report status updated"));
     } catch (error) {
+      console.error("Update report status error:", error);
       res
         .status(500)
         .json(ResponseHelper.error("Failed to update report status"));
@@ -215,6 +220,7 @@ export class ReportController {
         )
       );
     } catch (error) {
+      console.error("Upload evidence error:", error);
       res.status(500).json(ResponseHelper.error("Failed to upload evidence"));
     }
   }
@@ -276,6 +282,7 @@ export class ReportController {
 
       res.json(ResponseHelper.success({ upvotes, downvotes }, "Vote recorded"));
     } catch (error) {
+      console.error("Vote on report error:", error);
       res.status(500).json(ResponseHelper.error("Failed to record vote"));
     }
   }
