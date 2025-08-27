@@ -15,7 +15,7 @@ app.use("/api/v1", routes);
 app.use(errorHandler);
 
 // 404 handler
-app.use("*", (req, res) => {
+app.use((req, res) => {
   res.status(404).json(ResponseHelper.error("Route not found"));
 });
 
