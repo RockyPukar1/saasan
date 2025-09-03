@@ -7,13 +7,11 @@ import { generateUUID } from "../lib/utils";
 export class UserModel {
   static async create(userData: Partial<User>): Promise<User> {
     const id = generateUUID();
-    const hashedPassword = await bcrypt.hash(userData.password_hash!, 12);
 
     const [user] = await db("users")
       .insert({
         ...userData,
         id,
-        password_hash: hashedPassword,
         created_at: new Date(),
         updated_at: new Date(),
         last_active_at: new Date(),
