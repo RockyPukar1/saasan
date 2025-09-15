@@ -23,23 +23,28 @@ export const useDashboard = () => {
           apiService.getMajorCases(),
           apiService.getLiveServices(),
         ]);
-      
+
       if (statsResponse.success) {
         setDashboardStats(statsResponse.data);
         // Extract major cases from the nested structure
-        if (statsResponse.data?.recentActivity) {
-          const cases = statsResponse.data.recentActivity.map((item: any) => ({
-            id: item.id,
-            referenceNumber: item.reference_number,
-            title: item.title,
-            description: item.description,
-            status: item.status === 'verified' ? 'ongoing' : 
-                   item.status === 'resolved' ? 'solved' : 'unsolved',
-            priority: item.priority,
-            amountInvolved: parseFloat(item.amount_involved) || 0,
-            upvotesCount: item.upvotes_count || 0,
-            createdAt: item.created_at,
-          }));
+        if ((statsResponse.data as any)?.recentActivity) {
+          const cases = (statsResponse.data as any).recentActivity.map(
+            (item: any) => ({
+              id: item.id,
+              referenceNumber: item.reference_number,
+              title: item.title,
+              description: item.description,
+              status: (item.status === "verified"
+                ? "ongoing"
+                : item.status === "resolved"
+                ? "solved"
+                : "unsolved") as "unsolved" | "ongoing" | "solved",
+              priority: item.priority,
+              amountInvolved: parseFloat(item.amount_involved) || 0,
+              upvotesCount: item.upvotes_count || 0,
+              createdAt: item.created_at,
+            })
+          );
           setMajorCases(cases);
         }
       }
@@ -52,8 +57,11 @@ export const useDashboard = () => {
             referenceNumber: item.reference_number,
             title: item.title,
             description: item.description,
-            status: item.status === 'verified' ? 'ongoing' : 
-                   item.status === 'resolved' ? 'solved' : 'unsolved',
+            status: (item.status === "verified"
+              ? "ongoing"
+              : item.status === "resolved"
+              ? "solved"
+              : "unsolved") as "unsolved" | "ongoing" | "solved",
             priority: item.priority,
             amountInvolved: parseFloat(item.amount_involved) || 0,
             upvotesCount: item.upvotes_count || 0,
@@ -64,7 +72,7 @@ export const useDashboard = () => {
       }
 
       if (servicesResponse.success) {
-        setServiceStatus(servicesResponse.data);
+        setServiceStatus(servicesResponse.data as any);
       }
     } catch (err: any) {
       setError(

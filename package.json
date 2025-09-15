@@ -4,8 +4,19 @@
   "main": "index.js",
   "scripts": {
     "dev:backend": "cd saasan-node-be && npm run dev",
-    "dev:frontend": "cd saasan-mobile-rn && npm run dev",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev:mobile": "cd saasan-mobile-rn && npm run dev:web",
+    "dev:dashboard": "cd saasan-dashboard-react && npm run dev",
+    "dev": "node scripts/dev-with-browser.js",
+    "dev:auto": "./scripts/start-dev.sh",
+    "dev:no-open": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"cd saasan-mobile-rn && expo start -c --web --port 8082\" \"cd saasan-dashboard-react && vite\"",
+    "open:mobile": "sleep 5 && xdg-open http://localhost:8082",
+    "open:dashboard": "sleep 8 && xdg-open http://localhost:5173",
+    "dev:with-delay": "npm run dev:no-open & npm run open:mobile & npm run open:dashboard",
+    "install:all": "npm install && cd saasan-node-be && npm install && cd ../saasan-mobile-rn && npm install && cd ../saasan-dashboard-react && npm install",
+    "build:backend": "cd saasan-node-be && npm run build",
+    "build:mobile": "cd saasan-mobile-rn && npm run build",
+    "build:dashboard": "cd saasan-dashboard-react && npm run build",
+    "build:all": "npm run build:backend && npm run build:mobile && npm run build:dashboard"
   },
   "keywords": [],
   "author": "",

@@ -15,8 +15,36 @@ import {
   PollVote,
 } from "~/types/polling";
 
+// Utility function to transform poll data from backend format to frontend format
+const transformPoll = (data: any): Poll => ({
+  id: data.id,
+  title: data.title,
+  description: data.description,
+  type: data.type,
+  status: data.status,
+  category: data.category,
+  options: data.options?.map((option: any) => ({
+    id: option.id,
+    text: option.option, // Backend uses 'option', frontend expects 'text'
+    votes_count: option.votes || 0, // Backend uses 'votes', frontend expects 'votes_count'
+    percentage: 0, // Will be calculated later
+  })) || [],
+  total_votes: data.total_votes || 0,
+  start_date: data.start_date,
+  end_date: data.end_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 7 days from now if null
+  created_by: data.created_by,
+  created_at: data.created_at,
+  updated_at: data.updated_at,
+  user_vote: data.user_vote,
+  is_anonymous: data.is_anonymous || false,
+  requires_verification: data.requires_verification || false,
+  district: data.district,
+  municipality: data.municipality,
+  ward: data.ward,
+});
+
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.74:5000/api/v1";
+  process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 interface ApiResponse<T> {
   success: boolean;
@@ -342,25 +370,41 @@ class ApiService {
           .join("&")
       : "";
 
-    return this.request<Poll[]>(`/polls${queryParams}`);
+    const response = await this.request<any[]>(`/polls${queryParams}`);
+    return {
+      ...response,
+      data: response.data?.map(transformPoll) || [],
+    };
   }
 
   async getPollById(id: string): Promise<ApiResponse<Poll>> {
-    return this.request<Poll>(`/polls/${id}`);
+    const response = await this.request<any>(`/polls/${id}`);
+    return {
+      ...response,
+      data: transformPoll(response.data),
+    };
   }
 
   async getUserPolls(): Promise<ApiResponse<Poll[]>> {
-    return this.request<Poll[]>("/polls/my-polls");
+    const response = await this.request<any[]>("/polls/my-polls");
+    return {
+      ...response,
+      data: response.data?.map(transformPoll) || [],
+    };
   }
 
   async updatePoll(
     id: string,
     data: UpdatePollData
   ): Promise<ApiResponse<Poll>> {
-    return this.request<Poll>(`/polls/${id}`, {
+    const response = await this.request<any>(`/polls/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
+    return {
+      ...response,
+      data: transformPoll(response.data),
+    };
   }
 
   async deletePoll(id: string): Promise<ApiResponse<void>> {
@@ -373,14 +417,29 @@ class ApiService {
     pollId: string,
     optionId: string | string[]
   ): Promise<ApiResponse<PollVote>> {
-    return this.request<PollVote>(`/polls/${pollId}/vote`, {
-      method: "POST",
-      body: JSON.stringify({ optionId }),
-    });
+    // Handle single choice polls
+    if (typeof optionId === 'string') {
+      return this.request<PollVote>(`/polls/${pollId}/vote/${optionId}`, {
+        method: "POST",
+      });
+    }
+    // Handle multiple choice polls - vote on each option separately
+    const results = [];
+    for (const id of optionId) {
+      const result = await this.request<PollVote>(`/polls/${pollId}/vote/${id}`, {
+        method: "POST",
+      });
+      results.push(result.data);
+    }
+    return {
+      success: true,
+      data: results as any,
+    };
   }
 
   async getPollResults(id: string): Promise<ApiResponse<Poll>> {
-    return this.request<Poll>(`/polls/${id}/results`);
+    // Use the same endpoint as getPollById since there's no separate results endpoint
+    return this.getPollById(id);
   }
 
   async getPollCategories(): Promise<ApiResponse<string[]>> {

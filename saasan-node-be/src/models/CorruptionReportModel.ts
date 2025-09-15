@@ -88,15 +88,56 @@ export class CorruptionReportModel {
     if (filters.publicVisibility)
       query = query.where(
         "corruption_reports.is_public",
-        filters.publicVisibility === "true"
+        filters.publicVisibility === "public" || filters.publicVisibility === "true"
       );
 
-    const total = await query.clone().count("* as count").first();
+    const total = await db("corruption_reports")
+      .count("* as count")
+      .where((builder) => {
+        if (filters.status)
+          builder.where("status", filters.status);
+        if (filters.priority)
+          builder.where("priority", filters.priority);
+        if (filters.categoryId)
+          builder.where("category_id", filters.categoryId);
+        if (filters.district)
+          builder.where("district", filters.district);
+        if (filters.municipality)
+          builder.where("municipality", filters.municipality);
+        if (filters.assignedToOfficerId)
+          builder.where("assigned_to_officer_id", filters.assignedToOfficerId);
+        if (filters.reporterId)
+          builder.where("reporter_id", filters.reporterId);
+        if (filters.publicVisibility)
+          builder.where("is_public", filters.publicVisibility === "public" || filters.publicVisibility === "true");
+      })
+      .first();
 
     // Sorting
     const sortBy = filters.sortBy || "created_at";
     const sortOrder = filters.sortOrder || "desc";
-    query = query.orderBy(`corruption_reports.${sortBy}`, sortOrder);
+    
+    // Convert camelCase to snake_case for database columns
+    const dbSortBy = sortBy === "createdAt" ? "created_at" : 
+                    sortBy === "updatedAt" ? "updated_at" :
+                    sortBy === "referenceNumber" ? "reference_number" :
+                    sortBy === "amountInvolved" ? "amount_involved" :
+                    sortBy === "upvotesCount" ? "upvotes_count" :
+                    sortBy === "downvotesCount" ? "downvotes_count" :
+                    sortBy === "viewsCount" ? "views_count" :
+                    sortBy === "sharesCount" ? "shares_count" :
+                    sortBy === "peopleAffectedCount" ? "people_affected_count" :
+                    sortBy === "assignedToOfficerId" ? "assigned_to_officer_id" :
+                    sortBy === "reporterId" ? "reporter_id" :
+                    sortBy === "categoryId" ? "category_id" :
+                    sortBy === "dateOccurred" ? "date_occurred" :
+                    sortBy === "resolvedAt" ? "resolved_at" :
+                    sortBy === "isAnonymous" ? "is_anonymous" :
+                    sortBy === "isPublic" ? "is_public" :
+                    sortBy === "publicVisibility" ? "public_visibility" :
+                    sortBy;
+    
+    query = query.orderBy(`corruption_reports.${dbSortBy}`, sortOrder);
 
     // Pagination
     if (filters.limit) query = query.limit(filters.limit);

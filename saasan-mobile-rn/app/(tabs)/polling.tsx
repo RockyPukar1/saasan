@@ -25,10 +25,13 @@ import { Button } from "~/components/ui/button";
 import { usePolling } from "~/hooks/usePolling";
 import { Poll, PollStatus, PollType } from "~/types/polling";
 import { useAuthContext } from "~/contexts/AuthContext";
+import { useLanguage } from "~/contexts/LanguageContext";
+import { PageHeader } from "~/components/PageHeader";
 
 const PollScreen = () => {
   const router = useRouter();
   const { user } = useAuthContext();
+  const { t } = useLanguage();
   const { loading, error, polls, loadPolls, voteOnPoll, loadPollResults } =
     usePolling();
 
@@ -51,12 +54,19 @@ const PollScreen = () => {
   };
 
   const handleVote = async (pollId: string, optionId: string) => {
+    if (!user) {
+      Alert.alert(t("polling.authRequired"), t("polling.loginToVote"), [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("nav.login"), onPress: () => router.push("/(auth)/login") },
+      ]);
+      return;
+    }
+
     try {
       await voteOnPoll(pollId, optionId);
-      Alert.alert("Success", "Your vote has been recorded");
-      loadPollResults(pollId);
+      // No need to show success alert - optimistic update handles UI
     } catch (err) {
-      Alert.alert("Error", "Failed to submit vote");
+      Alert.alert(t("common.error"), t("polling.voteFailed"));
     }
   };
 
@@ -76,11 +86,11 @@ const PollScreen = () => {
   const getStatusText = (status: PollStatus) => {
     switch (status) {
       case PollStatus.ACTIVE:
-        return "Active";
+        return t("polling.active");
       case PollStatus.ENDED:
-        return "Ended";
+        return t("polling.ended");
       case PollStatus.DRAFT:
-        return "Draft";
+        return t("polling.draft");
       default:
         return status;
     }
@@ -114,14 +124,23 @@ const PollScreen = () => {
                 </View>
               )}
             </View>
-            <View
-              className={`px-3 py-1 rounded-full ${getStatusColor(
-                poll.status
-              )}`}
-            >
-              <Text className="text-white text-xs font-bold">
-                {getStatusText(poll.status)}
-              </Text>
+            <View className="items-end">
+              <View
+                className={`px-3 py-1 rounded-full ${getStatusColor(
+                  poll.status
+                )} mb-1`}
+              >
+                <Text className="text-white text-xs font-bold">
+                  {getStatusText(poll.status)}
+                </Text>
+              </View>
+              <View className="px-2 py-1 bg-blue-100 rounded-full">
+                <Text className="text-blue-800 text-xs font-medium">
+                  {poll.type === "multiple_choice"
+                    ? t("polling.multipleChoice")
+                    : t("polling.singleChoice")}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -137,18 +156,25 @@ const PollScreen = () => {
                 (Array.isArray(poll.user_vote) &&
                   poll.user_vote.includes(option.id));
 
+              const isMultipleChoice = poll.type === "multiple_choice";
+              const canVote = poll.status === PollStatus.ACTIVE && user;
+              const isDisabled =
+                !canVote || (!isMultipleChoice && hasVoted && !isSelected);
+
               return (
                 <TouchableOpacity
                   key={option.id}
                   onPress={() => {
-                    if (!hasVoted && poll.status === PollStatus.ACTIVE) {
+                    if (canVote) {
                       handleVote(poll.id, option.id);
                     }
                   }}
-                  disabled={hasVoted || poll.status !== PollStatus.ACTIVE}
+                  disabled={isDisabled}
                   className={`mb-2 p-3 rounded-lg border ${
                     isSelected
                       ? "border-green-500 bg-green-50"
+                      : isDisabled
+                      ? "border-gray-200 bg-gray-50"
                       : "border-gray-200 bg-white"
                   }`}
                 >
@@ -160,24 +186,22 @@ const PollScreen = () => {
                     >
                       {option.text}
                     </Text>
-                    {hasVoted && (
-                      <Text
-                        className={`${
-                          isSelected ? "text-green-800" : "text-gray-600"
-                        }`}
-                      >
-                        {percentage}%
-                      </Text>
-                    )}
+                    <Text
+                      className={`text-sm ${
+                        isSelected ? "text-green-800" : "text-gray-600"
+                      }`}
+                    >
+                      {option.votes_count} {t("polling.votes")} ({percentage}%)
+                    </Text>
                   </View>
-                  {hasVoted && (
-                    <View className="mt-2 bg-gray-200 rounded-full overflow-hidden">
-                      <View
-                        className="h-2 bg-green-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </View>
-                  )}
+                  <View className="mt-2 bg-gray-200 rounded-full overflow-hidden">
+                    <View
+                      className={`h-2 ${
+                        isSelected ? "bg-green-500" : "bg-blue-500"
+                      }`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -191,12 +215,14 @@ const PollScreen = () => {
               </Text>
             </View>
             <Text className="text-gray-600 text-xs">
-              {poll.total_votes} votes
+              {poll.total_votes} {t("polling.votes")}
             </Text>
             {poll.is_anonymous && (
               <View className="flex-row items-center">
                 <AlertCircle className="text-gray-500" size={14} />
-                <Text className="text-gray-500 text-xs ml-1">Anonymous</Text>
+                <Text className="text-gray-500 text-xs ml-1">
+                  {t("polling.anonymous")}
+                </Text>
               </View>
             )}
           </View>
@@ -210,7 +236,7 @@ const PollScreen = () => {
       <View className="flex-1 items-center justify-center">
         <Text className="text-red-600">{error}</Text>
         <Button onPress={() => loadPolls()} className="mt-4">
-          <Text className="text-white">Retry</Text>
+          <Text className="text-white">{t("common.retry")}</Text>
         </Button>
       </View>
     );
@@ -218,16 +244,18 @@ const PollScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
+      {/* Header with Language Toggle */}
+      <PageHeader
+        title={t("polling.title")}
+        subtitle={`${polls.filter((p) => p.status === "active").length} ${t(
+          "polling.activePolls"
+        )}`}
+      />
+
       {/* Search and Filter */}
-      <View className="bg-white px-4 py-3 pt-16 border-b border-gray-200">
-        {/* Active Polls Status */}
-        <View className="mb-3 flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <BarChart3 className="text-blue-600 mr-2" size={16} />
-            <Text className="text-sm font-medium text-gray-700">
-              {polls.filter((p) => p.status === "active").length} active polls
-            </Text>
-          </View>
+      <View className="bg-white px-4 py-3 border-b border-gray-200">
+        {/* Voted Status */}
+        <View className="mb-3 flex-row items-center justify-end">
           <View className="flex-row items-center">
             <CheckCircle2 className="text-green-600 mr-1" size={14} />
             <Text className="text-xs text-gray-600">
@@ -238,7 +266,9 @@ const PollScreen = () => {
 
         <View className="flex-row space-x-2">
           <TextInput
-            placeholder="Search polls..."
+            placeholder={
+              t("common.search") + " " + t("polling.title").toLowerCase()
+            }
             value={searchQuery}
             onChangeText={setSearchQuery}
             className="flex-1 bg-gray-100 px-4 py-2 rounded-lg text-gray-800"
@@ -263,7 +293,7 @@ const PollScreen = () => {
                 activeTab === "all" ? "text-red-600" : "text-gray-600"
               }`}
             >
-              All Polls
+              {t("polling.activePolls")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -277,7 +307,7 @@ const PollScreen = () => {
                 activeTab === "my_votes" ? "text-red-600" : "text-gray-600"
               }`}
             >
-              My Votes
+              {t("polling.myPolls")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -292,11 +322,11 @@ const PollScreen = () => {
       >
         {loading && polls.length === 0 ? (
           <View className="flex-1 items-center justify-center py-8">
-            <Text>Loading polls...</Text>
+            <Text>{t("polling.loadingPolls")}</Text>
           </View>
         ) : polls.length === 0 ? (
           <View className="flex-1 items-center justify-center py-8">
-            <Text className="text-gray-600">No polls found</Text>
+            <Text className="text-gray-600">{t("polling.noPolls")}</Text>
           </View>
         ) : (
           polls

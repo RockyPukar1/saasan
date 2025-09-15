@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { useAuthContext } from "~/contexts/AuthContext";
 import { Redirect } from "expo-router";
-import { ThemeToggle } from "~/components/ThemeToggle";
+import ThemeToggle from "~/components/ThemeToggle";
 
 export default function ProtectedLayout() {
   const { isAuthenticated, loading } = useAuthContext();

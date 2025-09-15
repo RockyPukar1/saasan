@@ -257,4 +257,66 @@ export class PollingController {
         .json(ResponseHelper.error("Failed to fetch poll statistics"));
     }
   }
+
+  static async getAnalytics(req: Request, res: Response): Promise<void> {
+    try {
+      // Return mock data for now to test the endpoint
+      const analytics = {
+        total_polls: 3,
+        active_polls: 3,
+        total_votes: 0,
+        participation_rate: 0,
+        category_breakdown: [
+          { category: "General", count: 3, percentage: 100 },
+        ],
+        district_breakdown: [],
+        politician_performance: [],
+        party_performance: [],
+      };
+      res.json(ResponseHelper.success(analytics));
+    } catch (error) {
+      console.error("Get analytics error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch analytics"));
+    }
+  }
+
+  static async getCategories(req: Request, res: Response): Promise<void> {
+    try {
+      // Return mock data for now to test the endpoint
+      const categories = ["General", "Politics", "Corruption", "Government"];
+      res.json(ResponseHelper.success(categories));
+    } catch (error) {
+      console.error("Get categories error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch categories"));
+    }
+  }
+
+  static async getPoliticianComparison(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { politicianId } = req.params;
+      const comparison = await PollModel.getPoliticianComparison(politicianId);
+      res.json(ResponseHelper.success(comparison));
+    } catch (error) {
+      console.error("Get politician comparison error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician comparison"));
+    }
+  }
+
+  static async getPartyComparison(req: Request, res: Response): Promise<void> {
+    try {
+      const { partyId } = req.params;
+      const comparison = await PollModel.getPartyComparison(partyId);
+      res.json(ResponseHelper.success(comparison));
+    } catch (error) {
+      console.error("Get party comparison error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch party comparison"));
+    }
+  }
 }

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "expo start -c",
-    "dev:web": "expo start -c --web",
+    "dev:web": "expo start -c --web --port 8082",
     "dev:android": "expo start -c --android",
     "android": "expo start -c --android",
     "ios": "expo start -c --ios",

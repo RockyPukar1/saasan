@@ -24,8 +24,11 @@ import { useRouter } from "expo-router";
 import { usePoliticians, Politician } from "~/hooks/usePoliticians";
 import Loading from "~/components/Loading";
 import Error from "~/components/Error";
+import { useLanguage } from "~/contexts/LanguageContext";
+import { PageHeader } from "~/components/PageHeader";
 
 const PoliticiansScreen = () => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const {
     politicians,
@@ -55,8 +58,14 @@ const PoliticiansScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
+      {/* Header with Language Toggle */}
+      <PageHeader
+        title={t("politicians.title")}
+        subtitle={t("politicians.searchLeaders")}
+      />
+
       {/* Search Bar */}
-      <View className="px-4 py-3 pt-16 bg-white border-b border-gray-200">
+      <View className="px-4 py-3 bg-white border-b border-gray-200">
         {/* Active Filter Indicator */}
         {selectedLevel && (
           <View className="mb-3 flex-row items-center justify-between">
@@ -74,7 +83,7 @@ const PoliticiansScreen = () => {
             </TouchableOpacity>
           </View>
         )}
-        
+
         <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
           <Search className="text-gray-500" size={20} />
           <TextInput

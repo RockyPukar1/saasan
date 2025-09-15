@@ -112,12 +112,12 @@ export const useReports = (initialFilters?: ReportFilters) => {
           // Handle ImagePicker result
           formData.append("evidence", {
             uri: file.uri,
-            type: file.type || "image/jpeg",
-            name: file.fileName || "photo.jpg",
+            type: (file as any).type || "image/jpeg",
+            name: (file as any).fileName || "photo.jpg",
           } as any);
         } else if ("assets" in file) {
           // Handle DocumentPicker result
-          const asset = file.assets[0];
+          const asset = (file as any).assets[0];
           formData.append("evidence", {
             uri: asset.uri,
             type: asset.mimeType || "application/octet-stream",
@@ -125,7 +125,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
           } as any);
         }
 
-        const response = await apiService.uploadEvidence(reportId, formData);
+        const response = await apiService.uploadEvidence(reportId, formData as any);
 
         if (currentReport?.id === reportId) {
           setCurrentReport((prev) =>

@@ -26,6 +26,8 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { Audio } from "expo-av";
+import { useLanguage } from "~/contexts/LanguageContext";
+import { PageHeader } from "~/components/PageHeader";
 
 interface Report {
   id: string;
@@ -49,6 +51,7 @@ interface ReportCategory {
 
 const ReportsScreen = () => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"new" | "my_reports">("new");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -424,8 +427,14 @@ const ReportsScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
+      {/* Header with Language Toggle */}
+      <PageHeader
+        title={t("reports.title")}
+        subtitle={t("reports.createReport")}
+      />
+
       {/* Tab Selector */}
-      <View className="bg-white border-b border-gray-200 pt-16">
+      <View className="bg-white border-b border-gray-200">
         {/* Reports Summary */}
         <View className="px-4 py-3 border-b border-gray-100">
           <View className="flex-row items-center justify-between">
@@ -439,19 +448,23 @@ const ReportsScreen = () => {
               <View className="flex-row items-center">
                 <View className="w-2 h-2 bg-yellow-500 rounded-full mr-1" />
                 <Text className="text-xs text-gray-600">
-                  {mockReports?.filter(r => r.status === 'under_review').length || 0} pending
+                  {mockReports?.filter((r) => r.status === "under_review")
+                    .length || 0}{" "}
+                  pending
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <View className="w-2 h-2 bg-green-500 rounded-full mr-1" />
                 <Text className="text-xs text-gray-600">
-                  {mockReports?.filter(r => r.status === 'resolved').length || 0} resolved
+                  {mockReports?.filter((r) => r.status === "resolved").length ||
+                    0}{" "}
+                  resolved
                 </Text>
               </View>
             </View>
           </View>
         </View>
-        
+
         <View className="flex-row px-4 py-2">
           <TouchableOpacity
             onPress={() => setActiveTab("new")}

@@ -9,6 +9,7 @@ import { NAV_THEME } from "~/lib/constants";
 import { PortalHost } from "@rn-primitives/portal";
 import { setAndroidNavigationBar } from "~/lib/android-navigation-bar";
 import { AuthProvider, useAuthContext } from "~/contexts/AuthContext";
+import { LanguageProvider } from "~/contexts/LanguageContext";
 
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
@@ -30,32 +31,34 @@ export default function RootLayout() {
   usePlatformSpecificSetup();
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={LIGHT_THEME}>
-        <StatusBar style="dark" />
-        <Stack>
-          <Stack.Screen
-            name="(auth)"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="(protected)"
-            options={{
-              headerShown: false,
-            }}
-          />
-        </Stack>
-        <PortalHost />
-      </ThemeProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <ThemeProvider value={LIGHT_THEME}>
+          <StatusBar style="dark" />
+          <Stack>
+            <Stack.Screen
+              name="(auth)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(protected)"
+              options={{
+                headerShown: false,
+              }}
+            />
+          </Stack>
+          <PortalHost />
+        </ThemeProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

@@ -50,9 +50,7 @@ export class PollModel {
     const total = parseInt(totalResult?.count as string) || 0;
 
     // Build main query for data
-    let mainQuery = baseQuery
-      .select("*")
-      .orderBy("created_at", "desc");
+    let mainQuery = baseQuery.select("*").orderBy("created_at", "desc");
 
     // Apply pagination
     if (filters.limit) mainQuery = mainQuery.limit(filters.limit);
@@ -197,5 +195,192 @@ export class PollModel {
     );
 
     return pollsWithOptions;
+  }
+
+  static async getAnalytics(): Promise<any> {
+    // Get total polls count
+    const totalPollsResult = await db("polls").count("id as count").first();
+    const totalPolls = parseInt(totalPollsResult?.count as string) || 0;
+
+    // Get active polls count
+    const activePollsResult = await db("polls")
+      .where("status", "active")
+      .count("id as count")
+      .first();
+    const activePolls = parseInt(activePollsResult?.count as string) || 0;
+
+    // Get total votes count
+    const totalVotesResult = await db("poll_votes")
+      .count("id as count")
+      .first();
+    const totalVotes = parseInt(totalVotesResult?.count as string) || 0;
+
+    // Calculate participation rate (simplified)
+    const participationRate =
+      totalPolls > 0 ? Math.round((totalVotes / (totalPolls * 10)) * 100) : 0;
+
+    // Get category breakdown
+    const categoryBreakdown = await db("polls")
+      .select("category")
+      .count("id as count")
+      .groupBy("category")
+      .orderBy("count", "desc");
+
+    const categoryData = categoryBreakdown.map((item) => ({
+      category: item.category,
+      count: parseInt(item.count as string),
+      percentage:
+        totalPolls > 0
+          ? Math.round((parseInt(item.count as string) / totalPolls) * 100)
+          : 0,
+    }));
+
+    // Get district breakdown
+    const districtBreakdown = await db("polls")
+      .select("district")
+      .count("id as count")
+      .whereNotNull("district")
+      .groupBy("district")
+      .orderBy("count", "desc");
+
+    const districtData = districtBreakdown.map((item) => ({
+      district: item.district,
+      count: parseInt(item.count as string),
+      percentage:
+        totalPolls > 0
+          ? Math.round((parseInt(item.count as string) / totalPolls) * 100)
+          : 0,
+    }));
+
+    // Get politician performance (mock data for now)
+    const politicianPerformance = await db("polls")
+      .leftJoin("politicians", "polls.politician_id", "politicians.id")
+      .select(
+        "politicians.id as politician_id",
+        "politicians.full_name as politician_name"
+      )
+      .count("polls.id as polls_created")
+      .whereNotNull("polls.politician_id")
+      .groupBy("politicians.id", "politicians.full_name")
+      .orderBy("polls_created", "desc")
+      .limit(10);
+
+    const politicianData = politicianPerformance.map((item) => ({
+      politician_id: item.politician_id,
+      politician_name: item.politician_name,
+      polls_created: parseInt(item.polls_created as string),
+      total_votes_received: Math.floor(Math.random() * 1000), // Mock data
+      average_rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Mock data: 3-5 rating
+    }));
+
+    // Get party performance (mock data for now)
+    const partyPerformance = await db("polls")
+      .leftJoin("political_parties", "polls.party_id", "political_parties.id")
+      .select(
+        "political_parties.id as party_id",
+        "political_parties.name as party_name"
+      )
+      .count("polls.id as polls_created")
+      .whereNotNull("polls.party_id")
+      .groupBy("political_parties.id", "political_parties.name")
+      .orderBy("polls_created", "desc")
+      .limit(10);
+
+    const partyData = partyPerformance.map((item) => ({
+      party_id: item.party_id,
+      party_name: item.party_name,
+      polls_created: parseInt(item.polls_created as string),
+      total_votes_received: Math.floor(Math.random() * 2000), // Mock data
+      average_rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Mock data: 3-5 rating
+    }));
+
+    return {
+      total_polls: totalPolls,
+      active_polls: activePolls,
+      total_votes: totalVotes,
+      participation_rate: participationRate,
+      category_breakdown: categoryData,
+      district_breakdown: districtData,
+      politician_performance: politicianData,
+      party_performance: partyData,
+    };
+  }
+
+  static async getCategories(): Promise<string[]> {
+    const categories = await db("polls")
+      .select("category")
+      .distinct()
+      .whereNotNull("category")
+      .orderBy("category");
+
+    return categories.map((item) => item.category);
+  }
+
+  static async getPoliticianComparison(politicianId: string): Promise<any[]> {
+    // Get polls related to this politician
+    const polls = await db("polls")
+      .where("politician_id", politicianId)
+      .select("*");
+
+    // Mock comparison data for now
+    return polls.map((poll) => ({
+      poll_id: poll.id,
+      poll_title: poll.title,
+      politician_comparison: [
+        {
+          politician_id: politicianId,
+          politician_name: "Current Politician",
+          votes_received: Math.floor(Math.random() * 500),
+          percentage: Math.floor(Math.random() * 100),
+        },
+      ],
+      party_comparison: [
+        {
+          party_id: "1",
+          party_name: "Party A",
+          votes_received: Math.floor(Math.random() * 300),
+          percentage: Math.floor(Math.random() * 50),
+        },
+        {
+          party_id: "2",
+          party_name: "Party B",
+          votes_received: Math.floor(Math.random() * 200),
+          percentage: Math.floor(Math.random() * 30),
+        },
+      ],
+    }));
+  }
+
+  static async getPartyComparison(partyId: string): Promise<any[]> {
+    // Get polls related to this party
+    const polls = await db("polls").where("party_id", partyId).select("*");
+
+    // Mock comparison data for now
+    return polls.map((poll) => ({
+      poll_id: poll.id,
+      poll_title: poll.title,
+      politician_comparison: [
+        {
+          politician_id: "1",
+          politician_name: "Politician A",
+          votes_received: Math.floor(Math.random() * 400),
+          percentage: Math.floor(Math.random() * 60),
+        },
+        {
+          politician_id: "2",
+          politician_name: "Politician B",
+          votes_received: Math.floor(Math.random() * 300),
+          percentage: Math.floor(Math.random() * 40),
+        },
+      ],
+      party_comparison: [
+        {
+          party_id: partyId,
+          party_name: "Current Party",
+          votes_received: Math.floor(Math.random() * 600),
+          percentage: Math.floor(Math.random() * 100),
+        },
+      ],
+    }));
   }
 }

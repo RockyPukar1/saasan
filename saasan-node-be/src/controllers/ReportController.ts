@@ -4,6 +4,7 @@ import { ValidationHelper } from "../lib/helpers/ValidationHelper";
 import { CorruptionReportModel } from "../models/CorruptionReportModel";
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
+import { ReportStatus } from "../types";
 
 export class ReportController {
   static async create(req: Request, res: Response): Promise<void> {
@@ -284,6 +285,102 @@ export class ReportController {
     } catch (error) {
       console.error("Vote on report error:", error);
       res.status(500).json(ResponseHelper.error("Failed to record vote"));
+    }
+  }
+
+  // Admin functions for report management
+  static async approve(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { comment } = req.body;
+
+      const report = await CorruptionReportModel.updateStatus(
+        id,
+        ReportStatus.VERIFIED,
+        req.user.userId
+      );
+
+      // Add update to timeline
+      if (comment) {
+        await db("report_updates").insert({
+          reportId: id,
+          status: ReportStatus.VERIFIED,
+          updateMessage: comment,
+          officerId: req.user.userId,
+          isPublicVisible: true,
+          createdAt: new Date(),
+        });
+      }
+
+      res.json(ResponseHelper.success(report, "Report approved successfully"));
+    } catch (error) {
+      console.error("Approve report error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to approve report"));
+    }
+  }
+
+  static async reject(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { comment } = req.body;
+
+      if (!comment) {
+        res
+          .status(400)
+          .json(ResponseHelper.error("Rejection comment is required"));
+        return;
+      }
+
+      const report = await CorruptionReportModel.updateStatus(
+        id,
+        ReportStatus.DISMISSED,
+        req.user.userId
+      );
+
+      // Add update to timeline
+      await db("report_updates").insert({
+        reportId: id,
+        status: ReportStatus.DISMISSED,
+        updateMessage: comment,
+        officerId: req.user.userId,
+        isPublicVisible: true,
+        createdAt: new Date(),
+      });
+
+      res.json(ResponseHelper.success(report, "Report rejected successfully"));
+    } catch (error) {
+      console.error("Reject report error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to reject report"));
+    }
+  }
+
+  static async resolve(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { comment } = req.body;
+
+      const report = await CorruptionReportModel.updateStatus(
+        id,
+        ReportStatus.RESOLVED,
+        req.user.userId
+      );
+
+      // Add update to timeline
+      if (comment) {
+        await db("report_updates").insert({
+          reportId: id,
+          status: ReportStatus.RESOLVED,
+          updateMessage: comment,
+          officerId: req.user.userId,
+          isPublicVisible: true,
+          createdAt: new Date(),
+        });
+      }
+
+      res.json(ResponseHelper.success(report, "Report resolved successfully"));
+    } catch (error) {
+      console.error("Resolve report error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to resolve report"));
     }
   }
 }

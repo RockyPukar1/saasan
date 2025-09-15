@@ -26,4 +26,10 @@ router.post(
   PoliticianController.ratePolitician
 );
 
+// Admin routes (require authentication)
+router.post("/", authenticateToken, PoliticianController.create);
+router.put("/:id", authenticateToken, PoliticianController.update);
+router.delete("/:id", authenticateToken, PoliticianController.delete);
+router.post("/bulk-upload", authenticateToken, PoliticianController.bulkUpload);
+
 export default router;

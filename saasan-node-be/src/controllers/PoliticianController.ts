@@ -3,6 +3,7 @@ import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 import { PoliticianModel } from "../models/PoliticianModel";
 import { PoliticalPromiseModel } from "../models/PoliticalPromiseModel";
 import { ValidationHelper } from "../lib/helpers/ValidationHelper";
+import { generateUUID } from "../lib/utils";
 import db from "../config/database";
 
 export class PoliticianController {
@@ -104,7 +105,9 @@ export class PoliticianController {
       res.json(ResponseHelper.success(levels));
     } catch (error) {
       console.error("Get government levels error:", error);
-      res.status(500).json(ResponseHelper.error("Failed to fetch government levels"));
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch government levels"));
     }
   }
 
@@ -145,7 +148,9 @@ export class PoliticianController {
       );
     } catch (error) {
       console.error("Get politicians by level error:", error);
-      res.status(500).json(ResponseHelper.error("Failed to fetch politicians by level"));
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politicians by level"));
     }
   }
 
@@ -197,6 +202,116 @@ export class PoliticianController {
     } catch (error) {
       console.error("Rate politician error:", error);
       res.status(500).json(ResponseHelper.error("Failed to submit rating"));
+    }
+  }
+
+  static async create(req: Request, res: Response): Promise<void> {
+    try {
+      const { error, value } = ValidationHelper.politician.validate(req.body);
+
+      if (error) {
+        res
+          .status(400)
+          .json(ResponseHelper.error("Validation failed", 400, error.details));
+        return;
+      }
+
+      const id = generateUUID();
+      const politician = await db("politicians")
+        .insert({
+          id,
+          ...value,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning("*");
+
+      res
+        .status(201)
+        .json(
+          ResponseHelper.success(
+            politician[0],
+            "Politician created successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Create politician error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to create politician"));
+    }
+  }
+
+  static async update(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { error, value } = ValidationHelper.politicianUpdate.validate(
+        req.body
+      );
+
+      if (error) {
+        res
+          .status(400)
+          .json(ResponseHelper.error("Validation failed", 400, error.details));
+        return;
+      }
+
+      const politician = await db("politicians")
+        .where({ id })
+        .update({
+          ...value,
+          updated_at: new Date(),
+        })
+        .returning("*");
+
+      if (!politician.length) {
+        res.status(404).json(ResponseHelper.error("Politician not found"));
+        return;
+      }
+
+      res.json(
+        ResponseHelper.success(politician[0], "Politician updated successfully")
+      );
+    } catch (error) {
+      console.error("Update politician error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to update politician"));
+    }
+  }
+
+  static async delete(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const deleted = await db("politicians").where({ id }).del();
+
+      if (!deleted) {
+        res.status(404).json(ResponseHelper.error("Politician not found"));
+        return;
+      }
+
+      res.json(ResponseHelper.success(null, "Politician deleted successfully"));
+    } catch (error) {
+      console.error("Delete politician error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to delete politician"));
+    }
+  }
+
+  static async bulkUpload(req: Request, res: Response): Promise<void> {
+    try {
+      // This would typically handle CSV file upload and parsing
+      // For now, we'll return a mock response
+      res.json(
+        ResponseHelper.success(
+          {
+            imported: 0,
+            skipped: 0,
+            errors: ["CSV upload functionality not implemented yet"],
+          },
+          "Bulk upload completed"
+        )
+      );
+    } catch (error) {
+      console.error("Bulk upload politicians error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to upload politicians"));
     }
   }
 }

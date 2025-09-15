@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+:root {
+  /* Saasan Red Theme - matching React Native app */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --primary: 0 84% 60%; /* Red primary */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 84% 60%;
+  --radius: 0.5rem;
+
+  /* Saasan specific colors */
+  --saasan-red: 0 84% 60%;
+  --saasan-red-light: 0 84% 95%;
+  --saasan-yellow: 45 93% 58%;
+  --saasan-green: 142 76% 36%;
+  --saasan-blue: 221 83% 53%;
+  --saasan-gray: 0 0% 50%;
+  --saasan-gray-light: 0 0% 96%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Saasan specific color utilities */
+.bg-saasan-red {
+  background-color: hsl(var(--saasan-red));
+}
+.bg-saasan-red-light {
+  background-color: hsl(var(--saasan-red-light));
+}
+.bg-saasan-yellow {
+  background-color: hsl(var(--saasan-yellow));
+}
+.bg-saasan-green {
+  background-color: hsl(var(--saasan-green));
+}
+.bg-saasan-blue {
+  background-color: hsl(var(--saasan-blue));
+}
+.bg-saasan-gray {
+  background-color: hsl(var(--saasan-gray));
+}
+.bg-saasan-gray-light {
+  background-color: hsl(var(--saasan-gray-light));
+}
+
+.text-saasan-red {
+  color: hsl(var(--saasan-red));
+}
+.text-saasan-yellow {
+  color: hsl(var(--saasan-yellow));
+}
+.text-saasan-green {
+  color: hsl(var(--saasan-green));
+}
+.text-saasan-blue {
+  color: hsl(var(--saasan-blue));
+}
+.text-saasan-gray {
+  color: hsl(var(--saasan-gray));
+}
+
+.border-saasan-red {
+  border-color: hsl(var(--saasan-red));
+}
+.border-saasan-yellow {
+  border-color: hsl(var(--saasan-yellow));
+}
+.border-saasan-green {
+  border-color: hsl(var(--saasan-green));
+}
+.border-saasan-blue {
+  border-color: hsl(var(--saasan-blue));
+}
+
+/* Card styles matching mobile app */
+.card-saasan {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.card-saasan-red {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-left: 4px solid hsl(var(--saasan-red));
+  background-color: hsl(var(--card));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.card-saasan-yellow {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-left: 4px solid hsl(var(--saasan-yellow));
+  background-color: hsl(var(--card));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.card-saasan-green {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-left: 4px solid hsl(var(--saasan-green));
+  background-color: hsl(var(--card));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.card-saasan-blue {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-left: 4px solid hsl(var(--saasan-blue));
+  background-color: hsl(var(--card));
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Modal fixes */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Ensure modal backdrop is visible */
+.fixed.inset-0 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Modal close button styling */
+.modal-close-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.modal-close-btn:hover {
+  transform: scale(1.1);
+}
