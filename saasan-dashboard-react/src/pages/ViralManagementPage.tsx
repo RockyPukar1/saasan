@@ -147,7 +147,7 @@ export const ViralManagementPage: React.FC = () => {
                   Total Shares
                 </p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {metrics.totalShares.toLocaleString()}
+                  {(metrics?.totalShares || 0).toLocaleString()}
                 </p>
               </div>
               <Share className="h-8 w-8 text-blue-600" />
@@ -162,7 +162,7 @@ export const ViralManagementPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Votes</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {metrics.totalVotes.toLocaleString()}
+                  {(metrics?.totalVotes || 0).toLocaleString()}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
@@ -177,7 +177,7 @@ export const ViralManagementPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Comments</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {metrics.totalComments.toLocaleString()}
+                  {(metrics?.totalComments || 0).toLocaleString()}
                 </p>
               </div>
               <MessageCircle className="h-8 w-8 text-purple-600" />
@@ -193,10 +193,10 @@ export const ViralManagementPage: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600">Viral Score</p>
                 <p
                   className={`text-2xl font-bold ${
-                    getViralScoreColor(metrics.viralScore).split(" ")[0]
+                    getViralScoreColor(metrics?.viralScore || 0).split(" ")[0]
                   }`}
                 >
-                  {metrics.viralScore}/100
+                  {metrics?.viralScore || 0}/100
                 </p>
               </div>
               <BarChart3 className="h-8 w-8 text-orange-600" />
@@ -233,23 +233,27 @@ export const ViralManagementPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {metrics.topSharedContent.slice(0, 5).map((content) => (
-                    <div
-                      key={content.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{content.title}</p>
-                        <p className="text-xs text-gray-500">{content.type}</p>
+                  {(metrics?.topSharedContent || [])
+                    .slice(0, 5)
+                    .map((content) => (
+                      <div
+                        key={content.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{content.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {content.type}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-blue-600">
+                            {content.shareCount}
+                          </p>
+                          <p className="text-xs text-gray-500">shares</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-blue-600">
-                          {content.shareCount}
-                        </p>
-                        <p className="text-xs text-gray-500">shares</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -264,19 +268,21 @@ export const ViralManagementPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {metrics.trendingHashtags.slice(0, 5).map((hashtag) => (
-                    <div
-                      key={hashtag.tag}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-600">
-                        #{hashtag.tag}
-                      </span>
-                      <span className="font-bold text-gray-700">
-                        {hashtag.count}
-                      </span>
-                    </div>
-                  ))}
+                  {(metrics?.trendingHashtags || [])
+                    .slice(0, 5)
+                    .map((hashtag) => (
+                      <div
+                        key={hashtag.tag}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-600">
+                          #{hashtag.tag}
+                        </span>
+                        <span className="font-bold text-gray-700">
+                          {hashtag.count}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -490,7 +496,7 @@ export const ViralManagementPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {metrics.topSharedContent.map((content, index) => (
+                {(metrics?.topSharedContent || []).map((content, index) => (
                   <div
                     key={content.id}
                     className="flex items-center justify-between p-4 border rounded-lg"

@@ -55,13 +55,13 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen
-              name="politician"
+              name="politician/[id]"
               options={{
                 headerShown: false,
               }}
             />
             <Stack.Screen
-              name="report"
+              name="report/[id]"
               options={{
                 headerShown: false,
               }}

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { ViralService } from "../services/viralService";
+import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 
 export class ViralController {
   // Share functionality
@@ -256,7 +257,15 @@ export class ViralController {
 
   // Analytics and metrics
   static async getViralMetrics(req: Request, res: Response) {
-    res.status(501).json({ error: "Not implemented yet" });
+    try {
+      const metrics = await ViralService.getViralMetrics();
+      res.json(ResponseHelper.success(metrics));
+    } catch (error) {
+      console.error("Get viral metrics error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch viral metrics"));
+    }
   }
 
   static async getUpdates(req: Request, res: Response) {

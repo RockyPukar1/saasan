@@ -37,10 +37,9 @@ export class PoliticianModel {
     let query = db("politicians")
       .select(
         "politicians.*",
-        "positions.title as positionTitle",
+        "politicians.position as positionTitle",
         "political_parties.name as partyName"
       )
-      .leftJoin("positions", "politicians.position_id", "positions.id")
       .leftJoin(
         "political_parties",
         "politicians.party_id",
@@ -53,7 +52,7 @@ export class PoliticianModel {
     if (filters.partyId)
       query = query.where("politicians.party_id", filters.partyId);
     if (filters.positionId)
-      query = query.where("politicians.position_id", filters.positionId);
+      query = query.where("politicians.position", filters.positionId);
     if (filters.status)
       query = query.where(
         "politicians.is_active",
@@ -61,7 +60,6 @@ export class PoliticianModel {
       );
 
     const total = await db("politicians")
-      .leftJoin("positions", "politicians.position_id", "positions.id")
       .leftJoin(
         "political_parties",
         "politicians.party_id",
@@ -75,7 +73,7 @@ export class PoliticianModel {
         if (filters.partyId)
           queryBuilder.where("politicians.party_id", filters.partyId);
         if (filters.positionId)
-          queryBuilder.where("politicians.position_id", filters.positionId);
+          queryBuilder.where("politicians.position", filters.positionId);
         if (filters.status) {
           queryBuilder.where(
             "politicians.is_active",
@@ -123,7 +121,6 @@ export class PoliticianModel {
 
     // Build base query for filtering
     let baseQuery = db("politicians")
-      .leftJoin("positions", "politicians.position_id", "positions.id")
       .leftJoin(
         "political_parties",
         "politicians.party_id",
@@ -134,6 +131,7 @@ export class PoliticianModel {
         "politicians.constituency_id",
         "constituencies.id"
       )
+      .leftJoin("positions", "politicians.position", "positions.title")
       .leftJoin("levels", "positions.level_id", "levels.id")
       .where("levels.name", "ilike", `%${normalizedLevel}%`);
 
@@ -148,10 +146,7 @@ export class PoliticianModel {
     if (filters.partyId)
       baseQuery = baseQuery.where("politicians.party_id", filters.partyId);
     if (filters.positionId)
-      baseQuery = baseQuery.where(
-        "politicians.position_id",
-        filters.positionId
-      );
+      baseQuery = baseQuery.where("politicians.position", filters.positionId);
     if (filters.status)
       baseQuery = baseQuery.where(
         "politicians.is_active",
@@ -201,7 +196,7 @@ export class PoliticianModel {
     const levelCounts = await db("levels")
       .select("levels.id", db.raw("COUNT(DISTINCT politicians.id) as count"))
       .leftJoin("positions", "levels.id", "positions.level_id")
-      .leftJoin("politicians", "positions.id", "politicians.position_id")
+      .leftJoin("politicians", "positions.title", "politicians.position")
       .where("politicians.is_active", true)
       .groupBy("levels.id");
 
@@ -224,11 +219,10 @@ export class PoliticianModel {
     return db("politicians")
       .select(
         "politicians.*",
-        "positions.title as positionTitle",
+        "politicians.position as positionTitle",
         "political_parties.name as partyName",
         "constituencies.name as constituencyName"
       )
-      .leftJoin("positions", "politicians.position_id", "positions.id")
       .leftJoin(
         "political_parties",
         "politicians.party_id",
@@ -269,5 +263,135 @@ export class PoliticianModel {
       .first();
 
     return { promises, ratings };
+  }
+
+  static async getDetailedProfile(id: string): Promise<any> {
+    // Get basic politician info with joins
+    const politician = await db("politicians")
+      .select(
+        "politicians.*",
+        "political_parties.name as partyName",
+        "political_parties.name_nepali as partyNameNepali",
+        "constituencies.name as constituencyName",
+        "constituencies.name_nepali as constituencyNameNepali",
+        "positions.title as positionTitle",
+        "positions.title_nepali as positionTitleNepali",
+        "levels.name as levelName",
+        "levels.name_nepali as levelNameNepali"
+      )
+      .leftJoin(
+        "political_parties",
+        "politicians.party_id",
+        "political_parties.id"
+      )
+      .leftJoin(
+        "constituencies",
+        "politicians.constituency_id",
+        "constituencies.id"
+      )
+      .leftJoin("positions", "politicians.position", "positions.title")
+      .leftJoin("levels", "positions.level_id", "levels.id")
+      .where("politicians.id", id)
+      .first();
+
+    if (!politician) return null;
+
+    // Get promises
+    const promises = await db("political_promises")
+      .where({ politician_id: id })
+      .orderBy("created_at", "desc");
+
+    // Get achievements
+    const achievements = await db("politician_achievements")
+      .where({ politician_id: id })
+      .orderBy("achievement_date", "desc");
+
+    // Get contacts
+    const contacts = await db("politician_contacts")
+      .where({ politician_id: id })
+      .orderBy("is_primary", "desc");
+
+    // Get social media
+    const socialMedia = await db("politician_social_media").where({
+      politician_id: id,
+    });
+
+    // Get budget tracking
+    const budgetTracking = await db("politician_budget_tracking")
+      .where({ politician_id: id })
+      .orderBy("fiscal_year", "desc");
+
+    // Get attendance records
+    const attendance = await db("politician_attendance")
+      .where({ politician_id: id })
+      .orderBy("session_date", "desc")
+      .limit(30);
+
+    // Get ratings by category
+    const ratings = await db("politician_ratings")
+      .select("category")
+      .avg("rating as averageRating")
+      .count("* as totalRatings")
+      .where({ politician_id: id })
+      .groupBy("category");
+
+    // Calculate overall performance metrics
+    const performanceMetrics = await this.getPerformanceMetrics(id);
+
+    return {
+      ...politician,
+      promises,
+      achievements,
+      contacts,
+      socialMedia,
+      budgetTracking,
+      attendance,
+      ratings,
+      performanceMetrics,
+    };
+  }
+
+  static async getPoliticianPromises(id: string): Promise<any[]> {
+    return db("political_promises")
+      .where({ politician_id: id })
+      .orderBy("created_at", "desc");
+  }
+
+  static async getPoliticianAchievements(id: string): Promise<any[]> {
+    return db("politician_achievements")
+      .where({ politician_id: id })
+      .orderBy("achievement_date", "desc");
+  }
+
+  static async getPoliticianContacts(id: string): Promise<any[]> {
+    return db("politician_contacts")
+      .where({ politician_id: id })
+      .orderBy("is_primary", "desc");
+  }
+
+  static async getPoliticianSocialMedia(id: string): Promise<any[]> {
+    return db("politician_social_media").where({ politician_id: id });
+  }
+
+  static async getPoliticianBudgetTracking(id: string): Promise<any[]> {
+    return db("politician_budget_tracking")
+      .where({ politician_id: id })
+      .orderBy("fiscal_year", "desc");
+  }
+
+  static async getPoliticianAttendance(id: string, limit = 30): Promise<any[]> {
+    return db("politician_attendance")
+      .where({ politician_id: id })
+      .orderBy("session_date", "desc")
+      .limit(limit);
+  }
+
+  static async getPoliticianRatings(id: string): Promise<any[]> {
+    return db("politician_ratings")
+      .select("category")
+      .avg("rating as averageRating")
+      .count("* as totalRatings")
+      .where({ politician_id: id })
+      .groupBy("category");
   }
 }

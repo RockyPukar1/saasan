@@ -56,13 +56,10 @@ export class CorruptionReportModel {
       sortOrder?: "asc" | "desc";
     } = {}
   ): Promise<{ reports: CorruptionReport[]; total: number }> {
-    let query = db("corruption_reports")
-      .select("corruption_reports.*", "report_categories.name as categoryName")
-      .leftJoin(
-        "report_categories",
-        "corruption_reports.category_id",
-        "report_categories.id"
-      );
+    let query = db("corruption_reports").select(
+      "corruption_reports.*",
+      "corruption_reports.category as categoryName"
+    );
 
     // Apply filters
     if (filters.status)
@@ -88,20 +85,18 @@ export class CorruptionReportModel {
     if (filters.publicVisibility)
       query = query.where(
         "corruption_reports.is_public",
-        filters.publicVisibility === "public" || filters.publicVisibility === "true"
+        filters.publicVisibility === "public" ||
+          filters.publicVisibility === "true"
       );
 
     const total = await db("corruption_reports")
       .count("* as count")
       .where((builder) => {
-        if (filters.status)
-          builder.where("status", filters.status);
-        if (filters.priority)
-          builder.where("priority", filters.priority);
+        if (filters.status) builder.where("status", filters.status);
+        if (filters.priority) builder.where("priority", filters.priority);
         if (filters.categoryId)
           builder.where("category_id", filters.categoryId);
-        if (filters.district)
-          builder.where("district", filters.district);
+        if (filters.district) builder.where("district", filters.district);
         if (filters.municipality)
           builder.where("municipality", filters.municipality);
         if (filters.assignedToOfficerId)
@@ -109,34 +104,56 @@ export class CorruptionReportModel {
         if (filters.reporterId)
           builder.where("reporter_id", filters.reporterId);
         if (filters.publicVisibility)
-          builder.where("is_public", filters.publicVisibility === "public" || filters.publicVisibility === "true");
+          builder.where(
+            "is_public",
+            filters.publicVisibility === "public" ||
+              filters.publicVisibility === "true"
+          );
       })
       .first();
 
     // Sorting
     const sortBy = filters.sortBy || "created_at";
     const sortOrder = filters.sortOrder || "desc";
-    
+
     // Convert camelCase to snake_case for database columns
-    const dbSortBy = sortBy === "createdAt" ? "created_at" : 
-                    sortBy === "updatedAt" ? "updated_at" :
-                    sortBy === "referenceNumber" ? "reference_number" :
-                    sortBy === "amountInvolved" ? "amount_involved" :
-                    sortBy === "upvotesCount" ? "upvotes_count" :
-                    sortBy === "downvotesCount" ? "downvotes_count" :
-                    sortBy === "viewsCount" ? "views_count" :
-                    sortBy === "sharesCount" ? "shares_count" :
-                    sortBy === "peopleAffectedCount" ? "people_affected_count" :
-                    sortBy === "assignedToOfficerId" ? "assigned_to_officer_id" :
-                    sortBy === "reporterId" ? "reporter_id" :
-                    sortBy === "categoryId" ? "category_id" :
-                    sortBy === "dateOccurred" ? "date_occurred" :
-                    sortBy === "resolvedAt" ? "resolved_at" :
-                    sortBy === "isAnonymous" ? "is_anonymous" :
-                    sortBy === "isPublic" ? "is_public" :
-                    sortBy === "publicVisibility" ? "public_visibility" :
-                    sortBy;
-    
+    const dbSortBy =
+      sortBy === "createdAt"
+        ? "created_at"
+        : sortBy === "updatedAt"
+        ? "updated_at"
+        : sortBy === "referenceNumber"
+        ? "reference_number"
+        : sortBy === "amountInvolved"
+        ? "amount_involved"
+        : sortBy === "upvotesCount"
+        ? "upvotes_count"
+        : sortBy === "downvotesCount"
+        ? "downvotes_count"
+        : sortBy === "viewsCount"
+        ? "views_count"
+        : sortBy === "sharesCount"
+        ? "shares_count"
+        : sortBy === "peopleAffectedCount"
+        ? "people_affected_count"
+        : sortBy === "assignedToOfficerId"
+        ? "assigned_to_officer_id"
+        : sortBy === "reporterId"
+        ? "reporter_id"
+        : sortBy === "categoryId"
+        ? "category_id"
+        : sortBy === "dateOccurred"
+        ? "date_occurred"
+        : sortBy === "resolvedAt"
+        ? "resolved_at"
+        : sortBy === "isAnonymous"
+        ? "is_anonymous"
+        : sortBy === "isPublic"
+        ? "is_public"
+        : sortBy === "publicVisibility"
+        ? "public_visibility"
+        : sortBy;
+
     query = query.orderBy(`corruption_reports.${dbSortBy}`, sortOrder);
 
     // Pagination
@@ -214,14 +231,10 @@ export class CorruptionReportModel {
 
   static async getStatsByCategory(): Promise<any[]> {
     return db("corruption_reports")
-      .select("report_categories.name as categoryName")
+      .select("category as categoryName")
       .count("* as count")
-      .leftJoin(
-        "report_categories",
-        "corruption_reports.category_id",
-        "report_categories.id"
-      )
-      .groupBy("report_categories.name")
+      .whereNotNull("category")
+      .groupBy("category")
       .orderBy("count", "desc");
   }
 }

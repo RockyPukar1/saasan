@@ -26,7 +26,10 @@ export class PoliticianController {
         search,
       } = req.query;
 
-      const language = getLanguageFromRequest(req.headers, req.query as Record<string, string | string[] | undefined>);
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
       const offset = (Number(page) - 1) * Number(limit);
 
       let result;
@@ -76,25 +79,24 @@ export class PoliticianController {
   static async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const language = getLanguageFromRequest(req.headers, req.query as Record<string, string | string[] | undefined>);
-      const politician = await PoliticianModel.findById(id);
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
+      // Get detailed politician profile with all related data
+      const politician = await PoliticianModel.getDetailedProfile(id);
 
       if (!politician) {
         res.status(404).json(ResponseHelper.error("Politician not found"));
         return;
       }
 
-      // Get performance metrics
-      const metrics = await PoliticianModel.getPerformanceMetrics(id);
-
       const bilingualPolitician = formatBilingualResponse(politician, language);
 
       res.json(
         createBilingualResponse(
-          {
-            ...bilingualPolitician,
-            performanceMetrics: metrics,
-          },
+          bilingualPolitician,
           language,
           "Politician fetched successfully"
         )
@@ -102,24 +104,6 @@ export class PoliticianController {
     } catch (error) {
       console.error("Get politician by ID error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch politician"));
-    }
-  }
-
-  static async getPromises(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const promises = await PoliticalPromiseModel.findByPolitician(id);
-      const stats = await PoliticalPromiseModel.getStatsByPolitician(id);
-
-      res.json(
-        ResponseHelper.success({
-          promises,
-          statistics: stats,
-        })
-      );
-    } catch (error) {
-      console.error("Get politician promises error:", error);
-      res.status(500).json(ResponseHelper.error("Failed to fetch promises"));
     }
   }
 
@@ -314,6 +298,146 @@ export class PoliticianController {
     } catch (error) {
       console.error("Delete politician error:", error);
       res.status(500).json(ResponseHelper.error("Failed to delete politician"));
+    }
+  }
+
+  static async getDetailedProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
+      const politician = await PoliticianModel.getDetailedProfile(id);
+
+      if (!politician) {
+        res.status(404).json(ResponseHelper.error("Politician not found"));
+        return;
+      }
+
+      const bilingualPolitician = formatBilingualResponse(politician, language);
+
+      res.json(
+        createBilingualResponse(
+          bilingualPolitician,
+          language,
+          "Detailed politician profile fetched successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Get detailed politician profile error:", error);
+      res
+        .status(500)
+        .json(
+          ResponseHelper.error("Failed to fetch detailed politician profile")
+        );
+    }
+  }
+
+  static async getPromises(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const promises = await PoliticianModel.getPoliticianPromises(id);
+
+      res.json(ResponseHelper.success(promises));
+    } catch (error) {
+      console.error("Get politician promises error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician promises"));
+    }
+  }
+
+  static async getAchievements(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const achievements = await PoliticianModel.getPoliticianAchievements(id);
+
+      res.json(ResponseHelper.success(achievements));
+    } catch (error) {
+      console.error("Get politician achievements error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician achievements"));
+    }
+  }
+
+  static async getContacts(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const contacts = await PoliticianModel.getPoliticianContacts(id);
+
+      res.json(ResponseHelper.success(contacts));
+    } catch (error) {
+      console.error("Get politician contacts error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician contacts"));
+    }
+  }
+
+  static async getSocialMedia(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const socialMedia = await PoliticianModel.getPoliticianSocialMedia(id);
+
+      res.json(ResponseHelper.success(socialMedia));
+    } catch (error) {
+      console.error("Get politician social media error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician social media"));
+    }
+  }
+
+  static async getBudgetTracking(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const budgetTracking = await PoliticianModel.getPoliticianBudgetTracking(
+        id
+      );
+
+      res.json(ResponseHelper.success(budgetTracking));
+    } catch (error) {
+      console.error("Get politician budget tracking error:", error);
+      res
+        .status(500)
+        .json(
+          ResponseHelper.error("Failed to fetch politician budget tracking")
+        );
+    }
+  }
+
+  static async getAttendance(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { limit = 30 } = req.query;
+      const attendance = await PoliticianModel.getPoliticianAttendance(
+        id,
+        Number(limit)
+      );
+
+      res.json(ResponseHelper.success(attendance));
+    } catch (error) {
+      console.error("Get politician attendance error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician attendance"));
+    }
+  }
+
+  static async getRatings(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const ratings = await PoliticianModel.getPoliticianRatings(id);
+
+      res.json(ResponseHelper.success(ratings));
+    } catch (error) {
+      console.error("Get politician ratings error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch politician ratings"));
     }
   }
 

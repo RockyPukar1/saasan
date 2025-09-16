@@ -363,6 +363,9 @@ const ReportsScreen = () => {
       <Button onPress={handleSubmitReport} className="bg-red-600 py-4 mb-8">
         <Text className="text-white font-bold text-lg">Submit Report</Text>
       </Button>
+
+      {/* Bottom padding for tab bar */}
+      <View className="h-24" />
     </ScrollView>
   );
 
@@ -439,6 +442,9 @@ const ReportsScreen = () => {
           </Card>
         </TouchableOpacity>
       ))}
+
+      {/* Bottom padding for tab bar */}
+      <View className="h-24" />
     </ScrollView>
   );
 

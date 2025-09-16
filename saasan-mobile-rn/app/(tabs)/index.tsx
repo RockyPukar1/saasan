@@ -239,64 +239,64 @@ const DashboardScreen = () => {
             </View>
 
             <View className="flex-row flex-wrap justify-between">
-              <Card className="w-[48%] mb-4 border-l-4 border-red-500">
-                <CardContent className="p-4">
+              <Card className="w-[48%] mb-3 border-l-3 border-red-500">
+                <CardContent className="p-3">
                   <View className="flex-row justify-between items-center">
-                    <Gavel className="text-red-600" size={24} />
-                    <Text className="text-2xl font-bold text-red-600">
+                    <Gavel className="text-red-600" size={20} />
+                    <Text className="text-xl font-bold text-red-600">
                       {dashboardStats.overview.totalReports}
                     </Text>
                   </View>
-                  <Text className="text-gray-600 text-xs mt-2">
+                  <Text className="text-gray-600 text-xs mt-1">
                     Total Reports
                   </Text>
-                  <Text className="text-red-500 text-xs mt-1">
+                  <Text className="text-red-500 text-xs">
                     {dashboardStats.overview.resolutionRate}% resolved
                   </Text>
                 </CardContent>
               </Card>
 
-              <Card className="w-[48%] mb-4 border-l-4 border-yellow-500">
-                <CardContent className="p-4">
+              <Card className="w-[48%] mb-3 border-l-3 border-yellow-500">
+                <CardContent className="p-3">
                   <View className="flex-row justify-between items-center">
-                    <Clock className="text-yellow-600" size={24} />
-                    <Text className="text-2xl font-bold text-yellow-600">
+                    <Clock className="text-yellow-600" size={20} />
+                    <Text className="text-xl font-bold text-yellow-600">
                       {dashboardStats.overview.totalReports -
                         dashboardStats.overview.resolvedReports}
                     </Text>
                   </View>
-                  <Text className="text-gray-600 text-xs mt-2">
+                  <Text className="text-gray-600 text-xs mt-1">
                     Pending Cases
                   </Text>
                 </CardContent>
               </Card>
 
-              <Card className="w-[48%] mb-4 border-l-4 border-green-500">
-                <CardContent className="p-4">
+              <Card className="w-[48%] mb-3 border-l-3 border-green-500">
+                <CardContent className="p-3">
                   <View className="flex-row justify-between items-center">
-                    <CheckCircle className="text-green-600" size={24} />
-                    <Text className="text-2xl font-bold text-green-600">
+                    <CheckCircle className="text-green-600" size={20} />
+                    <Text className="text-xl font-bold text-green-600">
                       {dashboardStats.overview.resolvedReports}
                     </Text>
                   </View>
-                  <Text className="text-gray-600 text-xs mt-2">
+                  <Text className="text-gray-600 text-xs mt-1">
                     Cases Resolved
                   </Text>
                 </CardContent>
               </Card>
 
-              <Card className="w-[48%] mb-4 border-l-4 border-blue-500">
-                <CardContent className="p-4">
+              <Card className="w-[48%] mb-3 border-l-3 border-blue-500">
+                <CardContent className="p-3">
                   <View className="flex-row justify-between items-center">
-                    <Users className="text-blue-600" size={24} />
-                    <Text className="text-2xl font-bold text-blue-600">
+                    <Users className="text-blue-600" size={20} />
+                    <Text className="text-xl font-bold text-blue-600">
                       {dashboardStats.overview.activePoliticians}
                     </Text>
                   </View>
-                  <Text className="text-gray-600 text-xs mt-2">
+                  <Text className="text-gray-600 text-xs mt-1">
                     Active Politicians
                   </Text>
-                  <Text className="text-blue-500 text-xs mt-1">
+                  <Text className="text-blue-500 text-xs">
                     of {dashboardStats.overview.totalPoliticians} total
                   </Text>
                 </CardContent>
@@ -410,36 +410,37 @@ const DashboardScreen = () => {
                 onPress={() => router.push(`/report/${caseItem.id}`)}
                 activeOpacity={0.7}
               >
-                <Card className="mb-4">
-                  <CardContent className="p-4">
-                    <View className="flex-row justify-between items-start mb-3">
-                      <View className="flex-1 mr-3">
-                        <View className="flex-row items-center mb-2">
-                          <Text className="text-lg font-bold text-gray-800 flex-1">
-                            {caseItem.title}
-                          </Text>
-                        </View>
+                <Card className="mb-3">
+                  <CardContent className="p-3">
+                    <View className="flex-row justify-between items-start mb-2">
+                      <View className="flex-1 mr-2">
                         <Text
-                          className="text-gray-600 text-sm mb-2"
+                          className="text-base font-bold text-gray-800 mb-1"
+                          numberOfLines={1}
+                        >
+                          {caseItem.title}
+                        </Text>
+                        <Text
+                          className="text-gray-600 text-xs mb-2"
                           numberOfLines={2}
                         >
                           {caseItem.description}
                         </Text>
                         {caseItem.amountInvolved &&
                           caseItem.amountInvolved > 0 && (
-                            <View className="flex-row items-center mb-2">
+                            <View className="flex-row items-center mb-1">
                               <DollarSign
                                 className="text-red-500 mr-1"
-                                size={16}
+                                size={12}
                               />
-                              <Text className="text-red-600 text-sm font-bold">
+                              <Text className="text-red-600 text-xs font-bold">
                                 {formatCurrency(caseItem.amountInvolved)}
                               </Text>
                             </View>
                           )}
                       </View>
                       <View
-                        className={`px-3 py-1 rounded-full ${getStatusColor(
+                        className={`px-2 py-1 rounded ${getStatusColor(
                           caseItem.status
                         )}`}
                       >
@@ -449,39 +450,39 @@ const DashboardScreen = () => {
                       </View>
                     </View>
 
-                    {/* Days Counter */}
-                    <View className="bg-gray-100 p-3 rounded-lg">
-                      <Text className="text-2xl font-bold text-red-600 text-center">
+                    {/* Compact Days Counter */}
+                    <View className="bg-gray-100 p-2 rounded mb-2">
+                      <Text className="text-lg font-bold text-red-600 text-center">
                         {caseItem.createdAt
                           ? calculateDaysSince(caseItem.createdAt)
                           : 0}{" "}
                         DAYS
                       </Text>
-                      <Text className="text-gray-600 text-center text-sm">
+                      <Text className="text-gray-600 text-center text-xs">
                         since reported
                       </Text>
                     </View>
 
-                    {/* Engagement Stats */}
-                    <View className="flex-row justify-around mt-3 pt-3 border-t border-gray-200">
+                    {/* Compact Engagement Stats */}
+                    <View className="flex-row justify-between items-center pt-2 border-t border-gray-200">
                       <View className="flex-row items-center">
-                        <TrendingUp className="text-green-600 mr-1" size={16} />
-                        <Text className="text-green-600 text-sm font-bold">
+                        <TrendingUp className="text-green-600 mr-1" size={12} />
+                        <Text className="text-green-600 text-xs font-bold">
                           {caseItem.upvotesCount || 0}
                         </Text>
                       </View>
                       <View className="flex-row items-center">
-                        <FileText className="text-blue-600 mr-1" size={16} />
-                        <Text className="text-blue-600 text-sm">
+                        <FileText className="text-blue-600 mr-1" size={12} />
+                        <Text className="text-blue-600 text-xs">
                           {caseItem.referenceNumber}
                         </Text>
                       </View>
                       <Text
-                        className={`text-sm font-bold ${getPriorityColor(
+                        className={`text-xs font-bold ${getPriorityColor(
                           caseItem.priority
                         )}`}
                       >
-                        {caseItem.priority?.toUpperCase() || "MEDIUM"} PRIORITY
+                        {caseItem.priority?.toUpperCase() || "MEDIUM"}
                       </Text>
                     </View>
                   </CardContent>
@@ -745,6 +746,9 @@ const DashboardScreen = () => {
             Last updated: {format(currentDate, "PPpp")}
           </Text>
         </View>
+
+        {/* Bottom padding for tab bar */}
+        <View className="h-24" />
       </ScrollView>
     </View>
   );

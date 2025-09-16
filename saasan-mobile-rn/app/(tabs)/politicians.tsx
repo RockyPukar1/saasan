@@ -165,8 +165,11 @@ const PoliticiansScreen = () => {
         )}
       </ScrollView>
 
+      {/* Bottom padding for tab bar */}
+      <View className="h-24" />
+
       {/* Floating Action Button */}
-      <TouchableOpacity className="absolute bottom-6 right-6 bg-red-600 w-14 h-14 rounded-full items-center justify-center shadow-lg">
+      <TouchableOpacity className="absolute bottom-20 right-6 bg-red-600 w-14 h-14 rounded-full items-center justify-center shadow-lg">
         <Text className="text-white text-2xl">+</Text>
       </TouchableOpacity>
     </View>
@@ -194,11 +197,11 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "up":
-        return <TrendingUp className="text-green-600" size={16} />;
+        return <TrendingUp className="text-green-600" size={14} />;
       case "down":
-        return <TrendingDown className="text-red-600" size={16} />;
+        return <TrendingDown className="text-red-600" size={14} />;
       default:
-        return <Clock className="text-gray-600" size={16} />;
+        return <Clock className="text-gray-600" size={14} />;
     }
   };
 
@@ -216,61 +219,64 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
   return (
     <TouchableOpacity
       onPress={() => router.push(`/politician/${politician.id}`)}
+      className="mb-3"
     >
-      <Card className="mb-4">
-        <CardContent className="p-4">
-          {/* Header - Name and Position */}
-          <View className="mb-3">
-            <Text className="text-lg font-bold text-gray-800 mb-1">
-              {politician.name}
-            </Text>
-            <Text className="text-gray-600 text-sm mb-2">
-              {politician.position}
-            </Text>
-
-            {/* Location */}
-            <View className="flex-row items-center mb-2">
-              <MapPin className="text-gray-500" size={12} />
-              <Text className="text-gray-500 text-xs ml-1">
-                {politician.constituency}
+      <Card className="overflow-hidden">
+        <CardContent className="p-3">
+          {/* Compact Header */}
+          <View className="flex-row items-start justify-between mb-2">
+            <View className="flex-1 mr-2">
+              <Text
+                className="text-base font-bold text-gray-800 mb-1"
+                numberOfLines={1}
+              >
+                {politician.name}
               </Text>
+              <Text className="text-gray-600 text-xs mb-1" numberOfLines={1}>
+                {politician.position}
+              </Text>
+              <View className="flex-row items-center">
+                <MapPin className="text-gray-500" size={10} />
+                <Text className="text-gray-500 text-xs ml-1" numberOfLines={1}>
+                  {politician.constituency}
+                </Text>
+              </View>
             </View>
 
-            {/* Party Badge - Full width */}
+            {/* Party Badge - Compact */}
             <View
-              className={`px-3 py-2 rounded-lg ${getPartyColor(
-                politician.party
-              )} self-start`}
+              className={`px-2 py-1 rounded ${getPartyColor(politician.party)}`}
             >
-              <Text className="text-white text-xs font-bold text-center">
+              <Text className="text-white text-xs font-bold" numberOfLines={1}>
                 {politician.party}
               </Text>
             </View>
           </View>
 
-          {/* Rating */}
-          <View className="flex-row items-center mb-3">
-            <Star className="text-yellow-500" size={16} fill="#EAB308" />
-            <Text className="text-gray-800 font-bold ml-1">
-              {politician.rating.toFixed(1)}
-            </Text>
-            <Text className="text-gray-500 text-sm ml-1">
-              ({politician.totalVotes.toLocaleString()} votes)
-            </Text>
+          {/* Compact Rating and Stats */}
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center">
+              <Star className="text-yellow-500" size={14} fill="#EAB308" />
+              <Text className="text-gray-800 font-bold ml-1 text-sm">
+                {typeof politician.rating === "number"
+                  ? politician.rating.toFixed(1)
+                  : "0.0"}
+              </Text>
+              <Text className="text-gray-500 text-xs ml-1">
+                ({politician.totalVotes?.toLocaleString() || 0})
+              </Text>
+            </View>
+            {getTrendIcon(politician.trends)}
           </View>
 
-          {/* Promise Tracker */}
+          {/* Compact Promise Tracker */}
           {politician.totalPromises > 0 && (
-            <View className="bg-gray-50 p-3 rounded-lg mb-3">
-              <Text className="text-gray-700 font-medium mb-2">
-                Promise Tracker
-              </Text>
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-sm text-gray-600">
-                  {politician.promisesFulfilled} of {politician.totalPromises}{" "}
-                  fulfilled
+            <View className="bg-gray-50 p-2 rounded mb-2">
+              <View className="flex-row justify-between items-center mb-1">
+                <Text className="text-gray-700 font-medium text-xs">
+                  Promises
                 </Text>
-                <Text className="text-sm font-bold text-gray-800">
+                <Text className="text-xs font-bold text-gray-800">
                   {Math.round(
                     (politician.promisesFulfilled / politician.totalPromises) *
                       100
@@ -279,10 +285,10 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
                 </Text>
               </View>
 
-              {/* Progress Bar */}
-              <View className="bg-gray-300 h-2 rounded-full">
+              {/* Compact Progress Bar */}
+              <View className="bg-gray-300 h-1.5 rounded-full">
                 <View
-                  className="bg-green-500 h-2 rounded-full"
+                  className="bg-green-500 h-1.5 rounded-full"
                   style={{
                     width: `${Math.min(
                       (politician.promisesFulfilled /
@@ -294,44 +300,42 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
                 />
               </View>
 
-              {/* Status Icons */}
-              <View className="flex-row justify-between mt-2">
+              {/* Compact Status */}
+              <View className="flex-row justify-between mt-1">
                 <View className="flex-row items-center">
-                  <CheckCircle className="text-green-600" size={14} />
+                  <CheckCircle className="text-green-600" size={12} />
                   <Text className="text-xs text-gray-600 ml-1">
-                    {politician.promisesFulfilled} Kept
+                    {politician.promisesFulfilled}
                   </Text>
                 </View>
                 <View className="flex-row items-center">
-                  <XCircle className="text-red-600" size={14} />
+                  <XCircle className="text-red-600" size={12} />
                   <Text className="text-xs text-gray-600 ml-1">
-                    {politician.totalPromises - politician.promisesFulfilled}{" "}
-                    Pending
+                    {politician.totalPromises - politician.promisesFulfilled}
                   </Text>
                 </View>
               </View>
             </View>
           )}
 
-          {/* Action Buttons */}
-          <View className="flex-row gap-3">
+          {/* Compact Action Buttons */}
+          <View className="flex-row gap-2">
             <TouchableOpacity
-              className="flex-1 bg-blue-600 py-3 rounded-lg"
+              className="flex-1 bg-blue-600 py-2 rounded"
               onPress={() => {
-                // TODO: Implement rating functionality
                 console.log("Rate politician:", politician.id);
               }}
             >
-              <Text className="text-white font-medium text-center">
-                Rate Performance
+              <Text className="text-white font-medium text-center text-xs">
+                Rate
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 bg-gray-200 py-3 rounded-lg"
+              className="flex-1 bg-gray-200 py-2 rounded"
               onPress={() => router.push(`/politician/${politician.id}`)}
             >
-              <Text className="text-gray-700 font-medium text-center">
-                View Promises
+              <Text className="text-gray-700 font-medium text-center text-xs">
+                View Details
               </Text>
             </TouchableOpacity>
           </View>

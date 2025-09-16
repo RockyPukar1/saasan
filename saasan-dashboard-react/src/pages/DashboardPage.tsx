@@ -354,28 +354,28 @@ export const DashboardPage: React.FC = () => {
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <Share className="h-8 w-8 text-blue-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-blue-600">
-                    {viralMetrics.totalShares.toLocaleString()}
+                    {(viralMetrics?.totalShares || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-600">Total Shares</p>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-green-600">
-                    {viralMetrics.totalVotes.toLocaleString()}
+                    {(viralMetrics?.totalVotes || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-600">Total Votes</p>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <MessageCircle className="h-8 w-8 text-purple-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-purple-600">
-                    {viralMetrics.totalComments.toLocaleString()}
+                    {(viralMetrics?.totalComments || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-600">Comments</p>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
                   <BarChart3 className="h-8 w-8 text-orange-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-orange-600">
-                    {viralMetrics.viralScore}/100
+                    {viralMetrics?.viralScore || 0}/100
                   </p>
                   <p className="text-sm text-gray-600">Viral Score</p>
                 </div>

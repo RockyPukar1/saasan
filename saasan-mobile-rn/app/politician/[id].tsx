@@ -561,6 +561,9 @@ const PoliticianDetailScreen = () => {
             </Button>
           </View>
         </View>
+
+        {/* Bottom padding for tab bar */}
+        <View className="h-24" />
       </ScrollView>
     </View>
   );

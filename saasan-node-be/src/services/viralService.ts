@@ -195,13 +195,17 @@ export class ViralService {
       let query;
 
       if (type === "reports") {
-        query = db("reports")
+        query = db("corruption_reports")
           .select(
             "c.name as location",
             "c.name_nepali as location_nepali",
             db.raw("COUNT(*) as score")
           )
-          .leftJoin("constituencies as c", "reports.constituency_id", "c.id")
+          .leftJoin(
+            "constituencies as c",
+            "corruption_reports.constituency_id",
+            "c.id"
+          )
           .groupBy("c.id", "c.name", "c.name_nepali")
           .orderBy("score", "desc")
           .limit(10);
@@ -226,7 +230,7 @@ export class ViralService {
           FROM constituencies c
           LEFT JOIN (
             SELECT constituency_id, COUNT(*) as report_count
-            FROM reports
+            FROM corruption_reports
             GROUP BY constituency_id
           ) r ON c.id = r.constituency_id
           LEFT JOIN (
@@ -370,7 +374,7 @@ export class ViralService {
     offset: number
   ): Promise<FeedItem[]> {
     try {
-      const reports = await db("reports")
+      const reports = await db("corruption_reports")
         .select(
           "r.*",
           "c.name as constituency_name",
@@ -378,7 +382,7 @@ export class ViralService {
           "p.name as province_name",
           "p.name_nepali as province_name_nepali"
         )
-        .from("reports as r")
+        .from("corruption_reports as r")
         .leftJoin("constituencies as c", "r.constituency_id", "c.id")
         .leftJoin("provinces as p", "c.province_id", "p.id")
         .where("r.status", "verified")
@@ -426,7 +430,7 @@ export class ViralService {
 
       // Update vote count
       const field = reaction === "upvote" ? "upvotes_count" : "downvotes_count";
-      await db("reports").where("id", itemId).increment(field, 1);
+      await db("corruption_reports").where("id", itemId).increment(field, 1);
 
       return { success: true };
     } catch (error) {
@@ -714,7 +718,9 @@ export class ViralService {
   ): Promise<VerificationStatus> {
     try {
       if (itemType === "corruption_report") {
-        const report = await db("reports").where("id", itemId).first();
+        const report = await db("corruption_reports")
+          .where("id", itemId)
+          .first();
         if (!report) {
           throw new Error("Report not found");
         }
@@ -780,7 +786,7 @@ export class ViralService {
         });
 
         const field = vote === "up" ? "upvotes_count" : "downvotes_count";
-        await db("reports").where("id", itemId).increment(field, 1);
+        await db("corruption_reports").where("id", itemId).increment(field, 1);
       }
 
       return { success: true };
@@ -797,7 +803,7 @@ export class ViralService {
       const totalVotes = await db("poll_votes").count("* as count").first();
       const totalComments = await db("comments").count("* as count").first();
       const activeUsers = await db("users")
-        .where("last_active", ">=", db.raw("NOW() - INTERVAL '7 days'"))
+        .where("last_active_at", ">=", db.raw("NOW() - INTERVAL '7 days'"))
         .count("* as count")
         .first();
 

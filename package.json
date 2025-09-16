@@ -11,7 +11,7 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\" \"npm run dev:mobile\"",
     "dev:backend": "cd saasan-node-be && npm run dev",
     "dev:dashboard": "cd saasan-dashboard-react && npm run dev",
-    "dev:mobile": "cd saasan-mobile-rn && npm start"
+    "dev:mobile": "cd saasan-mobile-rn && npm run dev:web"
   },
   "keywords": [
     "nepal",
@@ -43,6 +43,7 @@
   },
   "homepage": "https://github.com/your-username/saasan#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.2.2",
     "knex": "^3.1.0",
     "pg": "^8.16.3"

@@ -109,10 +109,14 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100),
     phone VARCHAR(20),
+    district VARCHAR(100),
+    municipality VARCHAR(100),
+    ward_number INTEGER,
     constituency_id INTEGER,
+    role VARCHAR(50) DEFAULT 'citizen',
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
-    last_active TIMESTAMP,
+    last_active_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -521,6 +525,95 @@ CREATE TABLE user_votes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create Levels table
+CREATE TABLE levels (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    name_nepali VARCHAR(100),
+    description TEXT,
+    description_nepali TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Positions table
+CREATE TABLE positions (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    title_nepali VARCHAR(100),
+    level_id INTEGER REFERENCES levels(id),
+    description TEXT,
+    description_nepali TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Corruption Reports table
+CREATE TABLE corruption_reports (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    title_nepali VARCHAR(255),
+    description TEXT,
+    description_nepali TEXT,
+    category VARCHAR(50),
+    category_nepali VARCHAR(50),
+    constituency_id INTEGER REFERENCES constituencies(id),
+    reporter_id INTEGER REFERENCES users(id),
+    amount_involved DECIMAL(15,2),
+    status VARCHAR(20) DEFAULT 'pending',
+    priority VARCHAR(20) DEFAULT 'medium',
+    upvotes_count INTEGER DEFAULT 0,
+    downvotes_count INTEGER DEFAULT 0,
+    views_count INTEGER DEFAULT 0,
+    reference_number VARCHAR(50),
+    tags TEXT[],
+    tags_nepali TEXT[],
+    verification_notes TEXT,
+    verified_by VARCHAR(100),
+    verified_at TIMESTAMP,
+    is_public BOOLEAN DEFAULT false,
+    assigned_to_officer_id INTEGER,
+    district VARCHAR(100),
+    municipality VARCHAR(100),
+    ward_number INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Service Status table
+CREATE TABLE service_status (
+    id SERIAL PRIMARY KEY,
+    service_name VARCHAR(100) NOT NULL,
+    service_name_nepali VARCHAR(100),
+    status VARCHAR(20) NOT NULL,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    description TEXT,
+    description_nepali TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Historical Events table
+CREATE TABLE historical_events (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    title_nepali VARCHAR(255),
+    description TEXT,
+    description_nepali TEXT,
+    category VARCHAR(100),
+    category_nepali VARCHAR(100),
+    year INTEGER,
+    date DATE,
+    location VARCHAR(255),
+    location_nepali VARCHAR(255),
+    significance TEXT,
+    significance_nepali TEXT,
+    source_url VARCHAR(500),
+    is_verified BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_reports_constituency_id ON reports(constituency_id);
 CREATE INDEX idx_reports_status ON reports(status);
@@ -540,15 +633,7 @@ CREATE INDEX idx_user_votes_user_id ON user_votes(user_id);
 CREATE INDEX idx_user_votes_voting_session_id ON user_votes(voting_session_id);
 CREATE INDEX idx_voting_centers_constituency_id ON voting_centers(constituency_id);
 
--- Insert default admin user
-INSERT INTO users (username, email, password_hash, full_name, is_active, is_verified) 
-VALUES ('admin', 'admin@saasan.com', '$2b$10$example_hash_here', 'System Administrator', true, true)
-ON CONFLICT (email) DO NOTHING;
-
--- Insert default admin user for development
-INSERT INTO users (username, email, password_hash, full_name, is_active, is_verified) 
-VALUES ('dev', 'dev@saasan.com', '$2b$10$example_hash_here', 'Development User', true, true)
-ON CONFLICT (email) DO NOTHING;
+-- Note: Admin users are created via JavaScript seeding in seedUsers() function
 `;
 
     // Execute SQL directly using the database connection
@@ -771,6 +856,483 @@ async function seedAllData() {
   }
 }
 
+async function seedAdditionalData() {
+  try {
+    log(`${colors.bright}${colors.cyan}🌱 Seeding additional data...${colors.reset}`);
+    
+    const backendPath = path.join(__dirname, '../saasan-node-be');
+    
+    // Load environment variables
+    require('dotenv').config({ path: path.join(backendPath, '.env') });
+    
+    // Create database connection
+    const knex = require('knex');
+    const db = knex({
+      client: 'postgresql',
+      connection: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'saasan',
+      },
+    });
+
+    // Seed Levels
+    log('📊 Seeding government levels...');
+    const levels = [
+      { id: 1, name: "Federal", name_nepali: "संघीय", description: "Federal level positions", description_nepali: "संघीय स्तरका पदहरू" },
+      { id: 2, name: "Provincial", name_nepali: "प्रदेश", description: "Provincial level positions", description_nepali: "प्रदेश स्तरका पदहरू" },
+      { id: 3, name: "Local", name_nepali: "स्थानीय", description: "Local level positions", description_nepali: "स्थानीय स्तरका पदहरू" },
+      { id: 4, name: "Municipal", name_nepali: "नगरपालिका", description: "Municipal level positions", description_nepali: "नगरपालिका स्तरका पदहरू" }
+    ];
+    
+    for (const level of levels) {
+      await db('levels').insert(level).onConflict('id').ignore();
+    }
+
+    // Seed Positions
+    log('👔 Seeding positions...');
+    const positions = [
+      { id: 1, title: "Prime Minister", title_nepali: "प्रधानमन्त्री", level_id: 1, description: "Head of Government", description_nepali: "सरकारका प्रमुख" },
+      { id: 2, title: "Minister", title_nepali: "मन्त्री", level_id: 1, description: "Cabinet Minister", description_nepali: "मन्त्रिपरिषदका सदस्य" },
+      { id: 3, title: "Member of Parliament", title_nepali: "संसद सदस्य", level_id: 1, description: "Federal Parliament Member", description_nepali: "संघीय संसदका सदस्य" },
+      { id: 4, title: "Chief Minister", title_nepali: "मुख्यमन्त्री", level_id: 2, description: "Provincial Head", description_nepali: "प्रदेशका प्रमुख" },
+      { id: 5, title: "Mayor", title_nepali: "मेयर", level_id: 4, description: "Municipal Head", description_nepali: "नगरपालिकाका प्रमुख" },
+      { id: 6, title: "Ward Chairperson", title_nepali: "वडा अध्यक्ष", level_id: 3, description: "Ward Level Head", description_nepali: "वडा स्तरका प्रमुख" }
+    ];
+    
+    for (const position of positions) {
+      await db('positions').insert(position).onConflict('id').ignore();
+    }
+
+    // Seed Service Status
+    log('🔧 Seeding service status...');
+    const serviceStatus = [
+      { id: 1, service_name: "Database", service_name_nepali: "डेटाबेस", status: "operational", description: "Main database service", description_nepali: "मुख्य डेटाबेस सेवा" },
+      { id: 2, service_name: "API", service_name_nepali: "एपीआई", status: "operational", description: "REST API service", description_nepali: "रेस्ट एपीआई सेवा" },
+      { id: 3, service_name: "Authentication", service_name_nepali: "प्रमाणीकरण", status: "operational", description: "User authentication service", description_nepali: "प्रयोगकर्ता प्रमाणीकरण सेवा" },
+      { id: 4, service_name: "File Upload", service_name_nepali: "फाइल अपलोड", status: "operational", description: "File upload service", description_nepali: "फाइल अपलोड सेवा" },
+      { id: 5, service_name: "Email", service_name_nepali: "इमेल", status: "maintenance", description: "Email notification service", description_nepali: "इमेल सूचना सेवा" }
+    ];
+    
+    for (const service of serviceStatus) {
+      await db('service_status').insert(service).onConflict('id').ignore();
+    }
+
+    // Seed Sample Corruption Reports
+    log('📋 Seeding sample corruption reports...');
+    const sampleReports = [
+      {
+        id: 1,
+        title: "Road Construction Corruption",
+        title_nepali: "सडक निर्माण भ्रष्टाचार",
+        description: "Allegations of corruption in road construction project",
+        description_nepali: "सडक निर्माण परियोजनामा भ्रष्टाचारको आरोप",
+        category: "Infrastructure",
+        category_nepali: "पूर्वाधार",
+        constituency_id: 1,
+        reporter_id: 1,
+        amount_involved: 5000000,
+        status: "under_investigation",
+        priority: "high",
+        upvotes_count: 15,
+        downvotes_count: 2,
+        views_count: 45,
+        is_public: true,
+        district: "Kathmandu",
+        municipality: "Kathmandu Metropolitan City",
+        ward_number: 1,
+        tags: ["corruption", "infrastructure", "construction"],
+        tags_nepali: ["भ्रष्टाचार", "पूर्वाधार", "निर्माण"]
+      },
+      {
+        id: 2,
+        title: "Education Fund Misuse",
+        title_nepali: "शिक्षा कोषको दुरुपयोग",
+        description: "Misuse of education development fund",
+        description_nepali: "शिक्षा विकास कोषको दुरुपयोग",
+        category: "Education",
+        category_nepali: "शिक्षा",
+        constituency_id: 2,
+        reporter_id: 2,
+        amount_involved: 2000000,
+        status: "verified",
+        priority: "medium",
+        upvotes_count: 8,
+        downvotes_count: 1,
+        views_count: 23,
+        is_public: true,
+        district: "Lalitpur",
+        municipality: "Lalitpur Metropolitan City",
+        ward_number: 1,
+        tags: ["corruption", "education", "funds"],
+        tags_nepali: ["भ्रष्टाचार", "शिक्षा", "कोष"]
+      }
+    ];
+    
+    for (const report of sampleReports) {
+      await db('corruption_reports').insert(report).onConflict('id').ignore();
+    }
+
+    // Seed Sample Historical Events
+    log('📚 Seeding sample historical events...');
+    const sampleEvents = [
+      {
+        id: 1,
+        title: "People's Movement 1990",
+        title_nepali: "जनआन्दोलन १९९०",
+        description: "Mass movement that restored multi-party democracy in Nepal",
+        description_nepali: "नेपालमा बहुदलीय लोकतन्त्र पुनर्स्थापना गर्ने जनआन्दोलन",
+        category: "Political",
+        category_nepali: "राजनीतिक",
+        year: 1990,
+        date: "1990-04-06",
+        location: "Kathmandu",
+        location_nepali: "काठमाडौं",
+        significance: "Ended absolute monarchy and established constitutional monarchy",
+        significance_nepali: "निरंकुश राजतन्त्रको अन्त्य र संवैधानिक राजतन्त्रको स्थापना",
+        is_verified: true
+      },
+      {
+        id: 2,
+        title: "Maoist Insurgency",
+        title_nepali: "माओवादी विद्रोह",
+        description: "10-year armed conflict between Maoist rebels and government",
+        description_nepali: "माओवादी विद्रोही र सरकार बीच १० वर्षको सशस्त्र संघर्ष",
+        category: "Conflict",
+        category_nepali: "संघर्ष",
+        year: 1996,
+        date: "1996-02-13",
+        location: "Rolpa",
+        location_nepali: "रोल्पा",
+        significance: "Led to the end of monarchy and establishment of republic",
+        significance_nepali: "राजतन्त्रको अन्त्य र गणतन्त्रको स्थापनामा नेतृत्व",
+        is_verified: true
+      }
+    ];
+    
+    for (const event of sampleEvents) {
+      await db('historical_events').insert(event).onConflict('id').ignore();
+    }
+
+    // Close database connection
+    await db.destroy();
+    
+    log(`${colors.green}✅ Additional data seeded successfully!${colors.reset}`);
+  } catch (error) {
+    log(`${colors.red}❌ Error seeding additional data: ${error.message}${colors.reset}`);
+    throw error;
+  }
+}
+
+async function seedUsers() {
+  try {
+    log(`${colors.bright}${colors.cyan}👥 Seeding users with different roles...${colors.reset}`);
+    
+    const backendPath = path.join(__dirname, '../saasan-node-be');
+    
+    // Load environment variables
+    require('dotenv').config({ path: path.join(backendPath, '.env') });
+    
+    // Create database connection
+    const knex = require('knex');
+    const db = knex({
+      client: 'postgresql',
+      connection: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'saasan',
+      },
+    });
+
+    // Hash password function
+    const hashPassword = async (password) => {
+      return await require('bcrypt').hash(password, 10);
+    };
+
+    // Define users with different roles
+    const users = [
+      // Admin users
+      {
+        username: 'admin',
+        email: 'admin@saasan.com',
+        password: 'admin123',
+        full_name: 'System Administrator',
+        role: 'admin',
+        phone: '+977-1-1234567',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'superadmin',
+        email: 'superadmin@saasan.com',
+        password: 'superadmin123',
+        full_name: 'Super Administrator',
+        role: 'superadmin',
+        phone: '+977-1-1234568',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      
+      // Moderator users
+      {
+        username: 'moderator1',
+        email: 'moderator1@saasan.com',
+        password: 'moderator123',
+        full_name: 'Content Moderator',
+        role: 'moderator',
+        phone: '+977-1-1234569',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 2,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'moderator2',
+        email: 'moderator2@saasan.com',
+        password: 'moderator123',
+        full_name: 'Community Moderator',
+        role: 'moderator',
+        phone: '+977-1-1234570',
+        district: 'Lalitpur',
+        municipality: 'Lalitpur Metropolitan City',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      
+      // Campaign Manager users
+      {
+        username: 'campaign_manager1',
+        email: 'campaign1@saasan.com',
+        password: 'campaign123',
+        full_name: 'Election Campaign Manager',
+        role: 'campaign_manager',
+        phone: '+977-1-1234571',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 3,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'campaign_manager2',
+        email: 'campaign2@saasan.com',
+        password: 'campaign123',
+        full_name: 'Political Campaign Manager',
+        role: 'campaign_manager',
+        phone: '+977-1-1234572',
+        district: 'Pokhara',
+        municipality: 'Pokhara Metropolitan City',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      
+      // Journalist users
+      {
+        username: 'journalist1',
+        email: 'journalist1@saasan.com',
+        password: 'journalist123',
+        full_name: 'Political Journalist',
+        role: 'journalist',
+        phone: '+977-1-1234573',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 4,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'journalist2',
+        email: 'journalist2@saasan.com',
+        password: 'journalist123',
+        full_name: 'Investigative Journalist',
+        role: 'journalist',
+        phone: '+977-1-1234574',
+        district: 'Lalitpur',
+        municipality: 'Lalitpur Metropolitan City',
+        ward_number: 2,
+        is_active: true,
+        is_verified: true
+      },
+      
+      // Citizen users
+      {
+        username: 'citizen1',
+        email: 'citizen1@saasan.com',
+        password: 'citizen123',
+        full_name: 'Ram Bahadur Thapa',
+        role: 'citizen',
+        phone: '+977-1-1234575',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 5,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'citizen2',
+        email: 'citizen2@saasan.com',
+        password: 'citizen123',
+        full_name: 'Sita Devi Maharjan',
+        role: 'citizen',
+        phone: '+977-1-1234576',
+        district: 'Lalitpur',
+        municipality: 'Lalitpur Metropolitan City',
+        ward_number: 3,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'citizen3',
+        email: 'citizen3@saasan.com',
+        password: 'citizen123',
+        full_name: 'Hari Prasad Sharma',
+        role: 'citizen',
+        phone: '+977-1-1234577',
+        district: 'Bhaktapur',
+        municipality: 'Bhaktapur Municipality',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'citizen4',
+        email: 'citizen4@saasan.com',
+        password: 'citizen123',
+        full_name: 'Gita Kumari Tamang',
+        role: 'citizen',
+        phone: '+977-1-1234578',
+        district: 'Pokhara',
+        municipality: 'Pokhara Metropolitan City',
+        ward_number: 2,
+        is_active: true,
+        is_verified: true
+      },
+      
+      // Politician users
+      {
+        username: 'politician1',
+        email: 'politician1@saasan.com',
+        password: 'politician123',
+        full_name: 'Dr. Rajesh Sharma',
+        role: 'politician',
+        phone: '+977-1-1234579',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'politician2',
+        email: 'politician2@saasan.com',
+        password: 'politician123',
+        full_name: 'Sita Maharjan',
+        role: 'politician',
+        phone: '+977-1-1234580',
+        district: 'Lalitpur',
+        municipality: 'Lalitpur Metropolitan City',
+        ward_number: 1,
+        is_active: true,
+        is_verified: true
+      },
+      
+      // NGO users
+      {
+        username: 'ngo1',
+        email: 'ngo1@saasan.com',
+        password: 'ngo123',
+        full_name: 'Transparency Nepal',
+        role: 'ngo',
+        phone: '+977-1-1234581',
+        district: 'Kathmandu',
+        municipality: 'Kathmandu Metropolitan City',
+        ward_number: 6,
+        is_active: true,
+        is_verified: true
+      },
+      {
+        username: 'ngo2',
+        email: 'ngo2@saasan.com',
+        password: 'ngo123',
+        full_name: 'Citizens for Democracy',
+        role: 'ngo',
+        phone: '+977-1-1234582',
+        district: 'Lalitpur',
+        municipality: 'Lalitpur Metropolitan City',
+        ward_number: 4,
+        is_active: true,
+        is_verified: true
+      }
+    ];
+
+    // Clear existing users
+    log('🗑️ Clearing existing users...');
+    await db('users').del();
+
+    // Insert users
+    log('👤 Creating users...');
+    for (const user of users) {
+      const hashedPassword = await hashPassword(user.password);
+      
+      const userData = {
+        username: user.username,
+        email: user.email,
+        password_hash: hashedPassword,
+        full_name: user.full_name,
+        role: user.role,
+        phone: user.phone,
+        district: user.district,
+        municipality: user.municipality,
+        ward_number: user.ward_number,
+        is_active: user.is_active,
+        is_verified: user.is_verified,
+        last_active_at: new Date(),
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
+      await db('users').insert(userData).onConflict('email').ignore();
+      
+      log(`✅ Created ${user.role}: ${user.email} (password: ${user.password})`, colors.green);
+    }
+
+    // Close database connection
+    await db.destroy();
+    
+    log(`${colors.bright}${colors.green}🎉 All users seeded successfully!${colors.reset}`);
+    log(`${colors.cyan}📋 Login Credentials:${colors.reset}`);
+    log(`${colors.yellow}┌─────────────────────────────────────────────────────────────┐${colors.reset}`);
+    log(`${colors.yellow}│ Role              │ Email                    │ Password        │${colors.reset}`);
+    log(`${colors.yellow}├─────────────────────────────────────────────────────────────┤${colors.reset}`);
+    log(`${colors.yellow}│ Super Admin       │ superadmin@saasan.com    │ superadmin123   │${colors.reset}`);
+    log(`${colors.yellow}│ Admin             │ admin@saasan.com         │ admin123        │${colors.reset}`);
+    log(`${colors.yellow}│ Moderator         │ moderator1@saasan.com    │ moderator123    │${colors.reset}`);
+    log(`${colors.yellow}│ Campaign Manager  │ campaign1@saasan.com     │ campaign123     │${colors.reset}`);
+    log(`${colors.yellow}│ Journalist        │ journalist1@saasan.com   │ journalist123   │${colors.reset}`);
+    log(`${colors.yellow}│ Citizen           │ citizen1@saasan.com      │ citizen123      │${colors.reset}`);
+    log(`${colors.yellow}│ Politician        │ politician1@saasan.com   │ politician123   │${colors.reset}`);
+    log(`${colors.yellow}│ NGO               │ ngo1@saasan.com          │ ngo123          │${colors.reset}`);
+    log(`${colors.yellow}└─────────────────────────────────────────────────────────────┘${colors.reset}`);
+    
+  } catch (error) {
+    log(`${colors.red}❌ Error seeding users: ${error.message}${colors.reset}`);
+    throw error;
+  }
+}
+
 async function createDatabaseIfNotExists() {
   try {
     const backendPath = path.join(__dirname, '../saasan-node-be');
@@ -835,10 +1397,17 @@ async function setupCompleteDatabase() {
     // Step 3: Seed all data
     await seedAllData();
     
+    // Step 4: Seed additional data (levels, positions, service status, sample reports)
+    await seedAdditionalData();
+    
+    // Step 5: Seed users with different roles
+    await seedUsers();
+    
     log(`${colors.bright}${colors.green}🎉 Complete Database Setup Finished Successfully!${colors.reset}`);
     log(`${colors.cyan}✅ Database created${colors.reset}`);
     log(`${colors.cyan}✅ All tables created${colors.reset}`);
     log(`${colors.cyan}✅ All data seeded${colors.reset}`);
+    log(`${colors.cyan}✅ Users with different roles created${colors.reset}`);
     log(`${colors.cyan}✅ Ready for development!${colors.reset}`);
     
   } catch (error) {

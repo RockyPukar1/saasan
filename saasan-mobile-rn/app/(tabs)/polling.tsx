@@ -345,6 +345,9 @@ const PollScreen = () => {
             )
             .map(renderPollCard)
         )}
+
+        {/* Bottom padding for tab bar */}
+        <View className="h-24" />
       </ScrollView>
     </View>
   );
