@@ -49,8 +49,7 @@ export const BadgeSystem: React.FC<BadgeSystemProps> = ({ userStats }) => {
       setBadges(badgesWithDisplay);
     } catch (error) {
       console.error("Error loading badges:", error);
-      // Fallback to mock badges
-      setBadges(getMockBadges());
+      setBadges([]);
     } finally {
       setLoading(false);
     }
@@ -95,118 +94,6 @@ export const BadgeSystem: React.FC<BadgeSystemProps> = ({ userStats }) => {
         return "bg-gray-100";
     }
   };
-
-  const getMockBadges = (): BadgeDisplay[] => [
-    // Reporter Badges
-    {
-      id: "first_report",
-      name: "Whistleblower",
-      description: "Submitted your first corruption report",
-      icon: <Shield className="text-blue-600" size={24} />,
-      color: "bg-blue-100",
-      category: "reporter",
-      unlocked: userStats.reportsSubmitted >= 1,
-      rarity: "common",
-    },
-    {
-      id: "veteran_reporter",
-      name: "Corruption Hunter",
-      description: "Submitted 10 corruption reports",
-      icon: <Target className="text-red-600" size={24} />,
-      color: "bg-red-100",
-      category: "reporter",
-      unlocked: userStats.reportsSubmitted >= 10,
-      progress: userStats.reportsSubmitted,
-      maxProgress: 10,
-      rarity: "rare",
-    },
-    {
-      id: "top_reporter",
-      name: "Justice Warrior",
-      description: "Submitted 50 corruption reports",
-      icon: <Trophy className="text-yellow-600" size={24} />,
-      color: "bg-yellow-100",
-      category: "reporter",
-      unlocked: userStats.reportsSubmitted >= 50,
-      progress: userStats.reportsSubmitted,
-      maxProgress: 50,
-      rarity: "epic",
-    },
-    {
-      id: "verified_reporter",
-      name: "Fact Checker",
-      description: "Had 5 reports verified by community",
-      icon: <Star className="text-green-600" size={24} />,
-      color: "bg-green-100",
-      category: "reporter",
-      unlocked: userStats.verifiedReports >= 5,
-      progress: userStats.verifiedReports,
-      maxProgress: 5,
-      rarity: "rare",
-    },
-
-    // Voter Badges
-    {
-      id: "first_vote",
-      name: "Voice of Change",
-      description: "Voted in your first poll",
-      icon: <Zap className="text-purple-600" size={24} />,
-      color: "bg-purple-100",
-      category: "voter",
-      unlocked: userStats.pollsVoted >= 1,
-      rarity: "common",
-    },
-    {
-      id: "active_voter",
-      name: "Poll Master",
-      description: "Voted in 25 polls",
-      icon: <Users className="text-indigo-600" size={24} />,
-      color: "bg-indigo-100",
-      category: "voter",
-      unlocked: userStats.pollsVoted >= 25,
-      progress: userStats.pollsVoted,
-      maxProgress: 25,
-      rarity: "rare",
-    },
-
-    // Community Badges
-    {
-      id: "supporter",
-      name: "Community Supporter",
-      description: "Upvoted 100 reports",
-      icon: <Heart className="text-pink-600" size={24} />,
-      color: "bg-pink-100",
-      category: "community",
-      unlocked: userStats.reportsUpvoted >= 100,
-      progress: userStats.reportsUpvoted,
-      maxProgress: 100,
-      rarity: "rare",
-    },
-    {
-      id: "influencer",
-      name: "Saasan Ambassador",
-      description: "Invited 5 friends to join",
-      icon: <Award className="text-orange-600" size={24} />,
-      color: "bg-orange-100",
-      category: "community",
-      unlocked: userStats.friendsInvited >= 5,
-      progress: userStats.friendsInvited,
-      maxProgress: 5,
-      rarity: "epic",
-    },
-    {
-      id: "loyal_citizen",
-      name: "Loyal Citizen",
-      description: "Active for 30 days",
-      icon: <Star className="text-gold-600" size={24} />,
-      color: "bg-yellow-100",
-      category: "special",
-      unlocked: userStats.daysActive >= 30,
-      progress: userStats.daysActive,
-      maxProgress: 30,
-      rarity: "legendary",
-    },
-  ];
 
   const unlockedBadges = badges.filter((badge) => badge.unlocked);
   const lockedBadges = badges.filter((badge) => !badge.unlocked);

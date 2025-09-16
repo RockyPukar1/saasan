@@ -1,121 +1,184 @@
 import db from "../config/database";
+import { formatBilingualResponse } from "../lib/bilingual";
+
+export interface Badge {
+  id: string;
+  name: string;
+  nameNepali?: string;
+  description: string;
+  descriptionNepali?: string;
+  category: string;
+  rarity: string;
+  unlocked: boolean;
+  progress?: number;
+  maxProgress?: number;
+  unlockedAt?: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  nameNepali?: string;
+  location: string;
+  locationNepali?: string;
+  score: number;
+  metric: string;
+  change?: string;
+  badge?: string;
+}
+
+export interface TrendingPoll {
+  id: string;
+  title: string;
+  titleNepali?: string;
+  description: string;
+  descriptionNepali?: string;
+  category: string;
+  categoryNepali?: string;
+  total_votes: number;
+  trending_score: number;
+  options: any[];
+  created_at: string;
+  viral_potential: string;
+  share_count: number;
+  hashtags: string[];
+}
+
+export interface FeedItem {
+  id: string;
+  type: string;
+  title: string;
+  titleNepali?: string;
+  description: string;
+  descriptionNepali?: string;
+  location?: string;
+  locationNepali?: string;
+  amount?: number;
+  timestamp: string;
+  viral_score: number;
+  share_count: number;
+  reaction_count: number;
+  is_verified: boolean;
+  priority: string;
+  tags: string[];
+  viral_message?: string;
+}
+
+export interface StreakData {
+  dailyStreak: number;
+  weeklyStreak: number;
+  monthlyStreak: number;
+  longestDailyStreak: number;
+  longestWeeklyStreak: number;
+  totalDaysActive: number;
+  lastActivityDate: string;
+  streakHistory: any[];
+}
+
+export interface Comment {
+  id: string;
+  itemId: string;
+  itemType: string;
+  userId: string;
+  content: string;
+  timestamp: string;
+  likes: number;
+  dislikes: number;
+  replies: any[];
+  isVerified: boolean;
+  isAuthor: boolean;
+}
+
+export interface VerificationStatus {
+  status: string;
+  level: string;
+  verifiedBy: string;
+  verifiedAt: string;
+  evidenceCount: number;
+  communityVotes: any;
+  credibilityScore: number;
+  verificationNotes?: string;
+}
 
 export class ViralService {
-  // Share functionality
-  static async generateShareContent(shareData: any, userId?: string) {
-    const {
-      type,
-      title,
-      description,
-      location,
-      amountInvolved,
-      total_votes,
-      options,
-      name,
-      position,
-      constituency,
-      rating,
-    } = shareData;
-
-    let viralText = "";
-    let shareText = "";
-
-    switch (type) {
-      case "corruption_report":
-        viralText = this.generateCorruptionViralText(
-          title,
-          location,
-          amountInvolved
-        );
-        shareText = this.generateCorruptionShareText(
-          title,
-          description,
-          location,
-          amountInvolved
-        );
-        break;
-      case "poll_result":
-        viralText = this.generatePollViralText(title, options, total_votes);
-        shareText = this.generatePollShareText(title, options, total_votes);
-        break;
-      case "politician_rating":
-        viralText = this.generatePoliticianViralText(name, rating);
-        shareText = this.generatePoliticianShareText(
-          name,
-          position,
-          constituency,
-          rating
-        );
-        break;
-    }
-
-    // Track the share generation
-    if (userId) {
-      await this.trackShare(shareData.id, type, "content_generation", userId);
-    }
-
-    return { viralText, shareText };
-  }
-
-  static async trackShare(
-    itemId: string,
-    itemType: string,
-    platform: string,
-    userId?: string
-  ) {
-    try {
-      await db("viral_shares").insert({
-        item_id: itemId,
-        item_type: itemType,
-        platform,
-        user_id: userId,
-        created_at: new Date(),
-      });
-    } catch (error) {
-      console.error("Error tracking share:", error);
-    }
-  }
-
   // Badges and achievements
-  static async getUserBadges(userId?: string) {
+  static async getUserBadges(userId?: string): Promise<Badge[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: "first_report",
-          name: "Whistleblower",
-          description: "Submitted your first corruption report",
-          category: "reporter",
-          unlocked: true,
-          progress: 1,
-          maxProgress: 1,
-          rarity: "common",
-          unlockedAt: new Date().toISOString(),
-        },
-        {
-          id: "veteran_reporter",
-          name: "Veteran Reporter",
-          description: "Submitted 10+ corruption reports",
-          category: "reporter",
-          unlocked: false,
-          progress: 3,
-          maxProgress: 10,
-          rarity: "rare",
-        },
-      ];
+      let query = db("badges").select("*").orderBy("created_at", "desc");
+
+      if (userId) {
+        // Get user's badge progress
+        const userBadges = await db("user_badges")
+          .select("badge_id", "unlocked_at", "progress")
+          .where("user_id", userId);
+
+        const badges = await query;
+
+        return badges.map((badge: any) => {
+          const userBadge = userBadges.find(
+            (ub: any) => ub.badge_id === badge.id
+          );
+          return {
+            id: badge.id,
+            name: badge.name,
+            nameNepali: badge.name_nepali,
+            description: badge.description,
+            descriptionNepali: badge.description_nepali,
+            category: badge.category,
+            rarity: badge.rarity,
+            unlocked: !!userBadge,
+            progress: userBadge?.progress || 0,
+            maxProgress: badge.max_progress,
+            unlockedAt: userBadge?.unlocked_at,
+          };
+        });
+      }
+
+      const badges = await query;
+      return badges.map((badge: any) => ({
+        id: badge.id,
+        name: badge.name,
+        nameNepali: badge.name_nepali,
+        description: badge.description,
+        descriptionNepali: badge.description_nepali,
+        category: badge.category,
+        rarity: badge.rarity,
+        unlocked: false,
+        progress: 0,
+        maxProgress: badge.max_progress,
+      }));
     } catch (error) {
-      console.error("Error fetching badges:", error);
-      return [];
+      console.error("Error getting user badges:", error);
+      throw error;
     }
   }
 
-  static async unlockBadge(badgeId: string, userId: string) {
+  static async unlockBadge(badgeId: string, userId: string): Promise<Badge> {
     try {
-      // Mock implementation
+      const badge = await db("badges").where("id", badgeId).first();
+      if (!badge) {
+        throw new Error("Badge not found");
+      }
+
+      await db("user_badges").insert({
+        user_id: userId,
+        badge_id: badgeId,
+        unlocked_at: new Date(),
+        progress: badge.max_progress || 1,
+      });
+
       return {
-        id: badgeId,
-        userId,
-        unlockedAt: new Date(),
+        id: badge.id,
+        name: badge.name,
+        nameNepali: badge.name_nepali,
+        description: badge.description,
+        descriptionNepali: badge.description_nepali,
+        category: badge.category,
+        rarity: badge.rarity,
+        unlocked: true,
+        progress: badge.max_progress || 1,
+        maxProgress: badge.max_progress,
+        unlockedAt: new Date().toISOString(),
       };
     } catch (error) {
       console.error("Error unlocking badge:", error);
@@ -124,79 +187,177 @@ export class ViralService {
   }
 
   // Leaderboards
-  static async getLeaderboard(type: string, period: string) {
+  static async getLeaderboard(
+    type: string,
+    period: string
+  ): Promise<LeaderboardEntry[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          rank: 1,
-          name: "Kathmandu District",
-          location: "Kathmandu",
-          score: 1250,
-          metric: "reports",
-          change: "up",
-          badge: "champion",
-        },
-        {
-          rank: 2,
-          name: "Lalitpur District",
-          location: "Lalitpur",
-          score: 980,
-          metric: "reports",
-          change: "up",
-          badge: "rising",
-        },
-        {
-          rank: 3,
-          name: "Bhaktapur District",
-          location: "Bhaktapur",
-          score: 750,
-          metric: "reports",
-          change: "same",
-          badge: "consistent",
-        },
-      ];
+      let query;
+
+      if (type === "reports") {
+        query = db("reports")
+          .select(
+            "c.name as location",
+            "c.name_nepali as location_nepali",
+            db.raw("COUNT(*) as score")
+          )
+          .leftJoin("constituencies as c", "reports.constituency_id", "c.id")
+          .groupBy("c.id", "c.name", "c.name_nepali")
+          .orderBy("score", "desc")
+          .limit(10);
+      } else if (type === "participation") {
+        query = db("polls")
+          .select(
+            "c.name as location",
+            "c.name_nepali as location_nepali",
+            db.raw("SUM(p.total_votes) as score")
+          )
+          .leftJoin("constituencies as c", "polls.constituency_id", "c.id")
+          .groupBy("c.id", "c.name", "c.name_nepali")
+          .orderBy("score", "desc")
+          .limit(10);
+      } else {
+        // corruption_fighters - combine reports and participation
+        query = db.raw(`
+          SELECT 
+            c.name as location,
+            c.name_nepali as location_nepali,
+            (COALESCE(r.report_count, 0) + COALESCE(p.poll_participation, 0)) as score
+          FROM constituencies c
+          LEFT JOIN (
+            SELECT constituency_id, COUNT(*) as report_count
+            FROM reports
+            GROUP BY constituency_id
+          ) r ON c.id = r.constituency_id
+          LEFT JOIN (
+            SELECT constituency_id, SUM(total_votes) as poll_participation
+            FROM polls
+            GROUP BY constituency_id
+          ) p ON c.id = p.constituency_id
+          ORDER BY score DESC
+          LIMIT 10
+        `);
+      }
+
+      const results = await query;
+
+      return results.map((row: any, index: number) => ({
+        rank: index + 1,
+        name: row.location || "Unknown",
+        nameNepali: row.location_nepali,
+        location: row.location || "Unknown",
+        locationNepali: row.location_nepali,
+        score: parseInt(row.score) || 0,
+        metric: type,
+        change: "same",
+        badge: index < 3 ? "champion" : index < 7 ? "rising" : "consistent",
+      }));
     } catch (error) {
-      console.error("Error fetching leaderboard:", error);
-      return [];
+      console.error("Error getting leaderboard:", error);
+      throw error;
     }
   }
 
   // Trending polls
-  static async getTrendingPolls(limit: number) {
+  static async getTrendingPolls(limit: number): Promise<TrendingPoll[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: "1",
-          title: "Should corruption cases be public?",
-          description: "A poll about transparency in corruption cases",
-          category: "governance",
-          total_votes: 1250,
-          trending_score: 85,
-          options: [
-            { id: "1", option: "Yes, always", votes: 800, percentage: 64 },
-            { id: "2", option: "No, private", votes: 450, percentage: 36 },
-          ],
-          created_at: new Date().toISOString(),
-          viral_potential: "high",
-          share_count: 245,
-          hashtags: ["transparency", "governance"],
-        },
-      ];
+      const polls = await db("polls")
+        .select(
+          "p.*",
+          "po.id as option_id",
+          "po.option_text",
+          "po.option_text_nepali",
+          "po.vote_count",
+          db.raw(
+            "(po.vote_count * 100.0 / NULLIF(p.total_votes, 0)) as percentage"
+          )
+        )
+        .from("polls as p")
+        .leftJoin("poll_options as po", "p.id", "po.poll_id")
+        .where("p.is_active", true)
+        .where("p.created_at", ">=", db.raw("NOW() - INTERVAL '7 days'"))
+        .orderBy("p.total_votes", "desc")
+        .limit(limit);
+
+      // Group polls with their options
+      const pollsMap = new Map();
+
+      polls.forEach((row: any) => {
+        if (!pollsMap.has(row.id)) {
+          pollsMap.set(row.id, {
+            id: row.id,
+            title: row.title,
+            titleNepali: row.title_nepali,
+            description: row.description,
+            descriptionNepali: row.description_nepali,
+            category: row.category,
+            categoryNepali: row.category_nepali,
+            total_votes: row.total_votes,
+            trending_score: Math.min(100, (row.total_votes / 100) * 10),
+            options: [],
+            created_at: row.created_at,
+            viral_potential:
+              row.total_votes > 500
+                ? "high"
+                : row.total_votes > 100
+                ? "medium"
+                : "low",
+            share_count: Math.floor(row.total_votes * 0.2),
+            hashtags: row.hashtags || [],
+          });
+        }
+
+        if (row.option_id) {
+          pollsMap.get(row.id).options.push({
+            id: row.option_id,
+            option: row.option_text,
+            optionNepali: row.option_text_nepali,
+            votes: row.vote_count,
+            percentage: parseFloat(row.percentage) || 0,
+          });
+        }
+      });
+
+      return Array.from(pollsMap.values());
     } catch (error) {
-      console.error("Error fetching trending polls:", error);
-      return [];
+      console.error("Error getting trending polls:", error);
+      throw error;
     }
   }
 
-  static async voteOnPoll(pollId: string, optionId: string, userId: string) {
+  static async voteOnPoll(
+    pollId: string,
+    optionId: string,
+    userId: string
+  ): Promise<{ success: boolean; message: string }> {
     try {
-      // Mock implementation
-      return {
-        success: true,
-        message: "Vote recorded successfully",
-      };
+      // Check if user already voted
+      const existingVote = await db("poll_votes")
+        .where("poll_id", pollId)
+        .where("user_id", userId)
+        .first();
+
+      if (existingVote) {
+        return {
+          success: false,
+          message: "You have already voted on this poll",
+        };
+      }
+
+      // Record the vote
+      await db("poll_votes").insert({
+        poll_id: pollId,
+        option_id: optionId,
+        user_id: userId,
+        voted_at: new Date(),
+      });
+
+      // Update vote counts
+      await db("poll_options").where("id", optionId).increment("vote_count", 1);
+
+      await db("polls").where("id", pollId).increment("total_votes", 1);
+
+      return { success: true, message: "Vote recorded successfully" };
     } catch (error) {
       console.error("Error voting on poll:", error);
       throw error;
@@ -204,31 +365,49 @@ export class ViralService {
   }
 
   // Transparency feed
-  static async getTransparencyFeed(limit: number, offset: number) {
+  static async getTransparencyFeed(
+    limit: number,
+    offset: number
+  ): Promise<FeedItem[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: "1",
-          type: "corruption_report",
-          title: "Road construction corruption exposed",
-          description: "Evidence of misused funds in road construction project",
-          location: "Kathmandu",
-          amount: 5000000,
-          timestamp: new Date().toISOString(),
-          viral_score: 85,
-          share_count: 150,
-          reaction_count: 89,
-          is_verified: true,
-          priority: "high",
-          tags: ["construction", "corruption"],
-          viral_message:
-            "💸 5M NPR MISUSED in Kathmandu — Reported on Saasan 🔥",
-        },
-      ];
+      const reports = await db("reports")
+        .select(
+          "r.*",
+          "c.name as constituency_name",
+          "c.name_nepali as constituency_name_nepali",
+          "p.name as province_name",
+          "p.name_nepali as province_name_nepali"
+        )
+        .from("reports as r")
+        .leftJoin("constituencies as c", "r.constituency_id", "c.id")
+        .leftJoin("provinces as p", "c.province_id", "p.id")
+        .where("r.status", "verified")
+        .orderBy("r.created_at", "desc")
+        .limit(limit)
+        .offset(offset);
+
+      return reports.map((report: any) => ({
+        id: report.id.toString(),
+        type: "corruption_report",
+        title: report.title,
+        titleNepali: report.title_nepali,
+        description: report.description,
+        descriptionNepali: report.description_nepali,
+        location: report.constituency_name,
+        locationNepali: report.constituency_name_nepali,
+        amount: report.amount_involved,
+        timestamp: report.created_at,
+        viral_score: Math.min(100, (report.upvotes_count / 10) * 5),
+        share_count: Math.floor(report.upvotes_count * 0.3),
+        reaction_count: report.upvotes_count + report.downvotes_count,
+        is_verified: report.status === "verified",
+        priority: report.priority,
+        tags: report.tags || [],
+        viral_message: `🚨 ${report.title} — Reported on Saasan 🔥`,
+      }));
     } catch (error) {
-      console.error("Error fetching transparency feed:", error);
-      return [];
+      console.error("Error getting transparency feed:", error);
+      throw error;
     }
   }
 
@@ -236,47 +415,86 @@ export class ViralService {
     itemId: string,
     reaction: string,
     userId: string
-  ) {
+  ): Promise<{ success: boolean }> {
     try {
-      // Mock implementation
+      await db("report_reactions").insert({
+        report_id: itemId,
+        user_id: userId,
+        reaction_type: reaction,
+        created_at: new Date(),
+      });
+
+      // Update vote count
+      const field = reaction === "upvote" ? "upvotes_count" : "downvotes_count";
+      await db("reports").where("id", itemId).increment(field, 1);
+
       return { success: true };
     } catch (error) {
       console.error("Error reacting to feed item:", error);
+      throw error;
     }
   }
 
   // Streaks
-  static async getUserStreaks(userId: string) {
+  static async getUserStreaks(userId: string): Promise<StreakData> {
     try {
-      // Return mock data for now
+      const userActivity = await db("user_activities")
+        .where("user_id", userId)
+        .orderBy("activity_date", "desc")
+        .limit(30);
+
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+
+      let dailyStreak = 0;
+      let weeklyStreak = 0;
+      let monthlyStreak = 0;
+      let longestDailyStreak = 0;
+      let currentStreak = 0;
+
+      // Calculate streaks
+      const activityDates = userActivity.map((a: any) => a.activity_date);
+      const uniqueDates = [...new Set(activityDates)];
+
+      for (let i = 0; i < uniqueDates.length; i++) {
+        const currentDate = new Date(uniqueDates[i]);
+        const nextDate = new Date(uniqueDates[i + 1] || "");
+
+        if (
+          i === 0 ||
+          Math.abs(
+            currentDate.getTime() - new Date(uniqueDates[i - 1]).getTime()
+          ) <= 86400000
+        ) {
+          currentStreak++;
+          longestDailyStreak = Math.max(longestDailyStreak, currentStreak);
+        } else {
+          currentStreak = 1;
+        }
+      }
+
+      dailyStreak = currentStreak;
+      weeklyStreak = Math.floor(dailyStreak / 7);
+      monthlyStreak = Math.floor(dailyStreak / 30);
+
       return {
-        dailyStreak: 5,
-        weeklyStreak: 2,
-        monthlyStreak: 1,
-        longestDailyStreak: 15,
-        longestWeeklyStreak: 4,
-        totalDaysActive: 45,
-        lastActivityDate: new Date().toISOString(),
-        streakHistory: [
-          {
-            date: new Date().toISOString().split("T")[0],
-            activities: ["report_submitted", "poll_voted"],
-            points: 15,
-          },
-        ],
+        dailyStreak,
+        weeklyStreak,
+        monthlyStreak,
+        longestDailyStreak,
+        longestWeeklyStreak: Math.floor(longestDailyStreak / 7),
+        totalDaysActive: uniqueDates.length,
+        lastActivityDate:
+          userActivity[0]?.activity_date || new Date().toISOString(),
+        streakHistory: userActivity.slice(0, 7).map((activity: any) => ({
+          date: activity.activity_date,
+          activities: [activity.activity_type],
+          points: activity.points_earned,
+        })),
       };
     } catch (error) {
-      console.error("Error fetching streaks:", error);
-      return {
-        dailyStreak: 0,
-        weeklyStreak: 0,
-        monthlyStreak: 0,
-        longestDailyStreak: 0,
-        longestWeeklyStreak: 0,
-        totalDaysActive: 0,
-        lastActivityDate: new Date().toISOString(),
-        streakHistory: [],
-      };
+      console.error("Error getting user streaks:", error);
+      throw error;
     }
   }
 
@@ -284,36 +502,73 @@ export class ViralService {
     activity: string,
     points: number,
     userId: string
-  ) {
+  ): Promise<{ success: boolean }> {
     try {
-      // Mock implementation
+      await db("user_activities").insert({
+        user_id: userId,
+        activity_type: activity,
+        points_earned: points,
+        activity_date: new Date().toISOString().split("T")[0],
+        created_at: new Date(),
+      });
+
       return { success: true };
     } catch (error) {
       console.error("Error recording activity:", error);
+      throw error;
     }
   }
 
   // Comments
-  static async getComments(itemId: string, itemType: string) {
+  static async getComments(
+    itemId: string,
+    itemType: string
+  ): Promise<Comment[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: "1",
-          author: "Citizen Reporter",
-          authorId: "user123",
-          content: "This is concerning. We need more transparency.",
-          timestamp: new Date().toISOString(),
-          likes: 12,
-          dislikes: 2,
-          replies: [],
-          isVerified: false,
-          isAuthor: false,
-        },
-      ];
+      const comments = await db("comments")
+        .select(
+          "c.*",
+          "u.username as author",
+          db.raw("COUNT(cl.id) as likes"),
+          db.raw("COUNT(cd.id) as dislikes")
+        )
+        .from("comments as c")
+        .leftJoin("users as u", "c.user_id", "u.id")
+        .leftJoin("comment_likes as cl", function () {
+          this.on("c.id", "=", "cl.comment_id").andOn(
+            "cl.like_type",
+            "=",
+            db.raw("?", ["up"])
+          );
+        })
+        .leftJoin("comment_likes as cd", function () {
+          this.on("c.id", "=", "cd.comment_id").andOn(
+            "cd.like_type",
+            "=",
+            db.raw("?", ["down"])
+          );
+        })
+        .where("c.item_id", itemId)
+        .where("c.item_type", itemType)
+        .groupBy("c.id", "u.username")
+        .orderBy("c.created_at", "desc");
+
+      return comments.map((comment: any) => ({
+        id: comment.id.toString(),
+        itemId: comment.item_id,
+        itemType: comment.item_type,
+        userId: comment.user_id,
+        content: comment.content,
+        timestamp: comment.created_at,
+        likes: parseInt(comment.likes) || 0,
+        dislikes: parseInt(comment.dislikes) || 0,
+        replies: [], // TODO: Implement nested replies
+        isVerified: false,
+        isAuthor: false,
+      }));
     } catch (error) {
-      console.error("Error fetching comments:", error);
-      return [];
+      console.error("Error getting comments:", error);
+      throw error;
     }
   }
 
@@ -322,16 +577,30 @@ export class ViralService {
     itemType: string,
     content: string,
     userId: string
-  ) {
+  ): Promise<Comment> {
     try {
-      // Mock implementation
+      const [comment] = await db("comments")
+        .insert({
+          item_id: itemId,
+          item_type: itemType,
+          user_id: userId,
+          content,
+          created_at: new Date(),
+        })
+        .returning("*");
+
       return {
-        id: "new_comment",
-        itemId,
-        itemType,
-        content,
-        userId,
-        createdAt: new Date(),
+        id: comment.id.toString(),
+        itemId: comment.item_id,
+        itemType: comment.item_type,
+        userId: comment.user_id,
+        content: comment.content,
+        timestamp: comment.created_at,
+        likes: 0,
+        dislikes: 0,
+        replies: [],
+        isVerified: false,
+        isAuthor: true,
       };
     } catch (error) {
       console.error("Error posting comment:", error);
@@ -339,107 +608,222 @@ export class ViralService {
     }
   }
 
-  // Helper methods
-  private static generateCorruptionViralText(
-    title: string,
-    location: string,
-    amount?: number
-  ) {
-    if (amount && amount > 1000000) {
-      return `💸 ${(amount / 1000000).toFixed(
-        1
-      )}M NPR MISUSED in ${location} — Reported on Saasan 🔥`;
-    } else if (amount && amount > 100000) {
-      return `💸 ${(amount / 100000).toFixed(
-        1
-      )}L NPR MISUSED in ${location} — Reported on Saasan 🔥`;
-    } else {
-      return `🚨 CORRUPTION REPORTED in ${location} — Join the fight on Saasan 🔥`;
+  static async replyToComment(
+    commentId: string,
+    content: string,
+    userId: string
+  ): Promise<Comment> {
+    try {
+      const parentComment = await db("comments").where("id", commentId).first();
+      if (!parentComment) {
+        throw new Error("Parent comment not found");
+      }
+
+      const [reply] = await db("comments")
+        .insert({
+          item_id: parentComment.item_id,
+          item_type: parentComment.item_type,
+          user_id: userId,
+          content,
+          parent_comment_id: commentId,
+          created_at: new Date(),
+        })
+        .returning("*");
+
+      return {
+        id: reply.id.toString(),
+        itemId: reply.item_id,
+        itemType: reply.item_type,
+        userId: reply.user_id,
+        content: reply.content,
+        timestamp: reply.created_at,
+        likes: 0,
+        dislikes: 0,
+        replies: [],
+        isVerified: false,
+        isAuthor: true,
+      };
+    } catch (error) {
+      console.error("Error replying to comment:", error);
+      throw error;
     }
   }
 
-  private static generateCorruptionShareText(
-    title: string,
-    description: string,
-    location: string,
-    amount?: number
-  ) {
-    return `🚨 CORRUPTION ALERT 🚨\n\n"${title}"\n📍 ${location}\n💰 ${
-      amount ? `Amount: ${amount}` : "Amount: Unknown"
-    }\n\nReported on Saasan App\n#FightCorruption #SaasanApp #Nepal`;
-  }
+  static async voteOnComment(
+    commentId: string,
+    vote: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    try {
+      // Check if user already voted
+      const existingVote = await db("comment_likes")
+        .where("comment_id", commentId)
+        .where("user_id", userId)
+        .first();
 
-  private static generatePollViralText(
-    title: string,
-    options: any[],
-    totalVotes: number
-  ) {
-    const topOption = options.reduce(
-      (max, opt) => (opt.votes > max.votes ? opt : max),
-      options[0]
-    );
-    const percentage = Math.round((topOption.votes / totalVotes) * 100);
-    return `⚡ ${percentage}% of citizens say "${topOption.option}" — Join the poll on Saasan 📊`;
-  }
+      if (existingVote) {
+        // Update existing vote
+        await db("comment_likes")
+          .where("comment_id", commentId)
+          .where("user_id", userId)
+          .update({
+            like_type: vote,
+            updated_at: new Date(),
+          });
+      } else {
+        // Create new vote
+        await db("comment_likes").insert({
+          comment_id: commentId,
+          user_id: userId,
+          like_type: vote,
+          created_at: new Date(),
+        });
+      }
 
-  private static generatePollShareText(
-    title: string,
-    options: any[],
-    totalVotes: number
-  ) {
-    const optionsText = options
-      .map(
-        (opt, i) =>
-          `${i + 1}. ${opt.option}: ${opt.votes} votes (${Math.round(
-            (opt.votes / totalVotes) * 100
-          )}%)`
-      )
-      .join("\n");
-
-    return `📊 POLL RESULT 📊\n\n"${title}"\n\n${optionsText}\n\nTotal Votes: ${totalVotes}\n\nVote on Saasan App\n#SaasanPoll #Nepal`;
-  }
-
-  private static generatePoliticianViralText(name: string, rating: number) {
-    return `⭐ ${name} rated ${rating}/5 by citizens — Check ratings on Saasan 👤`;
-  }
-
-  private static generatePoliticianShareText(
-    name: string,
-    position: string,
-    constituency: string,
-    rating: number
-  ) {
-    return `👤 POLITICIAN RATING 👤\n\n${name}\n${position}\n📍 ${constituency}\n⭐ Rating: ${rating}/5\n\nRated on Saasan App\n#PoliticianRating #SaasanApp #Nepal`;
-  }
-
-  private static getViralPotential(trendingScore: number) {
-    if (trendingScore >= 100) return "explosive";
-    if (trendingScore >= 75) return "high";
-    if (trendingScore >= 50) return "medium";
-    return "low";
-  }
-
-  private static getPriority(amount: number, status: string) {
-    if (amount > 10000000 || status === "verified") return "critical";
-    if (amount > 1000000) return "high";
-    if (amount > 100000) return "medium";
-    return "low";
-  }
-
-  private static getPeriodStart(period: string) {
-    const now = new Date();
-    switch (period) {
-      case "week":
-        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      case "month":
-        return new Date(now.getFullYear(), now.getMonth(), 1);
-      default:
-        return new Date(0); // All time
+      return { success: true };
+    } catch (error) {
+      console.error("Error voting on comment:", error);
+      throw error;
     }
   }
 
-  private static async updateStreak(userId: string) {
-    // This would implement streak calculation logic
-    // For now, just a placeholder
+  static async reportComment(
+    commentId: string,
+    reason: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    try {
+      await db("comment_reports").insert({
+        comment_id: commentId,
+        user_id: userId,
+        reason,
+        created_at: new Date(),
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error reporting comment:", error);
+      throw error;
+    }
+  }
+
+  // Verification
+  static async getVerificationStatus(
+    itemId: string,
+    itemType: string
+  ): Promise<VerificationStatus> {
+    try {
+      if (itemType === "corruption_report") {
+        const report = await db("reports").where("id", itemId).first();
+        if (!report) {
+          throw new Error("Report not found");
+        }
+
+        return {
+          status: report.status,
+          level:
+            report.priority === "urgent"
+              ? "high"
+              : report.priority === "high"
+              ? "medium"
+              : "low",
+          verifiedBy: report.verified_by || "Community",
+          verifiedAt: report.verified_at || report.created_at,
+          evidenceCount: report.evidence_count || 0,
+          communityVotes: {
+            upvotes: report.upvotes_count || 0,
+            downvotes: report.downvotes_count || 0,
+            totalVoters:
+              (report.upvotes_count || 0) + (report.downvotes_count || 0),
+          },
+          credibilityScore: Math.min(
+            100,
+            ((report.upvotes_count || 0) /
+              Math.max(
+                1,
+                (report.upvotes_count || 0) + (report.downvotes_count || 0)
+              )) *
+              100
+          ),
+          verificationNotes: report.verification_notes,
+        };
+      }
+
+      return {
+        status: "citizen_report",
+        level: "low",
+        verifiedBy: "Community",
+        verifiedAt: new Date().toISOString(),
+        evidenceCount: 0,
+        communityVotes: { upvotes: 0, downvotes: 0, totalVoters: 0 },
+        credibilityScore: 0,
+      };
+    } catch (error) {
+      console.error("Error getting verification status:", error);
+      throw error;
+    }
+  }
+
+  static async voteOnVerification(
+    itemId: string,
+    itemType: string,
+    vote: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    try {
+      if (itemType === "corruption_report") {
+        await db("report_reactions").insert({
+          report_id: itemId,
+          user_id: userId,
+          reaction_type: vote === "up" ? "upvote" : "downvote",
+          created_at: new Date(),
+        });
+
+        const field = vote === "up" ? "upvotes_count" : "downvotes_count";
+        await db("reports").where("id", itemId).increment(field, 1);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error voting on verification:", error);
+      throw error;
+    }
+  }
+
+  // Viral metrics
+  static async getViralMetrics(): Promise<any> {
+    try {
+      const totalShares = await db("viral_shares").count("* as count").first();
+      const totalVotes = await db("poll_votes").count("* as count").first();
+      const totalComments = await db("comments").count("* as count").first();
+      const activeUsers = await db("users")
+        .where("last_active", ">=", db.raw("NOW() - INTERVAL '7 days'"))
+        .count("* as count")
+        .first();
+
+      const topSharedContent = await db("viral_shares")
+        .select("item_id", "item_type", db.raw("COUNT(*) as share_count"))
+        .groupBy("item_id", "item_type")
+        .orderBy("share_count", "desc")
+        .limit(5);
+
+      return {
+        totalShares: parseInt(totalShares.count) || 0,
+        totalVotes: parseInt(totalVotes.count) || 0,
+        totalComments: parseInt(totalComments.count) || 0,
+        activeUsers: parseInt(activeUsers.count) || 0,
+        viralScore: 75, // TODO: Calculate based on engagement metrics
+        topSharedContent: topSharedContent.map((item: any) => ({
+          id: item.item_id,
+          type: item.item_type,
+          shareCount: parseInt(item.share_count),
+        })),
+        trendingHashtags: [], // TODO: Extract from content
+        viralTrends: [], // TODO: Calculate trends over time
+      };
+    } catch (error) {
+      console.error("Error getting viral metrics:", error);
+      throw error;
+    }
   }
 }

@@ -14,7 +14,8 @@
     "seed:existing": "node scripts/seed-existing-schema.js",
     "seed:corrected": "node scripts/seed-corrected.js",
     "seed:smart": "node scripts/seed-smart.js",
-    "seed:reset": "npm run seed:nepali",
+    "seed:election": "node scripts/seed-election-data.js",
+    "seed:reset": "npm run seed:nepali && npm run seed:election",
     "update:poll-schema": "node scripts/update-poll-schema.js",
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "echo \"No linting configured\" && exit 0"
