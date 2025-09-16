@@ -949,57 +949,65 @@ async function seedAdditionalData() {
 
     // Seed Sample Corruption Reports
     log('📋 Seeding sample corruption reports...');
-    const sampleReports = [
-      {
-        id: 1,
-        title: "Road Construction Corruption",
-        title_nepali: "सडक निर्माण भ्रष्टाचार",
-        description: "Allegations of corruption in road construction project",
-        description_nepali: "सडक निर्माण परियोजनामा भ्रष्टाचारको आरोप",
-        category: "Infrastructure",
-        category_nepali: "पूर्वाधार",
-        constituency_id: 1,
-        reporter_id: 1,
-        amount_involved: 5000000,
-        status: "under_investigation",
-        priority: "high",
-        upvotes_count: 15,
-        downvotes_count: 2,
-        views_count: 45,
-        is_public: true,
-        district: "Kathmandu",
-        municipality: "Kathmandu Metropolitan City",
-        ward_number: 1,
-        tags: ["corruption", "infrastructure", "construction"],
-        tags_nepali: ["भ्रष्टाचार", "पूर्वाधार", "निर्माण"]
-      },
-      {
-        id: 2,
-        title: "Education Fund Misuse",
-        title_nepali: "शिक्षा कोषको दुरुपयोग",
-        description: "Misuse of education development fund",
-        description_nepali: "शिक्षा विकास कोषको दुरुपयोग",
-        category: "Education",
-        category_nepali: "शिक्षा",
-        constituency_id: 2,
-        reporter_id: 2,
-        amount_involved: 2000000,
-        status: "verified",
-        priority: "medium",
-        upvotes_count: 8,
-        downvotes_count: 1,
-        views_count: 23,
-        is_public: true,
-        district: "Lalitpur",
-        municipality: "Lalitpur Metropolitan City",
-        ward_number: 1,
-        tags: ["corruption", "education", "funds"],
-        tags_nepali: ["भ्रष्टाचार", "शिक्षा", "कोष"]
-      }
-    ];
     
-    for (const report of sampleReports) {
-      await db('corruption_reports').insert(report).onConflict('id').ignore();
+    // Get the first two users to use as reporters
+    const users = await db('users').select('id').orderBy('id').limit(2);
+    
+    if (users.length >= 2) {
+      const sampleReports = [
+        {
+          id: 1,
+          title: "Road Construction Corruption",
+          title_nepali: "सडक निर्माण भ्रष्टाचार",
+          description: "Allegations of corruption in road construction project",
+          description_nepali: "सडक निर्माण परियोजनामा भ्रष्टाचारको आरोप",
+          category: "Infrastructure",
+          category_nepali: "पूर्वाधार",
+          constituency_id: 1,
+          reporter_id: users[0].id,
+          amount_involved: 5000000,
+          status: "under_investigation",
+          priority: "high",
+          upvotes_count: 15,
+          downvotes_count: 2,
+          views_count: 45,
+          is_public: true,
+          district: "Kathmandu",
+          municipality: "Kathmandu Metropolitan City",
+          ward_number: 1,
+          tags: ["corruption", "infrastructure", "construction"],
+          tags_nepali: ["भ्रष्टाचार", "पूर्वाधार", "निर्माण"]
+        },
+        {
+          id: 2,
+          title: "Education Fund Misuse",
+          title_nepali: "शिक्षा कोषको दुरुपयोग",
+          description: "Misuse of education development fund",
+          description_nepali: "शिक्षा विकास कोषको दुरुपयोग",
+          category: "Education",
+          category_nepali: "शिक्षा",
+          constituency_id: 2,
+          reporter_id: users[1].id,
+          amount_involved: 2000000,
+          status: "verified",
+          priority: "medium",
+          upvotes_count: 8,
+          downvotes_count: 1,
+          views_count: 23,
+          is_public: true,
+          district: "Lalitpur",
+          municipality: "Lalitpur Metropolitan City",
+          ward_number: 1,
+          tags: ["corruption", "education", "funds"],
+          tags_nepali: ["भ्रष्टाचार", "शिक्षा", "कोष"]
+        }
+      ];
+      
+      for (const report of sampleReports) {
+        await db('corruption_reports').insert(report).onConflict('id').ignore();
+      }
+    } else {
+      log('⚠️ Not enough users found to create sample corruption reports', colors.yellow);
     }
 
     // Seed Sample Historical Events
@@ -1424,17 +1432,18 @@ async function setupCompleteDatabase() {
     // Step 3: Seed all data
     await seedAllData();
     
-    // Step 4: Seed additional data (levels, positions, service status, sample reports)
-    await seedAdditionalData();
-    
-    // Step 5: Seed users with different roles
+    // Step 4: Seed users with different roles (needed before corruption reports)
     await seedUsers();
+    
+    // Step 5: Seed additional data (levels, positions, service status, sample reports)
+    await seedAdditionalData();
     
     log(`${colors.bright}${colors.green}🎉 Complete Database Setup Finished Successfully!${colors.reset}`);
     log(`${colors.cyan}✅ Database created${colors.reset}`);
     log(`${colors.cyan}✅ All tables created${colors.reset}`);
     log(`${colors.cyan}✅ All data seeded${colors.reset}`);
     log(`${colors.cyan}✅ Users with different roles created${colors.reset}`);
+    log(`${colors.cyan}✅ Additional data seeded${colors.reset}`);
     log(`${colors.cyan}✅ Ready for development!${colors.reset}`);
     
   } catch (error) {
