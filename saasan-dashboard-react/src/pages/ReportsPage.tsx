@@ -269,7 +269,8 @@ export const ReportsPage: React.FC = () => {
               {reports.map((report) => (
                 <div
                   key={report.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setShowDetails(report)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -316,7 +317,9 @@ export const ReportsPage: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-1">
                           <AlertTriangle className="h-3 w-3" />
-                          <span>₹{(report.amountInvolved || 0).toLocaleString()}</span>
+                          <span>
+                            ₹{(report.amountInvolved || 0).toLocaleString()}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -324,7 +327,10 @@ export const ReportsPage: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowDetails(report)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDetails(report);
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -333,7 +339,10 @@ export const ReportsPage: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleApprove(report.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(report.id);
+                            }}
                             disabled={approveMutation.isPending}
                             className="text-green-600 hover:text-green-700"
                           >
@@ -343,7 +352,10 @@ export const ReportsPage: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleReject(report.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(report.id);
+                            }}
                             disabled={rejectMutation.isPending}
                             className="text-red-600 hover:text-red-700"
                           >
@@ -356,7 +368,10 @@ export const ReportsPage: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleResolve(report.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResolve(report.id);
+                          }}
                           disabled={resolveMutation.isPending}
                           className="text-blue-600 hover:text-blue-700"
                         >
@@ -364,6 +379,25 @@ export const ReportsPage: React.FC = () => {
                           Resolve
                         </Button>
                       )}
+                      {/* Delete button for all reports */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              "Are you sure you want to delete this report?"
+                            )
+                          ) {
+                            // TODO: Implement delete functionality
+                            console.log("Delete report:", report.id);
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -470,7 +504,11 @@ export const ReportsPage: React.FC = () => {
                     </p>
                     <p>
                       <strong>Date Occurred:</strong>{" "}
-                      {showDetails.dateOccurred ? new Date(showDetails.dateOccurred).toLocaleDateString() : 'N/A'}
+                      {showDetails.dateOccurred
+                        ? new Date(
+                            showDetails.dateOccurred
+                          ).toLocaleDateString()
+                        : "N/A"}
                     </p>
                     <p>
                       <strong>Reporter:</strong>{" "}

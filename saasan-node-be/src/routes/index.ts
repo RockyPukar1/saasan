@@ -8,6 +8,7 @@ import locationRoutes from "./locations";
 import pollRoutes from "./polls";
 import historicalEventRoutes from "./historical-events";
 import majorCaseRoutes from "./major-cases";
+import { viralRoutes } from "./viral";
 
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.use("/locations", locationRoutes);
 router.use("/polls", pollRoutes);
 router.use("/historical-events", historicalEventRoutes);
 router.use("/major-cases", majorCaseRoutes);
+router.use("/viral", viralRoutes);
 
 export default router;

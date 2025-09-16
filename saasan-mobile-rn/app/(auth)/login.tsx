@@ -28,7 +28,7 @@ export default function LoginScreen() {
           Welcome Back
         </Text>
 
-        <form className="space-y-4">
+        <View className="space-y-4">
           <View>
             <Text className="text-sm font-medium text-foreground mb-1">
               Email
@@ -57,7 +57,7 @@ export default function LoginScreen() {
               secureTextEntry
             />
           </View>
-        </form>
+        </View>
         <View className="space-y-4">
           <TouchableOpacity
             className="bg-primary py-3 rounded-md"

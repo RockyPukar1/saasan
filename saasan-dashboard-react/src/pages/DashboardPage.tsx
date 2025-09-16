@@ -3,43 +3,51 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Users,
   FileText,
-  CheckCircle,
   AlertTriangle,
   TrendingUp,
-  Clock,
-  Gavel,
-  Zap,
   Share,
-  DollarSign,
+  Settings,
+  Shield,
+  BarChart3,
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
+  MessageCircle,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { dashboardApi } from "@/services/api";
+import { dashboardApi, reportsApi, politiciansApi } from "@/services/api";
+import { viralApi } from "@/services/viralApi";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
+  // Admin-specific data queries
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
+    queryKey: ["admin-dashboard-stats"],
     queryFn: () => dashboardApi.getStats(),
   });
 
-  const { data: majorCases, isLoading: casesLoading } = useQuery({
-    queryKey: ["major-cases"],
-    queryFn: () => dashboardApi.getMajorCases(),
+  const { data: reports, isLoading: reportsLoading } = useQuery({
+    queryKey: ["admin-reports"],
+    queryFn: () => reportsApi.getAll({ page: 1, limit: 10 }),
   });
 
-  const { data: services, isLoading: servicesLoading } = useQuery({
-    queryKey: ["live-services"],
-    queryFn: () => dashboardApi.getLiveServices(),
+  const { data: politicians, isLoading: politiciansLoading } = useQuery({
+    queryKey: ["admin-politicians"],
+    queryFn: () => politiciansApi.getAll(),
   });
 
-  const isLoading = statsLoading || casesLoading || servicesLoading;
+  const { data: viralMetrics, isLoading: viralLoading } = useQuery({
+    queryKey: ["viral-metrics"],
+    queryFn: () => viralApi.getViralMetrics(),
+  });
+
+  const isLoading =
+    statsLoading || reportsLoading || politiciansLoading || viralLoading;
 
   if (isLoading) {
     return (
@@ -68,36 +76,8 @@ export const DashboardPage: React.FC = () => {
     resolutionRate: 0,
   };
 
-  // Ensure numeric values are properly handled
-  const resolutionRate =
-    typeof overview.resolutionRate === "number"
-      ? overview.resolutionRate
-      : parseFloat(overview.resolutionRate) || 0;
-
-  const totalReports =
-    typeof overview.totalReports === "number"
-      ? overview.totalReports
-      : parseInt(overview.totalReports) || 0;
-
-  const resolvedReports =
-    typeof overview.resolvedReports === "number"
-      ? overview.resolvedReports
-      : parseInt(overview.resolvedReports) || 0;
-
-  // const activePoliticians =
-  //   typeof overview.activePoliticians === "number"
-  //     ? overview.activePoliticians
-  //     : parseInt(overview.activePoliticians) || 0;
-
-  const recentCases = majorCases?.data?.slice(0, 5) || [];
-  const electricityServices =
-    services?.data?.filter((s) => s.serviceType === "electricity") || [];
-  const onlineElectricity = electricityServices.filter(
-    (s) => s.status === "online"
-  ).length;
-  const offlineElectricity = electricityServices.filter(
-    (s) => s.status === "offline"
-  ).length;
+  const recentReports = reports?.data?.slice(0, 5) || [];
+  const recentPoliticians = politicians?.data?.slice(0, 5) || [];
 
   // const statCards = [
   //   {
@@ -134,417 +114,349 @@ export const DashboardPage: React.FC = () => {
   //   },
   // ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "unsolved":
-        return "bg-red-500";
-      case "ongoing":
-        return "bg-yellow-500";
-      case "solved":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getPriorityColor = (priority: string): string => {
-    switch (priority.toLowerCase()) {
-      case "urgent":
-        return "text-red-600";
-      case "high":
-        return "text-orange-600";
-      case "medium":
-        return "text-yellow-600";
-      case "low":
-        return "text-green-600";
-      default:
-        return "text-gray-600";
-    }
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("en-NP", {
-      style: "currency",
-      currency: "NPR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const calculateDaysSince = (dateString: string): number => {
-    return Math.floor(
-      (new Date().getTime() - new Date(dateString).getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Red Banner */}
-      <div className="bg-saasan-red rounded-lg p-6 mb-6 mx-4 mt-4">
+      {/* Admin Header */}
+      <div className="bg-blue-600 rounded-lg p-6 mb-6 mx-4 mt-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h1 className="text-white text-2xl font-bold mb-2">
-              Saasan Dashboard
+              Admin Dashboard
             </h1>
-            <p className="text-red-100 text-sm">
-              Monitor corruption cases, track politicians, and stay informed
+            <p className="text-blue-100 text-sm">
+              Manage corruption reports, politicians, and polling data
             </p>
           </div>
-          <div className="bg-red-500 rounded-full p-3">
-            <Gavel className="text-white" size={24} />
+          <div className="bg-blue-500 rounded-full p-3">
+            <Shield className="text-white" size={24} />
           </div>
         </div>
       </div>
 
-      {/* System Status */}
+      {/* Admin Quick Actions */}
       <div className="px-4 mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
-          System Status
-        </h2>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
-            <span className="text-sm text-gray-600">
-              All systems operational
-            </span>
-          </div>
-          <div className="flex items-center">
-            <Clock className="text-gray-500 mr-1" size={16} />
-            <span className="text-sm text-gray-600">
-              {format(new Date(), "MMM dd, yyyy")}
-            </span>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate("/reports")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <FileText className="text-blue-600" size={24} />
+                <span className="text-2xl font-bold text-blue-600">
+                  {overview.totalReports}
+                </span>
+              </div>
+              <p className="text-gray-600 text-sm mt-2">Total Reports</p>
+              <p className="text-blue-500 text-xs mt-1">Click to manage</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate("/politicians")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Users className="text-green-600" size={24} />
+                <span className="text-2xl font-bold text-green-600">
+                  {overview.totalPoliticians}
+                </span>
+              </div>
+              <p className="text-gray-600 text-sm mt-2">Politicians</p>
+              <p className="text-green-500 text-xs mt-1">Click to manage</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate("/polling")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <BarChart3 className="text-purple-600" size={24} />
+                <span className="text-2xl font-bold text-purple-600">0</span>
+              </div>
+              <p className="text-gray-600 text-sm mt-2">Active Polls</p>
+              <p className="text-purple-500 text-xs mt-1">Click to manage</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate("/viral-management")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <TrendingUp className="text-purple-600" size={24} />
+                <span className="text-2xl font-bold text-purple-600">
+                  {viralMetrics?.totalShares || 0}
+                </span>
+              </div>
+              <p className="text-gray-600 text-sm mt-2">Viral Shares</p>
+              <p className="text-purple-500 text-xs mt-1">Click to manage</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate("/settings")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Settings className="text-orange-600" size={24} />
+                <span className="text-2xl font-bold text-orange-600">
+                  <Settings className="inline" size={20} />
+                </span>
+              </div>
+              <p className="text-gray-600 text-sm mt-2">System Settings</p>
+              <p className="text-orange-500 text-xs mt-1">Click to configure</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Recent Reports Management */}
       <div className="px-4 mb-6">
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="card-saasan-red">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <Gavel className="text-saasan-red" size={24} />
-                <span className="text-2xl font-bold text-saasan-red">
-                  {totalReports}
-                </span>
-              </div>
-              <p className="text-gray-600 text-xs mt-2">Total Reports</p>
-              <p className="text-saasan-red text-xs mt-1">
-                {resolutionRate.toFixed(1)}% resolved
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="card-saasan-yellow">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <Clock className="text-saasan-yellow" size={24} />
-                <span className="text-2xl font-bold text-saasan-yellow">
-                  {totalReports - resolvedReports}
-                </span>
-              </div>
-              <p className="text-gray-600 text-xs mt-2">Pending Cases</p>
-            </CardContent>
-          </Card>
-
-          <Card className="card-saasan-green">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <CheckCircle className="text-saasan-green" size={24} />
-                <span className="text-2xl font-bold text-saasan-green">
-                  {overview.resolvedReports}
-                </span>
-              </div>
-              <p className="text-gray-600 text-xs mt-2">Cases Resolved</p>
-            </CardContent>
-          </Card>
-
-          <Card className="card-saasan-blue">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <Users className="text-saasan-blue" size={24} />
-                <span className="text-2xl font-bold text-saasan-blue">
-                  {overview.activePoliticians}
-                </span>
-              </div>
-              <p className="text-gray-600 text-xs mt-2">Active Politicians</p>
-              <p className="text-saasan-blue text-xs mt-1">
-                of {overview.totalPoliticians} total
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Recent Reports</CardTitle>
+              <Button onClick={() => navigate("/reports")} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Manage All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate("/reports")}
+                >
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">
+                      {report.title}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {report.description?.substring(0, 100)}...
+                    </p>
+                    <div className="flex items-center space-x-4 mt-1">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          report.status === "verified"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {report.status}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {format(new Date(report.createdAt), "MMM dd")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button size="sm" variant="outline">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Electricity Status Card */}
-      {electricityServices.length > 0 && (
+      {/* Recent Politicians Management */}
+      <div className="px-4 mb-6">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Recent Politicians</CardTitle>
+              <Button onClick={() => navigate("/politicians")} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Manage All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentPoliticians.map((politician) => (
+                <div
+                  key={politician.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate("/politicians")}
+                >
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">
+                      {politician.fullName}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Position {politician.positionId} • Constituency{" "}
+                      {politician.constituencyId}
+                    </p>
+                    <div className="flex items-center space-x-4 mt-1">
+                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                        Party {politician.partyId}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Experience: {politician.experienceYears} years
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button size="sm" variant="outline">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Viral Metrics Overview */}
+      {viralMetrics && (
         <div className="px-4 mb-6">
-          <Card className="card-saasan-yellow">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                  <Zap className="text-saasan-yellow mr-2" size={20} />
-                  <span className="text-lg font-bold text-gray-800">
-                    Electricity Status
-                  </span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2" />
+                Viral Engagement Metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Share className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-blue-600">
+                    {viralMetrics.totalShares.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">Total Shares</p>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
-                  <span className="text-green-600 text-xs font-bold">LIVE</span>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-green-600">
+                    {viralMetrics.totalVotes.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">Total Votes</p>
                 </div>
-              </div>
-
-              <div className="mb-3">
-                <div className="flex justify-between mb-2">
-                  <span className="text-green-600 text-sm font-medium">
-                    Online: {onlineElectricity}
-                  </span>
-                  <span className="text-red-600 text-sm font-medium">
-                    Offline: {offlineElectricity}
-                  </span>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <MessageCircle className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-purple-600">
+                    {viralMetrics.totalComments.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">Comments</p>
                 </div>
-
-                <div className="bg-red-200 h-6 rounded-full overflow-hidden">
-                  <div
-                    className="bg-green-500 h-6 rounded-full transition-all duration-1000"
-                    style={{
-                      width: `${
-                        (onlineElectricity /
-                          (onlineElectricity + offlineElectricity)) *
-                        100
-                      }%`,
-                    }}
-                  />
-                </div>
-
-                <div className="flex justify-between mt-1">
-                  <span className="text-xs text-gray-500">0%</span>
-                  <span className="text-xs text-gray-500">
-                    {Math.round(
-                      (onlineElectricity /
-                        (onlineElectricity + offlineElectricity)) *
-                        100
-                    )}
-                    % Online
-                  </span>
-                  <span className="text-xs text-gray-500">100%</span>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <BarChart3 className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-orange-600">
+                    {viralMetrics.viralScore}/100
+                  </p>
+                  <p className="text-sm text-gray-600">Viral Score</p>
                 </div>
               </div>
-
-              <p className="text-xs text-gray-600 text-center">
-                Total Areas: {onlineElectricity + offlineElectricity}
-              </p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Major Cases Tracker */}
-      <div className="px-4 mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Major Cases Tracker
-        </h2>
-        {recentCases.length === 0 ? (
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-gray-500 text-center">
-                No major cases to display
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {recentCases.map((caseItem) => (
-              <Card
-                key={caseItem.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 mr-3">
-                      <div className="flex items-center mb-2">
-                        <h3 className="text-lg font-bold text-gray-800 flex-1">
-                          {caseItem.title}
-                        </h3>
-                      </div>
-                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                        {caseItem.description}
-                      </p>
-                      {caseItem.amountInvolved &&
-                        caseItem.amountInvolved > 0 && (
-                          <div className="flex items-center mb-2">
-                            <DollarSign
-                              className="text-red-500 mr-1"
-                              size={16}
-                            />
-                            <span className="text-red-600 text-sm font-bold">
-                              {formatCurrency(caseItem.amountInvolved)}
-                            </span>
-                          </div>
-                        )}
-                    </div>
-                    <div
-                      className={`px-3 py-1 rounded-full ${getStatusColor(
-                        caseItem.status
-                      )}`}
-                    >
-                      <span className="text-white text-xs font-bold uppercase">
-                        {caseItem.status.replace("_", " ")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Days Counter */}
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <p className="text-2xl font-bold text-red-600 text-center">
-                      {caseItem.createdAt
-                        ? calculateDaysSince(caseItem.createdAt)
-                        : 0}{" "}
-                      DAYS
-                    </p>
-                    <p className="text-gray-600 text-center text-sm">
-                      since reported
-                    </p>
-                  </div>
-
-                  {/* Engagement Stats */}
-                  <div className="flex justify-around mt-3 pt-3 border-t border-gray-200">
-                    <div className="flex items-center">
-                      <TrendingUp className="text-green-600 mr-1" size={16} />
-                      <span className="text-green-600 text-sm font-bold">
-                        {caseItem.upvotesCount || 0}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <FileText className="text-blue-600 mr-1" size={16} />
-                      <span className="text-blue-600 text-sm">
-                        {caseItem.referenceNumber}
-                      </span>
-                    </div>
-                    <span
-                      className={`text-sm font-bold ${getPriorityColor(
-                        caseItem.priority
-                      )}`}
-                    >
-                      {caseItem.priority?.toUpperCase() || "MEDIUM"} PRIORITY
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Category Breakdown */}
-      {stats?.data?.categoryBreakdown &&
-        stats.data.categoryBreakdown.length > 0 && (
-          <div className="px-4 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              Cases by Category
-            </h2>
-            <Card>
-              <CardContent className="p-4">
-                {stats.data.categoryBreakdown.map((category) => (
-                  <div key={category.categoryName} className="mb-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-700 font-medium">
-                        {category.categoryName || "Uncategorized"}
-                      </span>
-                      <span className="text-gray-600 font-bold">
-                        {category.count}
-                      </span>
-                    </div>
-                    <div className="bg-gray-200 h-2 rounded-full">
-                      <div
-                        className="bg-saasan-red h-2 rounded-full"
-                        style={{
-                          width: `${(
-                            (category.count / (totalReports || 1)) *
-                            100
-                          ).toFixed(1)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-      {/* Quick Actions */}
+      {/* Admin Actions */}
       <div className="px-4 mb-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Take Action</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Admin Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Button
-            variant="outline"
-            className="flex flex-col items-center p-4 h-auto"
+            className="flex items-center justify-center gap-2 p-4 h-auto"
             onClick={() => navigate("/reports")}
           >
-            <div className="bg-red-100 p-3 rounded-full mb-2">
-              <AlertTriangle className="text-red-600" size={24} />
+            <AlertTriangle className="h-6 w-6" />
+            <div className="text-left">
+              <div className="font-semibold">Manage Reports</div>
+              <div className="text-sm opacity-90">Review and moderate</div>
             </div>
-            <span className="text-gray-700 text-sm font-medium">
-              Report Issue
-            </span>
           </Button>
 
           <Button
-            variant="outline"
-            className="flex flex-col items-center p-4 h-auto"
+            className="flex items-center justify-center gap-2 p-4 h-auto"
             onClick={() => navigate("/politicians")}
           >
-            <div className="bg-blue-100 p-3 rounded-full mb-2">
-              <Users className="text-blue-600" size={24} />
+            <Users className="h-6 w-6" />
+            <div className="text-left">
+              <div className="font-semibold">Manage Politicians</div>
+              <div className="text-sm opacity-90">Add and edit profiles</div>
             </div>
-            <span className="text-gray-700 text-sm font-medium">Rate MP</span>
           </Button>
 
           <Button
-            variant="outline"
-            className="flex flex-col items-center p-4 h-auto"
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: "Saasan App",
-                  text: "Help fight corruption in Nepal with Saasan App",
-                  url: "https://saasan.app",
-                });
-              } else {
-                alert("Share app functionality coming soon!");
-              }
-            }}
+            className="flex items-center justify-center gap-2 p-4 h-auto"
+            onClick={() => navigate("/polling")}
           >
-            <div className="bg-green-100 p-3 rounded-full mb-2">
-              <Share className="text-green-600" size={24} />
+            <BarChart3 className="h-6 w-6" />
+            <div className="text-left">
+              <div className="font-semibold">Manage Polls</div>
+              <div className="text-sm opacity-90">Create and monitor</div>
             </div>
-            <span className="text-gray-700 text-sm font-medium">Share App</span>
+          </Button>
+
+          <Button
+            className="flex items-center justify-center gap-2 p-4 h-auto"
+            onClick={() => navigate("/viral-management")}
+          >
+            <TrendingUp className="h-6 w-6" />
+            <div className="text-left">
+              <div className="font-semibold">Viral Management</div>
+              <div className="text-sm opacity-90">Monitor engagement</div>
+            </div>
           </Button>
         </div>
       </div>
 
-      {/* Daily Reminder Banner */}
-      <div className="mx-4 mb-6 bg-gradient-to-r from-red-500 to-red-600 p-4 rounded-lg">
+      {/* Admin Reminder */}
+      <div className="mx-4 mb-6 bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg">
         <p className="text-white font-bold text-center mb-2">
-          📢 Daily Reminder
+          📢 Admin Reminder
         </p>
         <p className="text-white text-sm text-center mb-3">
-          Call your local MP today and ask: "What have you done for our
-          constituency this week?"
+          Review pending reports and update politician information regularly
         </p>
-        <Button
-          className="bg-white text-red-600 font-bold w-full"
-          onClick={() => navigate("/politicians")}
-        >
-          Find My MP
-        </Button>
+        <div className="flex justify-center space-x-4">
+          <Button className="bg-white" onClick={() => navigate("/reports")}>
+            <span className="text-blue-600 font-bold">Review Reports</span>
+          </Button>
+          <Button className="bg-white" onClick={() => navigate("/settings")}>
+            <span className="text-blue-600 font-bold">System Settings</span>
+          </Button>
+        </div>
       </div>
 
       {/* Last Updated Info */}
       <div className="px-4 pb-6">
         <p className="text-center text-gray-500 text-xs">
-          Last updated: {format(new Date(), "PPpp")}
+          Admin Dashboard • Last updated: {format(new Date(), "PPpp")}
         </p>
       </div>
     </div>

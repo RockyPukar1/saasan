@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   MapPin,
   BarChart3,
+  TrendingUp,
   Menu,
   X,
   LogOut,
@@ -24,6 +25,7 @@ const navigation = [
   { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
   { name: "Geographic", href: "/geographic", icon: MapPin },
   { name: "Polling", href: "/polling", icon: BarChart3 },
+  { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
 ];
 
 export const DashboardLayout: React.FC = () => {

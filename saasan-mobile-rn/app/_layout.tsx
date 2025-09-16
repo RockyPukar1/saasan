@@ -54,6 +54,18 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen
+              name="politician"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="report"
+              options={{
+                headerShown: false,
+              }}
+            />
           </Stack>
           <PortalHost />
         </ThemeProvider>

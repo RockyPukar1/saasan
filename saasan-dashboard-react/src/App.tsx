@@ -16,6 +16,7 @@ import { HistoricalEventsPage } from "@/pages/HistoricalEventsPage";
 import { MajorCasesPage } from "@/pages/MajorCasesPage";
 import { GeographicPage } from "@/pages/GeographicPage";
 import PollingPage from "@/pages/PollingPage";
+import { ViralManagementPage } from "@/pages/ViralManagementPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import "./index.css";
 
@@ -55,6 +56,10 @@ function App() {
                 <Route path="major-cases" element={<MajorCasesPage />} />
                 <Route path="geographic" element={<GeographicPage />} />
                 <Route path="polling" element={<PollingPage />} />
+                <Route
+                  path="viral-management"
+                  element={<ViralManagementPage />}
+                />
               </Route>
             </Routes>
             <Toaster

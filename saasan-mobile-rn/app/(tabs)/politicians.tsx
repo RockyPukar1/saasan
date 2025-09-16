@@ -101,14 +101,14 @@ const PoliticiansScreen = () => {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            className="px-2"
+            contentContainerStyle={{ paddingHorizontal: 16 }}
           >
             <View className="flex-row py-2">
               {governmentLevels.map((level) => (
                 <TouchableOpacity
                   key={level.id}
                   onPress={() => setSelectedLevel(level.name)}
-                  className={`mx-1 px-3 py-2 rounded-lg ${
+                  className={`mx-1 px-4 py-3 rounded-lg min-w-[80px] ${
                     selectedLevel === level.name
                       ? "bg-red-100 border-b-2 border-red-600"
                       : "bg-transparent"
@@ -314,13 +314,26 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
           )}
 
           {/* Action Buttons */}
-          <View className="flex-row space-x-2">
-            <Button className="flex-1 bg-blue-600">
-              <Text className="text-white font-medium">Rate Performance</Text>
-            </Button>
-            <Button className="flex-1 bg-gray-200">
-              <Text className="text-gray-700 font-medium">View Promises</Text>
-            </Button>
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              className="flex-1 bg-blue-600 py-3 rounded-lg"
+              onPress={() => {
+                // TODO: Implement rating functionality
+                console.log("Rate politician:", politician.id);
+              }}
+            >
+              <Text className="text-white font-medium text-center">
+                Rate Performance
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-1 bg-gray-200 py-3 rounded-lg"
+              onPress={() => router.push(`/politician/${politician.id}`)}
+            >
+              <Text className="text-gray-700 font-medium text-center">
+                View Promises
+              </Text>
+            </TouchableOpacity>
           </View>
         </CardContent>
       </Card>

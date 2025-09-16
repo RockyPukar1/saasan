@@ -28,6 +28,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { Audio } from "expo-av";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { PageHeader } from "~/components/PageHeader";
+import { ShareableImage } from "~/components/ShareableImage";
 
 interface Report {
   id: string;
@@ -53,6 +54,7 @@ const ReportsScreen = () => {
   const router = useRouter();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"new" | "my_reports">("new");
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [reportTitle, setReportTitle] = useState("");
@@ -418,6 +420,21 @@ const ReportsScreen = () => {
                   </View>
                 )}
               </View>
+
+              {/* Share Button */}
+              <View className="mt-3 pt-3 border-t border-gray-100">
+                <TouchableOpacity
+                  onPress={() => {
+                    // Show share modal
+                    setSelectedReport(report);
+                  }}
+                  className="flex-row items-center justify-center bg-blue-500 py-2 rounded-lg"
+                >
+                  <Text className="text-white font-medium text-sm">
+                    🚀 Share This Report
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </CardContent>
           </Card>
         </TouchableOpacity>
@@ -501,6 +518,32 @@ const ReportsScreen = () => {
 
       {/* Content */}
       {activeTab === "new" ? <NewReportForm /> : <MyReportsTab />}
+
+      {/* Share Modal */}
+      {selectedReport && (
+        <View className="absolute inset-0 bg-black bg-opacity-50 justify-center p-4">
+          <View className="bg-white rounded-lg max-h-[80%]">
+            <View className="p-4 border-b border-gray-200">
+              <Text className="text-lg font-bold text-gray-800">
+                Share This Report
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSelectedReport(null)}
+                className="absolute right-4 top-4"
+              >
+                <Text className="text-gray-500 text-xl">×</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView className="max-h-96">
+              <ShareableImage
+                type="corruption_report"
+                data={selectedReport}
+                onShare={() => setSelectedReport(null)}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </View>
   );
 };

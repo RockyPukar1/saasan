@@ -210,7 +210,7 @@ const PoliticianDetailScreen = () => {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-white pt-14 pb-4 px-5 border-b border-gray-200">
+      <View className="bg-white pt-12 pb-4 px-5 border-b border-gray-200">
         <View className="flex-row items-center">
           <TouchableOpacity
             onPress={() => router.back()}
@@ -306,38 +306,32 @@ const PoliticianDetailScreen = () => {
 
         {/* Tab Navigation */}
         <View className="bg-white border-b border-gray-200">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="px-2"
-          >
-            <View className="flex-row py-2">
-              {[
-                { id: "overview", name: "Overview" },
-                { id: "promises", name: "Promises" },
-                { id: "achievements", name: "Achievements" },
-                { id: "contact", name: "Contact" },
-              ].map((tab) => (
-                <TouchableOpacity
-                  key={tab.id}
-                  onPress={() => setActiveTab(tab.id as any)}
-                  className={`mx-1 px-4 py-2 rounded-lg ${
-                    activeTab === tab.id
-                      ? "bg-red-100 border-b-2 border-red-600"
-                      : "bg-transparent"
+          <View className="flex-row py-2 px-2">
+            {[
+              { id: "overview", name: "Overview" },
+              { id: "promises", name: "Promises" },
+              { id: "achievements", name: "Achievements" },
+              { id: "contact", name: "Contact" },
+            ].map((tab) => (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => setActiveTab(tab.id as any)}
+                className={`flex-1 mx-1 px-2 py-3 rounded-lg items-center ${
+                  activeTab === tab.id
+                    ? "bg-red-100 border-b-2 border-red-600"
+                    : "bg-transparent"
+                }`}
+              >
+                <Text
+                  className={`text-sm font-medium text-center ${
+                    activeTab === tab.id ? "text-red-600" : "text-gray-600"
                   }`}
                 >
-                  <Text
-                    className={`text-sm font-medium ${
-                      activeTab === tab.id ? "text-red-600" : "text-gray-600"
-                    }`}
-                  >
-                    {tab.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
+                  {tab.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Tab Content */}

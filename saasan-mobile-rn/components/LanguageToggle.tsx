@@ -18,7 +18,7 @@ export function LanguageToggle() {
             language === "en" ? "text-blue-600" : "text-gray-600"
           }`}
         >
-          {t("language.english")}
+          En
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -32,7 +32,7 @@ export function LanguageToggle() {
             language === "ne" ? "text-blue-600" : "text-gray-600"
           }`}
         >
-          {t("language.nepali")}
+          Nep
         </Text>
       </TouchableOpacity>
     </View>

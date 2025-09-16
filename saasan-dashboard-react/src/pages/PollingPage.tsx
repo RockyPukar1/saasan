@@ -316,20 +316,34 @@ const PollingPage: React.FC = () => {
               filteredPolls.map((poll) => (
                 <Card
                   key={poll.id}
-                  className="hover:shadow-lg transition-shadow"
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => handleViewDetails(poll)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg line-clamp-2">
                         {poll.title}
                       </CardTitle>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          poll.status
-                        )}`}
-                      >
-                        {getStatusText(poll.status)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            poll.status
+                          )}`}
+                        >
+                          {getStatusText(poll.status)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePoll(poll.id);
+                          }}
+                          className="text-red-600 hover:text-red-700 p-1 h-6 w-6"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2">
                       {poll.description}
@@ -359,21 +373,17 @@ const PollingPage: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewDetails(poll)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(poll);
+                        }}
                         className="flex items-center gap-2"
                       >
                         <Eye className="h-4 w-4" />
-                        View
+                        Edit
                       </Button>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeletePoll(poll.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="text-xs text-gray-500">
+                        Click anywhere to edit
                       </div>
                     </div>
                   </CardContent>

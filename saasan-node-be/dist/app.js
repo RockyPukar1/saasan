@@ -17,11 +17,16 @@ app.use((0, cors_1.default)({
         "http://localhost:3000", // React Native web
         "http://localhost:5173", // React Dashboard
         "http://localhost:8081", // Expo dev server
+        "http://localhost:8082", // Expo dev server (new port)
         "http://192.168.1.74:3000",
         "http://192.168.1.74:5173", // React Dashboard on network
         "http://192.168.1.74:8081",
+        "http://192.168.1.74:8082", // Expo dev server (new port)
+        "http://192.168.1.74:5000", // Backend API access
         "exp://192.168.1.74:8081",
+        "exp://192.168.1.74:8082",
         "exp://localhost:8081",
+        "exp://localhost:8082",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
