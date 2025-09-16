@@ -1,6 +1,6 @@
 # Saasan - Political Transparency Platform
 
-A comprehensive political transparency platform that enables citizens to track politicians, report corruption, and participate in democratic processes through polls and surveys.
+A comprehensive political transparency platform that enables citizens to track politicians, report corruption, and participate in democratic processes through polls and surveys. Built for Nepal with full bilingual support (English/Nepali) and ready for the 2027 elections.
 
 ## 🏗️ Project Architecture
 
@@ -17,10 +17,10 @@ saasan/
 ├── saasan-node-be/                 # Backend API (Node.js/Express)
 │   ├── src/
 │   │   ├── controllers/           # API route handlers
-│   │   ├── models/                # Database models
+│   │   ├── services/              # Business logic
 │   │   ├── routes/                # API routes
 │   │   ├── middleware/            # Authentication & validation
-│   │   ├── lib/helpers/           # Utility functions
+│   │   ├── lib/                   # Utility functions
 │   │   └── types/                 # TypeScript type definitions
 │   ├── scripts/                   # Database seeding scripts
 │   └── package.json
@@ -49,7 +49,6 @@ saasan/
 
 - **Node.js** (v18 or higher)
 - **PostgreSQL** (v12 or higher)
-- **pgAdmin4** (for database management)
 - **Git**
 
 ### 1. Clone the Repository
@@ -59,416 +58,282 @@ git clone <repository-url>
 cd saasan
 ```
 
-### 2. Install Dependencies
+### 2. Complete Setup (One Command)
 
 ```bash
-# Install all dependencies for all projects
+# This single command does everything:
+npm run setup
+```
+
+**What `npm run setup` does:**
+
+- Installs all dependencies for all projects
+- Sets up environment files with default values
+- Creates all database tables with proper relationships
+- Seeds comprehensive Nepali data including:
+  - All 7 provinces with bilingual names
+  - Districts and constituencies
+  - Political parties and politicians
+  - Election candidates with manifestos
+  - Polls and voting sessions
+  - Corruption reports and badges
+  - Campaign data and voter registrations
+
+### 3. Start Development
+
+```bash
+# Start all services (backend, dashboard, mobile)
+npm run dev
+```
+
+**Services will be available at:**
+
+- **Backend API**: http://localhost:5000
+- **Dashboard**: http://localhost:3000
+- **Mobile Web**: http://localhost:8081
+
+## 📊 Available Data
+
+After setup, you'll have:
+
+### 🗺️ Geographic Data
+
+- 7 Provinces (all of Nepal)
+- 11 Districts (major districts)
+- 9 Constituencies (key constituencies)
+- All with bilingual names (English + Nepali)
+
+### 🏛️ Political System
+
+- 5 Major Political Parties
+- 5 Politicians with detailed profiles
+- 2 Election Candidates with full manifestos
+- Party ideologies and symbols
+
+### 🗳️ Election Infrastructure
+
+- Voting Sessions for 2027 elections
+- Voter Registrations with verification
+- Voter Intent Surveys
+- Candidate comparisons and voting
+
+### 📊 Content & Engagement
+
+- 2 Trending Polls with options
+- 2 Corruption Reports with verification
+- 6 Achievement Badges with progress
+- Campaign analytics and tracking
+
+## 🌐 Bilingual System
+
+The platform features a unified bilingual system where English and Nepali are treated together:
+
+- **Display Format**: "काठमाडौं (Kathmandu)" or "Kathmandu (काठमाडौं)"
+- **Smart Fallback**: Shows available language when only one exists
+- **Cultural Context**: Authentic Nepali content with English translations
+- **Complete Coverage**: Every piece of data has both languages
+
+## 🛠️ Development Commands
+
+### Essential Commands (from project root):
+
+```bash
+# Install all dependencies
 npm run install:all
+
+# Complete setup (install + env + database + seed)
+npm run setup
+
+# Start all services
+npm run dev
+
+# Setup environment files only
+npm run setup:env
+
+# Setup database and seed data only
+npm run seed:smart
 ```
 
-### 3. Database Setup
-
-#### Install PostgreSQL
-
-- **Ubuntu/Debian:**
-
-  ```bash
-  sudo apt update
-  sudo apt install postgresql postgresql-contrib
-  ```
-
-- **macOS:**
-
-  ```bash
-  brew install postgresql
-  ```
-
-- **Windows:** Download from [postgresql.org](https://www.postgresql.org/download/windows/)
-
-#### Create Database
+### Individual Service Commands:
 
 ```bash
-# Start PostgreSQL service
-sudo systemctl start postgresql  # Linux
-brew services start postgresql   # macOS
+# Backend only
+npm run dev:backend
 
-# Connect to PostgreSQL
-sudo -u postgres psql
+# Dashboard only
+npm run dev:dashboard
 
-# Create database and user
-CREATE DATABASE saasan_db;
-CREATE USER saasan_user WITH PASSWORD 'saasan_password';
-GRANT ALL PRIVILEGES ON DATABASE saasan_db TO saasan_user;
-\q
+# Mobile only
+npm run dev:mobile
 ```
 
-#### Install pgAdmin4
+## 🗄️ Database Schema
 
-- **Ubuntu/Debian:**
+The platform includes a comprehensive database schema with:
 
-  ```bash
-  wget --quiet -O - https://www.pgadmin.org/static/pgp_pgadmin_asc.key | sudo apt-key add -
-  sudo sh -c 'echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list'
-  sudo apt update
-  sudo apt install pgadmin4
-  ```
+- **Users & Authentication**: User management with JWT
+- **Geographic Hierarchy**: Provinces → Districts → Constituencies → Wards
+- **Political System**: Parties → Politicians → Candidates
+- **Content System**: Reports, Polls, Comments, Badges
+- **Election Infrastructure**: Voting Sessions, Voter Registration, Surveys
+- **Campaign System**: Analytics, Comparisons, Voting
 
-- **macOS:**
+All tables include bilingual fields for complete English/Nepali support.
 
-  ```bash
-  brew install --cask pgadmin4
-  ```
+## 🔧 Environment Configuration
 
-- **Windows:** Download from [pgadmin.org](https://www.pgadmin.org/download/)
+Environment files are created automatically with default values:
 
-#### Configure pgAdmin4
-
-1. Open pgAdmin4
-2. Right-click "Servers" → "Create" → "Server"
-3. **General Tab:**
-   - Name: `Saasan Local`
-4. **Connection Tab:**
-   - Host: `localhost`
-   - Port: `5432`
-   - Database: `saasan_db`
-   - Username: `saasan_user`
-   - Password: `saasan_password`
-5. Click "Save"
-
-### 4. Environment Configuration
-
-Create environment files for each service:
-
-#### Backend Environment (`saasan-node-be/.env`)
+### Backend (`saasan-node-be/.env`)
 
 ```env
-NODE_ENV=development
-PORT=5000
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=saasan_db
 DB_USER=saasan_user
 DB_PASSWORD=saasan_password
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRES_IN=7d
-CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
-CLOUDINARY_API_KEY=your-cloudinary-api-key
-CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+PORT=5000
+NODE_ENV=development
+JWT_SECRET=your_jwt_secret_key_here
 ```
 
-#### React Dashboard Environment (`saasan-dashboard-react/.env`)
+### Dashboard (`saasan-dashboard-react/.env`)
 
 ```env
 VITE_API_URL=http://localhost:5000/api/v1
 ```
 
-### 5. Database Setup
+### Mobile (`saasan-mobile-rn/.env`)
 
-```bash
-# Navigate to backend directory
-cd saasan-node-be
-
-# Create poll tables (if not already created)
-npm run create:poll-tables
-
-# Run database seeding with sample data
-npm run seed:smart
+```env
+EXPO_PUBLIC_API_URL=http://localhost:5000/api/v1
 ```
 
-### 6. Start Development Servers
-
-#### Option 1: Start All Services (Recommended)
-
-```bash
-# From root directory
-npm run dev
-```
-
-This will start:
-
-- Backend API on `http://localhost:5000`
-- React Dashboard on `http://localhost:5173`
-- React Native Web on `http://localhost:8082`
-
-#### Option 2: Start Services Individually
-
-```bash
-# Terminal 1 - Backend
-npm run dev:backend
-
-# Terminal 2 - React Dashboard
-npm run dev:dashboard
-
-# Terminal 3 - React Native Mobile
-npm run dev:mobile
-```
-
-### 7. Access the Applications
-
-- **React Dashboard:** http://localhost:5173
-- **React Native Web:** http://localhost:8082
-- **Backend API:** http://localhost:5000/api/v1
-- **API Documentation:** http://localhost:5000/api/v1/docs
-
-## 🛠️ Development Guide
-
-### Creating a New Page
-
-#### React Dashboard
-
-1. Create page component in `saasan-dashboard-react/src/pages/`
-2. Add route in `saasan-dashboard-react/src/App.tsx`
-3. Add navigation item in `saasan-dashboard-react/src/components/layout/DashboardLayout.tsx`
-
-#### React Native Mobile
-
-1. Create page in `saasan-mobile-rn/app/` directory
-2. Add route in `saasan-mobile-rn/app/_layout.tsx` if needed
-
-### Creating a New API Endpoint
-
-1. Add route in `saasan-node-be/src/routes/`
-2. Create controller method in `saasan-node-be/src/controllers/`
-3. Add model methods in `saasan-node-be/src/models/`
-4. Update API service in frontend projects
-
-### Database Changes
-
-1. Create migration script in `saasan-node-be/scripts/`
-2. Update model definitions in `saasan-node-be/src/models/`
-3. Update TypeScript types in `saasan-node-be/src/types/`
-4. Update frontend types accordingly
-
-## 🔄 Git Workflow
-
-### Creating a New Feature Branch
-
-```bash
-# Create and switch to new branch
-git checkout -b feature/your-feature-name
-
-# Make your changes
-# ... code changes ...
-
-# Stage and commit changes
-git add .
-git commit -m "feat: add your feature description"
-
-# Push branch to remote
-git push origin feature/your-feature-name
-```
-
-### Creating a Pull Request
-
-1. Go to GitHub repository
-2. Click "Compare & pull request" for your branch
-3. Fill in PR description:
-   - **Title:** Brief description of changes
-   - **Description:** Detailed explanation of what was changed and why
-   - **Screenshots:** If UI changes were made
-4. Assign reviewers
-5. Add appropriate labels
-6. Submit PR
-
-### PR Review Process
-
-1. **Code Review:** Team members review code for:
-
-   - Code quality and best practices
-   - Security considerations
-   - Performance implications
-   - Test coverage
-
-2. **Testing:** Ensure all tests pass and manual testing is done
-
-3. **Approval:** At least one team member must approve
-
-4. **Merge:** Once approved, merge to main branch
-
-### Branch Naming Convention
-
-- `feature/description` - New features
-- `bugfix/description` - Bug fixes
-- `hotfix/description` - Critical fixes
-- `refactor/description` - Code refactoring
-- `docs/description` - Documentation updates
-
-## 🧪 Testing
-
-### Running Tests
-
-```bash
-# Backend tests
-cd saasan-node-be
-npm test
-
-# Frontend tests
-cd saasan-dashboard-react
-npm test
-
-# Mobile tests
-cd saasan-mobile-rn
-npm test
-```
-
-### Test Coverage
-
-```bash
-# Backend coverage
-cd saasan-node-be
-npm run test:coverage
-
-# Frontend coverage
-cd saasan-dashboard-react
-npm run test:coverage
-```
-
-## 📦 Building for Production
-
-### Backend
-
-```bash
-cd saasan-node-be
-npm run build
-npm start
-```
-
-### React Dashboard
-
-```bash
-cd saasan-dashboard-react
-npm run build
-# Deploy dist/ folder to your hosting service
-```
-
-### React Native Mobile
-
-```bash
-cd saasan-mobile-rn
-# For Android
-npm run android
-
-# For iOS
-npm run ios
-
-# For web
-npm run build
-```
-
-## 🚀 Deployment
-
-### Backend Deployment
-
-1. Set up PostgreSQL database on your server
-2. Configure environment variables
-3. Build and start the application
-4. Set up reverse proxy (nginx) if needed
-
-### Frontend Deployment
-
-1. Build the React dashboard
-2. Deploy to static hosting (Vercel, Netlify, etc.)
-3. Configure environment variables
-
-### Mobile App Deployment
-
-1. Build for production
-2. Upload to app stores (Google Play, Apple App Store)
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-#### Port Already in Use
-
-```bash
-# Find process using port
-lsof -i :5000  # or :5173, :8082
-
-# Kill process
-kill -9 <PID>
-```
-
-#### Database Connection Issues
-
-1. Check PostgreSQL is running
-2. Verify database credentials
-3. Check firewall settings
-
-#### Node Modules Issues
-
-```bash
-# Clear node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Getting Help
-
-1. Check existing issues in GitHub
-2. Create new issue with:
-   - Description of problem
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - System information
-
-## 📚 API Documentation
-
-### Authentication
-
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/register` - User registration
-- `GET /api/v1/auth/profile` - Get user profile
-
-### Politicians
-
-- `GET /api/v1/politicians` - List politicians
-- `GET /api/v1/politicians/:id` - Get politician details
-- `POST /api/v1/politicians` - Create politician
-- `PUT /api/v1/politicians/:id` - Update politician
-- `DELETE /api/v1/politicians/:id` - Delete politician
-
-### Polls
-
-- `GET /api/v1/polls` - List polls
-- `GET /api/v1/polls/:id` - Get poll details
-- `POST /api/v1/polls` - Create poll
-- `POST /api/v1/polls/:id/vote/:optionId` - Vote on poll
-- `GET /api/v1/polls/analytics` - Get poll analytics
-
-### Reports
-
-- `GET /api/v1/reports` - List corruption reports
-- `POST /api/v1/reports` - Create report
-- `PUT /api/v1/reports/:id/status` - Update report status
+## 🎯 Features
+
+### For Citizens (Mobile App)
+
+- **Politician Tracking**: View politician profiles and track their activities
+- **Corruption Reporting**: Report corruption cases with evidence
+- **Polls & Surveys**: Participate in community polls and surveys
+- **Election Features**:
+  - Candidate comparison
+  - Voter registration
+  - In-app voting
+  - Campaign tracking
+- **Achievement System**: Earn badges for civic engagement
+- **Bilingual Support**: Switch between English and Nepali
+
+### For Administrators (Dashboard)
+
+- **Content Management**: Manage politicians, parties, reports
+- **User Management**: Handle user accounts and verification
+- **Analytics**: View platform usage and engagement metrics
+- **Election Management**: Set up voting sessions and manage candidates
+- **Bilingual Content**: Create and edit content in both languages
+
+### For Developers (API)
+
+- **RESTful API**: Complete API for all platform features
+- **Authentication**: JWT-based authentication system
+- **File Upload**: Support for images and documents
+- **Bilingual Responses**: API responses include both languages
+- **Election APIs**: Complete election management endpoints
+
+## 🗳️ 2027 Election Ready
+
+The platform is specifically designed for Nepal's 2027 elections:
+
+- **Campaign Tracking**: "This Holiday for My Country" campaign system
+- **Voter Intent Surveys**: Track who's returning, unsure, or cannot vote
+- **Candidate Comparison**: Side-by-side candidate comparison tools
+- **In-App Voting**: Secure voting system for both federal and provincial elections
+- **Real-Time Results**: Live election results and analytics
+- **Constituency Management**: Complete constituency and ward system
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+### Setting Up for Development
 
-## 📄 License
+1. **Fork the repository**
+2. **Clone your fork**
+3. **Run setup**: `npm run setup`
+4. **Start development**: `npm run dev`
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Development Guidelines
 
-## 👥 Team
+#### Code Style
 
-- **Backend Development:** Node.js/Express API
-- **Frontend Development:** React Dashboard & React Native Mobile
-- **Database Design:** PostgreSQL with Knex.js
-- **UI/UX Design:** Tailwind CSS with custom components
+- Use TypeScript for type safety
+- Follow existing code patterns
+- Use meaningful variable and function names
+- Add comments for complex logic
+
+#### Bilingual Implementation
+
+- Always include both English and Nepali fields
+- Use the `getLocalizedText()` utility function
+- Ensure cultural context is preserved
+- Test with both languages
+
+#### Database Changes
+
+- Create migration files for schema changes
+- Update seed data to include new fields
+- Ensure foreign key relationships are maintained
+- Test with both languages
+
+#### API Development
+
+- Follow RESTful conventions
+- Include proper error handling
+- Return bilingual responses
+- Add proper TypeScript types
+
+#### Frontend Development
+
+- Use the bilingual utility functions
+- Implement proper loading states
+- Handle error scenarios gracefully
+- Ensure responsive design
+
+### Pull Request Process
+
+1. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+2. **Make your changes** following the guidelines above
+3. **Test thoroughly** with both English and Nepali
+4. **Update documentation** if needed
+5. **Submit a pull request** with a clear description
+
+### Issue Reporting
+
+When reporting issues, please include:
+
+- **Environment details** (OS, Node version, etc.)
+- **Steps to reproduce**
+- **Expected vs actual behavior**
+- **Screenshots** if applicable
+- **Console logs** for errors
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built for the people of Nepal
+- Designed for the 2027 elections
+- Supports both English and Nepali languages
+- Open source for transparency and democracy
 
 ## 📞 Support
 
 For support and questions:
 
 - Create an issue on GitHub
-- Contact the development team
-- Check the documentation wiki
+- Check the documentation
+- Review existing issues for solutions
 
 ---
 
-**Happy Coding! 🚀**
+**Made with ❤️ for Nepal's democracy and transparency** 🇳🇵

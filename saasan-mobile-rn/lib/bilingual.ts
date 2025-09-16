@@ -17,17 +17,23 @@ export interface BilingualObject {
 }
 
 /**
- * Get localized text with fallback to English
+ * Get unified bilingual text - returns both English and Nepali together
  */
 export function getLocalizedText(
   englishText: string | null | undefined,
   nepaliText: string | null | undefined,
   language: Language = "en"
 ): string {
-  if (language === "ne" && nepaliText && nepaliText.trim() !== "") {
-    return nepaliText;
+  const en = englishText || "";
+  const ne = nepaliText || "";
+
+  // If both exist and are different, show both
+  if (en && ne && en !== ne) {
+    return language === "ne" ? `${ne} (${en})` : `${en} (${ne})`;
   }
-  return englishText || "";
+
+  // Return the available text
+  return language === "ne" && ne ? ne : en;
 }
 
 /**

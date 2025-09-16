@@ -15,31 +15,51 @@ export interface BilingualObject {
 }
 
 /**
- * Get localized text with fallback to English
+ * Get unified bilingual text - returns both English and Nepali together
  */
 export function getLocalizedText(
   englishText: string | null | undefined,
   nepaliText: string | null | undefined,
   language: "en" | "ne" = "en"
 ): string {
-  if (language === "ne" && nepaliText && nepaliText.trim() !== "") {
-    return nepaliText;
+  const en = englishText || "";
+  const ne = nepaliText || "";
+
+  // If both exist and are different, show both
+  if (en && ne && en !== ne) {
+    return language === "ne" ? `${ne} (${en})` : `${en} (${ne})`;
   }
-  return englishText || "";
+
+  // Return the available text
+  return language === "ne" && ne ? ne : en;
 }
 
 /**
- * Get localized array with fallback to English
+ * Get unified bilingual array - combines English and Nepali arrays
  */
 export function getLocalizedArray(
   englishArray: string[] | null | undefined,
   nepaliArray: string[] | null | undefined,
   language: "en" | "ne" = "en"
 ): string[] {
-  if (language === "ne" && nepaliArray && nepaliArray.length > 0) {
-    return nepaliArray;
+  const en = englishArray || [];
+  const ne = nepaliArray || [];
+
+  // If both arrays exist, combine them
+  if (en.length > 0 && ne.length > 0) {
+    return en.map((item, index) => {
+      const nepaliItem = ne[index] || "";
+      if (nepaliItem && item !== nepaliItem) {
+        return language === "ne"
+          ? `${nepaliItem} (${item})`
+          : `${item} (${nepaliItem})`;
+      }
+      return language === "ne" && nepaliItem ? nepaliItem : item;
+    });
   }
-  return englishArray || [];
+
+  // Return the available array
+  return language === "ne" && ne.length > 0 ? ne : en;
 }
 
 /**
