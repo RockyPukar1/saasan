@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: saasan-postgres-prod
+    environment:
+      POSTGRES_DB: saasan_db
+      POSTGRES_USER: saasan_user
+      POSTGRES_PASSWORD: saasan_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./saasan-node-be/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - saasan-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: saasan-redis-prod
+    volumes:
+      - redis_data:/data
+    networks:
+      - saasan-network
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./saasan-node-be
+      dockerfile: Dockerfile
+    container_name: saasan-backend-prod
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=saasan_db
+      - DB_USER=saasan_user
+      - DB_PASSWORD=saasan_password
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - saasan-network
+    restart: unless-stopped
+
+  # React Dashboard
+  dashboard:
+    build:
+      context: ./saasan-dashboard-react
+      dockerfile: Dockerfile
+    container_name: saasan-dashboard-prod
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - saasan-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: saasan-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - dashboard
+    networks:
+      - saasan-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  saasan-network:
+    driver: bridge

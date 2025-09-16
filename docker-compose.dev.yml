@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: saasan-postgres-dev
+    environment:
+      POSTGRES_DB: saasan_db
+      POSTGRES_USER: saasan_user
+      POSTGRES_PASSWORD: saasan_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./saasan-node-be/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - saasan-network
+
+  # Redis (for caching and sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: saasan-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - saasan-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./saasan-node-be
+      dockerfile: Dockerfile.dev
+    container_name: saasan-backend-dev
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=saasan_db
+      - DB_USER=saasan_user
+      - DB_PASSWORD=saasan_password
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./saasan-node-be:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - saasan-network
+    command: npm run dev
+
+  # React Dashboard
+  dashboard:
+    build:
+      context: ./saasan-dashboard-react
+      dockerfile: Dockerfile.dev
+    container_name: saasan-dashboard-dev
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./saasan-dashboard-react:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - saasan-network
+    command: npm run dev -- --host
+
+  # React Native Web (for mobile web development)
+  mobile-web:
+    build:
+      context: ./saasan-mobile-rn
+      dockerfile: Dockerfile.web
+    container_name: saasan-mobile-web-dev
+    environment:
+      - EXPO_PUBLIC_API_BASE_URL=http://localhost:5000/api
+    ports:
+      - "19006:19006"
+    volumes:
+      - ./saasan-mobile-rn:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - saasan-network
+    command: npm run web
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  saasan-network:
+    driver: bridge

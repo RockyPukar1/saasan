@@ -1,6 +1,38 @@
-.env
-node_modules
-package-lock.json
-android
-ios
-dist
+# Dependencies
+node_modules/
+
+# Environment variables
+.env*
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+
+# Uploads
+uploads/
+
+# Expo
+.expo/
+
+# React Native
+web-build/

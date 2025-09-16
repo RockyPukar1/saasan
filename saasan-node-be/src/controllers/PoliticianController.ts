@@ -4,6 +4,11 @@ import { PoliticianModel } from "../models/PoliticianModel";
 import { PoliticalPromiseModel } from "../models/PoliticalPromiseModel";
 import { ValidationHelper } from "../lib/helpers/ValidationHelper";
 import { generateUUID } from "../lib/utils";
+import {
+  getLanguageFromRequest,
+  createBilingualResponse,
+  formatBilingualResponse,
+} from "../lib/bilingual";
 import db from "../config/database";
 
 export class PoliticianController {
@@ -20,6 +25,7 @@ export class PoliticianController {
         search,
       } = req.query;
 
+      const language = getLanguageFromRequest(req.headers, req.query);
       const offset = (Number(page) - 1) * Number(limit);
 
       let result;
@@ -43,12 +49,21 @@ export class PoliticianController {
         });
       }
 
+      // Format politicians with bilingual data
+      const bilingualPoliticians = result.politicians.map((politician) =>
+        formatBilingualResponse(politician, language)
+      );
+
       res.json(
-        ResponseHelper.paginated(
-          result.politicians,
-          result.total,
-          Number(page),
-          Number(limit)
+        createBilingualResponse(
+          ResponseHelper.paginated(
+            bilingualPoliticians,
+            result.total,
+            Number(page),
+            Number(limit)
+          ),
+          language,
+          "Politicians fetched successfully"
         )
       );
     } catch (error) {
@@ -60,20 +75,28 @@ export class PoliticianController {
   static async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      const language = getLanguageFromRequest(req.headers, req.query);
       const politician = await PoliticianModel.findById(id);
 
       if (!politician) {
         res.status(404).json(ResponseHelper.error("Politician not found"));
+        return;
       }
 
       // Get performance metrics
       const metrics = await PoliticianModel.getPerformanceMetrics(id);
 
+      const bilingualPolitician = formatBilingualResponse(politician, language);
+
       res.json(
-        ResponseHelper.success({
-          ...politician,
-          performanceMetrics: metrics,
-        })
+        createBilingualResponse(
+          {
+            ...bilingualPolitician,
+            performanceMetrics: metrics,
+          },
+          language,
+          "Politician fetched successfully"
+        )
       );
     } catch (error) {
       console.error("Get politician by ID error:", error);

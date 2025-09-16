@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Install Expo CLI
+RUN npm install -g @expo/cli
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 19006
+
+# Start web development server
+CMD ["npx", "expo", "start", "--web"]

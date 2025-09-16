@@ -14,34 +14,48 @@ import {
   UpdatePollData,
   PollVote,
 } from "~/types/polling";
+import {
+  getApiHeaders,
+  getApiQuery,
+  formatApiResponse,
+  type Language,
+} from "~/lib/bilingual";
 
 // Utility function to transform poll data from backend format to frontend format
-const transformPoll = (data: any): Poll => ({
-  id: data.id,
-  title: data.title,
-  description: data.description,
-  type: data.type,
-  status: data.status,
-  category: data.category,
-  options: data.options?.map((option: any) => ({
-    id: option.id,
-    text: option.option, // Backend uses 'option', frontend expects 'text'
-    votes_count: option.votes || 0, // Backend uses 'votes', frontend expects 'votes_count'
-    percentage: 0, // Will be calculated later
-  })) || [],
-  total_votes: data.total_votes || 0,
-  start_date: data.start_date,
-  end_date: data.end_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 7 days from now if null
-  created_by: data.created_by,
-  created_at: data.created_at,
-  updated_at: data.updated_at,
-  user_vote: data.user_vote,
-  is_anonymous: data.is_anonymous || false,
-  requires_verification: data.requires_verification || false,
-  district: data.district,
-  municipality: data.municipality,
-  ward: data.ward,
-});
+const transformPoll = (data: any, language: Language = "en"): Poll => {
+  // Format bilingual data
+  const formattedData = formatApiResponse(data, language);
+
+  return {
+    id: formattedData.id,
+    title: formattedData.title,
+    description: formattedData.description,
+    type: formattedData.type,
+    status: formattedData.status,
+    category: formattedData.category,
+    options:
+      formattedData.options?.map((option: any) => ({
+        id: option.id,
+        text: option.text || option.option, // Backend uses 'option', frontend expects 'text'
+        votes_count: option.votes || 0, // Backend uses 'votes', frontend expects 'votes_count'
+        percentage: 0, // Will be calculated later
+      })) || [],
+    total_votes: formattedData.total_votes || 0,
+    start_date: formattedData.start_date,
+    end_date:
+      formattedData.end_date ||
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 7 days from now if null
+    created_by: formattedData.created_by,
+    created_at: formattedData.created_at,
+    updated_at: formattedData.updated_at,
+    user_vote: formattedData.user_vote,
+    is_anonymous: formattedData.is_anonymous || false,
+    requires_verification: formattedData.requires_verification || false,
+    district: formattedData.district,
+    municipality: formattedData.municipality,
+    ward: formattedData.ward,
+  };
+};
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api/v1";
@@ -134,7 +148,8 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    language: Language = "en"
   ): Promise<ApiResponse<T>> {
     const token = await this.getAuthToken();
 
@@ -142,20 +157,30 @@ class ApiService {
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
+        ...getApiHeaders(language),
         ...options.headers,
       },
       ...options,
     };
 
     try {
-      const res = await fetch(`${this.baseURL}${endpoint}`, config);
+      // Add language query parameter
+      const url = new URL(`${this.baseURL}${endpoint}`);
+      const queryParams = getApiQuery(language);
+      Object.entries(queryParams).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+
+      const res = await fetch(url.toString(), config);
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || `API Error: ${res.status}`);
       }
 
-      return data;
+      // Format response data based on language
+      const formattedData = formatApiResponse(data, language);
+      return formattedData;
     } catch (error) {
       throw error instanceof Error
         ? error
@@ -217,10 +242,12 @@ class ApiService {
   async getPoliticians(level: string): Promise<ApiResponse<Politician[]>> {
     try {
       // Use the level-based endpoint if level is specified
-      if (level && level !== 'all') {
+      if (level && level !== "all") {
         // Convert to lowercase for the endpoint
         const lowercaseLevel = level.toLowerCase();
-        return this.request<Politician[]>(`/politicians/level/${lowercaseLevel}`);
+        return this.request<Politician[]>(
+          `/politicians/level/${lowercaseLevel}`
+        );
       } else {
         return this.request<Politician[]>("/politicians");
       }
@@ -418,7 +445,7 @@ class ApiService {
     optionId: string | string[]
   ): Promise<ApiResponse<PollVote>> {
     // Handle single choice polls
-    if (typeof optionId === 'string') {
+    if (typeof optionId === "string") {
       return this.request<PollVote>(`/polls/${pollId}/vote/${optionId}`, {
         method: "POST",
       });
@@ -426,9 +453,12 @@ class ApiService {
     // Handle multiple choice polls - vote on each option separately
     const results = [];
     for (const id of optionId) {
-      const result = await this.request<PollVote>(`/polls/${pollId}/vote/${id}`, {
-        method: "POST",
-      });
+      const result = await this.request<PollVote>(
+        `/polls/${pollId}/vote/${id}`,
+        {
+          method: "POST",
+        }
+      );
       results.push(result.data);
     }
     return {
