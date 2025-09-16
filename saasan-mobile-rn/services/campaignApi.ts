@@ -1,5 +1,5 @@
-import { apiService } from './api';
-import { formatApiResponse } from '../lib/bilingual';
+import { apiService } from "./api";
+import { formatApiResponse, type Language } from "../lib/bilingual";
 
 export interface VoterRegistration {
   id: number;
@@ -8,7 +8,7 @@ export interface VoterRegistration {
   wardId: number;
   registrationNumber: string;
   registrationDate: string;
-  verificationStatus: 'pending' | 'verified' | 'rejected';
+  verificationStatus: "pending" | "verified" | "rejected";
   verificationNotes?: string;
 }
 
@@ -16,9 +16,9 @@ export interface VoterIntentSurvey {
   id: number;
   userId: number;
   constituencyId: number;
-  returnIntent: 'returning' | 'unsure' | 'cannot';
+  returnIntent: "returning" | "unsure" | "cannot";
   returnReason?: string;
-  votingIntent?: 'will_vote' | 'might_vote' | 'will_not_vote';
+  votingIntent?: "will_vote" | "might_vote" | "will_not_vote";
   preferredCandidateId?: number;
   concerns?: string[];
   suggestions?: string;
@@ -62,7 +62,7 @@ export interface ElectionCandidate {
 
 export interface VotingSession {
   id: number;
-  electionType: 'federal' | 'provincial';
+  electionType: "federal" | "provincial";
   electionYear: number;
   constituencyId: number;
   sessionName: string;
@@ -129,7 +129,7 @@ export interface VotingResults {
 }
 
 class CampaignApiService {
-  private baseUrl = '/api/v1/campaign';
+  private baseUrl = "/api/v1/campaign";
 
   // Voter Registration
   async registerVoter(data: {
@@ -138,78 +138,84 @@ class CampaignApiService {
     wardId: number;
     registrationNumber: string;
   }): Promise<VoterRegistration> {
-    const response = await apiService.request('POST', `${this.baseUrl}/register-voter`, data);
-    return formatApiResponse(response.data);
+    const response = await apiService.registerVoter(data);
+    return formatApiResponse(response.data, "en");
   }
 
   async getVoterRegistrations(params?: {
     constituencyId?: number;
     userId?: number;
   }): Promise<VoterRegistration[]> {
-    const queryParams = new URLSearchParams();
-    if (params?.constituencyId) queryParams.append('constituencyId', params.constituencyId.toString());
-    if (params?.userId) queryParams.append('userId', params.userId.toString());
-    
-    const response = await apiService.request('GET', `${this.baseUrl}/voter-registrations?${queryParams.toString()}`);
-    return formatApiResponse(response.data);
+    const response = await apiService.getVoterRegistrations(params);
+    return formatApiResponse(response.data, "en");
   }
 
-  async verifyVoterRegistration(id: number, data: {
-    status: 'verified' | 'rejected';
-    notes?: string;
-  }): Promise<VoterRegistration> {
-    const response = await apiService.request('PUT', `${this.baseUrl}/voter-registrations/${id}/verify`, data);
-    return formatApiResponse(response.data);
+  async verifyVoterRegistration(
+    id: number,
+    data: {
+      status: "verified" | "rejected";
+      notes?: string;
+    }
+  ): Promise<VoterRegistration> {
+    const response = await apiService.verifyVoterRegistration(id, data);
+    return formatApiResponse(response.data, "en");
   }
 
   // Voter Intent Survey
   async submitVoterSurvey(data: {
     userId: number;
     constituencyId: number;
-    returnIntent: 'returning' | 'unsure' | 'cannot';
+    returnIntent: "returning" | "unsure" | "cannot";
     returnReason?: string;
-    votingIntent?: 'will_vote' | 'might_vote' | 'will_not_vote';
+    votingIntent?: "will_vote" | "might_vote" | "will_not_vote";
     preferredCandidateId?: number;
     concerns?: string[];
     suggestions?: string;
   }): Promise<VoterIntentSurvey> {
-    const response = await apiService.request('POST', `${this.baseUrl}/voter-survey`, data);
-    return formatApiResponse(response.data);
+    const response = await apiService.submitVoterSurvey(data);
+    return formatApiResponse(response.data, "en");
   }
 
   async getVoterSurveys(params?: {
     constituencyId?: number;
     userId?: number;
   }): Promise<VoterIntentSurvey[]> {
-    const queryParams = new URLSearchParams();
-    if (params?.constituencyId) queryParams.append('constituencyId', params.constituencyId.toString());
-    if (params?.userId) queryParams.append('userId', params.userId.toString());
-    
-    const response = await apiService.request('GET', `${this.baseUrl}/voter-surveys?${queryParams.toString()}`);
-    return formatApiResponse(response.data);
+    const response = await apiService.getVoterSurveys(params);
+    return formatApiResponse(response.data, "en");
   }
 
   // Election Candidates
   async getCandidatesByConstituency(
-    constituencyId: number, 
-    electionType: 'federal' | 'provincial' = 'federal'
+    constituencyId: number,
+    electionType: "federal" | "provincial" = "federal"
   ): Promise<ElectionCandidate[]> {
-    const response = await apiService.request('GET', `${this.baseUrl}/candidates/constituency/${constituencyId}?electionType=${electionType}`);
-    return formatApiResponse(response.data);
+    const response = await apiService.getCandidatesByConstituency(
+      constituencyId,
+      electionType
+    );
+    return formatApiResponse(response.data, "en");
   }
 
-  async compareCandidates(candidate1Id: number, candidate2Id: number, userId: number): Promise<{
+  async compareCandidates(
+    candidate1Id: number,
+    candidate2Id: number,
+    userId: number
+  ): Promise<{
     candidate1: ElectionCandidate;
     candidate2: ElectionCandidate;
   }> {
-    const response = await apiService.request('GET', `${this.baseUrl}/candidates/compare/${candidate1Id}/${candidate2Id}`, null, { userId });
-    return formatApiResponse(response.data);
+    const response = await apiService.compareCandidatesCampaign(
+      candidate1Id,
+      candidate2Id,
+      userId
+    );
+    return formatApiResponse(response.data, "en");
   }
 
   // Voting System
   async getActiveVotingSessions(): Promise<VotingSession[]> {
-    const response = await apiService.request('GET', `${this.baseUrl}/voting-sessions/active`);
-    return formatApiResponse(response.data);
+    const response = await apiService.getActiveVotingSessions();
+    return formatApiResponse(response.data, "en");
   }
 
   async castVote(data: {
@@ -217,25 +223,30 @@ class CampaignApiService {
     votingSessionId: number;
     candidateId: number;
   }): Promise<any> {
-    const response = await apiService.request('POST', `${this.baseUrl}/vote`, data);
-    return formatApiResponse(response.data);
+    const response = await apiService.castVote({
+      sessionId: data.votingSessionId,
+      candidateId: data.candidateId,
+      userId: data.userId,
+    });
+    return formatApiResponse(response.data, "en");
   }
 
   async getVotingResults(sessionId: number): Promise<VotingResults> {
-    const response = await apiService.request('GET', `${this.baseUrl}/voting-results/${sessionId}`);
-    return formatApiResponse(response.data);
+    const response = await apiService.getVotingResults(sessionId);
+    return formatApiResponse(response.data, "en");
   }
 
   // Campaign Analytics
-  async getCampaignAnalytics(constituencyId?: number): Promise<CampaignAnalytics> {
-    const queryParams = constituencyId ? `?constituencyId=${constituencyId}` : '';
-    const response = await apiService.request('GET', `${this.baseUrl}/analytics${queryParams}`);
-    return formatApiResponse(response.data);
+  async getCampaignAnalytics(
+    constituencyId?: number
+  ): Promise<CampaignAnalytics> {
+    const response = await apiService.getCampaignAnalytics({ constituencyId });
+    return formatApiResponse(response.data, "en");
   }
 
   async getCampaignDashboard(): Promise<CampaignDashboard> {
-    const response = await apiService.request('GET', `${this.baseUrl}/dashboard`);
-    return formatApiResponse(response.data);
+    const response = await apiService.getCampaignDashboard();
+    return formatApiResponse(response.data, "en");
   }
 }
 

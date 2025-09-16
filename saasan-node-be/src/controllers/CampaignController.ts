@@ -1,6 +1,9 @@
-import { Request, Response } from 'express';
-import { CampaignService } from '../services/campaignService';
-import { formatBilingualResponse, getLanguageFromRequest } from '../lib/bilingual';
+import { Request, Response } from "express";
+import { CampaignService } from "../services/campaignService";
+import {
+  formatBilingualResponse,
+  getLanguageFromRequest,
+} from "../lib/bilingual";
 
 const campaignService = new CampaignService();
 
@@ -9,25 +12,26 @@ export class CampaignController {
   async registerVoter(req: Request, res: Response): Promise<void> {
     try {
       const { userId, constituencyId, wardId, registrationNumber } = req.body;
-      
+
       const registration = await campaignService.registerVoter({
         userId,
         constituencyId,
         wardId,
         registrationNumber,
         registrationDate: new Date(),
-        verificationStatus: 'pending'
+        verificationStatus: "pending",
       });
 
       res.status(201).json({
         success: true,
         data: registration,
-        message: 'Voter registration submitted successfully'
+        message: "Voter registration submitted successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to register voter'
+        error:
+          error instanceof Error ? error.message : "Failed to register voter",
       });
     }
   }
@@ -35,26 +39,32 @@ export class CampaignController {
   async getVoterRegistrations(req: Request, res: Response): Promise<void> {
     try {
       const { constituencyId, userId } = req.query;
-      const language = getLanguageFromRequest(req);
-      
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
       const registrations = await campaignService.getVoterRegistrations(
         constituencyId ? parseInt(constituencyId as string) : undefined,
         userId ? parseInt(userId as string) : undefined
       );
 
-      const formattedRegistrations = registrations.map(registration => 
+      const formattedRegistrations = registrations.map((registration) =>
         formatBilingualResponse(registration, language)
       );
 
       res.json({
         success: true,
         data: formattedRegistrations,
-        message: 'Voter registrations retrieved successfully'
+        message: "Voter registrations retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve voter registrations'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve voter registrations",
       });
     }
   }
@@ -63,7 +73,7 @@ export class CampaignController {
     try {
       const { id } = req.params;
       const { status, notes } = req.body;
-      
+
       const registration = await campaignService.verifyVoterRegistration(
         parseInt(id),
         status,
@@ -73,12 +83,15 @@ export class CampaignController {
       res.json({
         success: true,
         data: registration,
-        message: 'Voter registration verification updated'
+        message: "Voter registration verification updated",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to verify voter registration'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to verify voter registration",
       });
     }
   }
@@ -94,9 +107,9 @@ export class CampaignController {
         votingIntent,
         preferredCandidateId,
         concerns,
-        suggestions
+        suggestions,
       } = req.body;
-      
+
       const survey = await campaignService.submitVoterSurvey({
         userId,
         constituencyId,
@@ -106,18 +119,21 @@ export class CampaignController {
         preferredCandidateId,
         concerns,
         suggestions,
-        surveyDate: new Date()
+        surveyDate: new Date(),
       });
 
       res.status(201).json({
         success: true,
         data: survey,
-        message: 'Voter intent survey submitted successfully'
+        message: "Voter intent survey submitted successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to submit voter survey'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to submit voter survey",
       });
     }
   }
@@ -125,55 +141,70 @@ export class CampaignController {
   async getVoterSurveys(req: Request, res: Response): Promise<void> {
     try {
       const { constituencyId, userId } = req.query;
-      const language = getLanguageFromRequest(req);
-      
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
       const surveys = await campaignService.getVoterSurveys(
         constituencyId ? parseInt(constituencyId as string) : undefined,
         userId ? parseInt(userId as string) : undefined
       );
 
-      const formattedSurveys = surveys.map(survey => 
+      const formattedSurveys = surveys.map((survey) =>
         formatBilingualResponse(survey, language)
       );
 
       res.json({
         success: true,
         data: formattedSurveys,
-        message: 'Voter surveys retrieved successfully'
+        message: "Voter surveys retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve voter surveys'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve voter surveys",
       });
     }
   }
 
   // Election Candidates Endpoints
-  async getCandidatesByConstituency(req: Request, res: Response): Promise<void> {
+  async getCandidatesByConstituency(
+    req: Request,
+    res: Response
+  ): Promise<void> {
     try {
       const { constituencyId } = req.params;
-      const { electionType = 'federal' } = req.query;
-      const language = getLanguageFromRequest(req);
-      
-      const candidates = await campaignService.getCandidatesByConstituency(
-        parseInt(constituencyId),
-        electionType as 'federal' | 'provincial'
+      const { electionType = "federal" } = req.query;
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
       );
 
-      const formattedCandidates = candidates.map(candidate => 
+      const candidates = await campaignService.getCandidatesByConstituency(
+        parseInt(constituencyId),
+        electionType as "federal" | "provincial"
+      );
+
+      const formattedCandidates = candidates.map((candidate) =>
         formatBilingualResponse(candidate, language)
       );
 
       res.json({
         success: true,
         data: formattedCandidates,
-        message: 'Candidates retrieved successfully'
+        message: "Candidates retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve candidates'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve candidates",
       });
     }
   }
@@ -182,8 +213,11 @@ export class CampaignController {
     try {
       const { candidate1Id, candidate2Id } = req.params;
       const { userId } = req.body;
-      const language = getLanguageFromRequest(req);
-      
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
       const comparison = await campaignService.compareCandidates(
         parseInt(candidate1Id),
         parseInt(candidate2Id),
@@ -192,18 +226,21 @@ export class CampaignController {
 
       const formattedComparison = {
         candidate1: formatBilingualResponse(comparison.candidate1, language),
-        candidate2: formatBilingualResponse(comparison.candidate2, language)
+        candidate2: formatBilingualResponse(comparison.candidate2, language),
       };
 
       res.json({
         success: true,
         data: formattedComparison,
-        message: 'Candidate comparison retrieved successfully'
+        message: "Candidate comparison retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to compare candidates'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to compare candidates",
       });
     }
   }
@@ -211,23 +248,29 @@ export class CampaignController {
   // Voting System Endpoints
   async getActiveVotingSessions(req: Request, res: Response): Promise<void> {
     try {
-      const language = getLanguageFromRequest(req);
-      
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
       const sessions = await campaignService.getActiveVotingSessions();
 
-      const formattedSessions = sessions.map(session => 
+      const formattedSessions = sessions.map((session) =>
         formatBilingualResponse(session, language)
       );
 
       res.json({
         success: true,
         data: formattedSessions,
-        message: 'Active voting sessions retrieved successfully'
+        message: "Active voting sessions retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve voting sessions'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve voting sessions",
       });
     }
   }
@@ -237,10 +280,10 @@ export class CampaignController {
       const { userId, votingSessionId, candidateId } = req.body;
       const verificationData = {
         ip_address: req.ip,
-        device_fingerprint: req.headers['user-agent'],
-        method: 'otp' // This should be enhanced with proper verification
+        device_fingerprint: req.headers["user-agent"],
+        method: "otp", // This should be enhanced with proper verification
       };
-      
+
       const vote = await campaignService.castVote(
         userId,
         votingSessionId,
@@ -251,12 +294,12 @@ export class CampaignController {
       res.status(201).json({
         success: true,
         data: vote,
-        message: 'Vote cast successfully'
+        message: "Vote cast successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to cast vote'
+        error: error instanceof Error ? error.message : "Failed to cast vote",
       });
     }
   }
@@ -264,26 +307,34 @@ export class CampaignController {
   async getVotingResults(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const language = getLanguageFromRequest(req);
-      
-      const results = await campaignService.getVotingResults(parseInt(sessionId));
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
+      const results = await campaignService.getVotingResults(
+        parseInt(sessionId)
+      );
 
       const formattedResults = {
         ...results,
-        candidates: results.candidates.map((candidate: any) => 
+        candidates: results.candidates.map((candidate: any) =>
           formatBilingualResponse(candidate, language)
-        )
+        ),
       };
 
       res.json({
         success: true,
         data: formattedResults,
-        message: 'Voting results retrieved successfully'
+        message: "Voting results retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve voting results'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve voting results",
       });
     }
   }
@@ -292,8 +343,11 @@ export class CampaignController {
   async getCampaignAnalytics(req: Request, res: Response): Promise<void> {
     try {
       const { constituencyId } = req.query;
-      const language = getLanguageFromRequest(req);
-      
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
       const analytics = await campaignService.getCampaignAnalytics(
         constituencyId ? parseInt(constituencyId as string) : undefined
       );
@@ -303,12 +357,15 @@ export class CampaignController {
       res.json({
         success: true,
         data: formattedAnalytics,
-        message: 'Campaign analytics retrieved successfully'
+        message: "Campaign analytics retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve campaign analytics'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve campaign analytics",
       });
     }
   }
@@ -316,42 +373,52 @@ export class CampaignController {
   // "This Holiday for My Country" Campaign Dashboard
   async getCampaignDashboard(req: Request, res: Response): Promise<void> {
     try {
-      const language = getLanguageFromRequest(req);
-      
+      const language = getLanguageFromRequest(
+        req.headers,
+        req.query as Record<string, string | string[] | undefined>
+      );
+
       // Get overall analytics
       const analytics = await campaignService.getCampaignAnalytics();
-      
+
       // Get recent registrations
       const recentRegistrations = await campaignService.getVoterRegistrations();
-      
+
       // Get recent surveys
       const recentSurveys = await campaignService.getVoterSurveys();
 
       const dashboard = {
         analytics: formatBilingualResponse(analytics, language),
-        recentRegistrations: recentRegistrations.slice(0, 10).map(reg => 
-          formatBilingualResponse(reg, language)
-        ),
-        recentSurveys: recentSurveys.slice(0, 10).map(survey => 
-          formatBilingualResponse(survey, language)
-        ),
+        recentRegistrations: recentRegistrations
+          .slice(0, 10)
+          .map((reg) => formatBilingualResponse(reg, language)),
+        recentSurveys: recentSurveys
+          .slice(0, 10)
+          .map((survey) => formatBilingualResponse(survey, language)),
         campaignMessage: {
-          title: language === 'ne' ? 'यो छुट्टी मेरो देशका लागि' : 'This Holiday for My Country',
-          description: language === 'ne' 
-            ? 'नेपाल फर्केर मतदान गर्नुहोस्। आफ्नो मत दिनुहोस्। आफ्नो देश बनाउनुहोस्।'
-            : 'Return to Nepal to vote. Make your voice heard. Build your country.'
-        }
+          title:
+            language === "ne"
+              ? "यो छुट्टी मेरो देशका लागि"
+              : "This Holiday for My Country",
+          description:
+            language === "ne"
+              ? "नेपाल फर्केर मतदान गर्नुहोस्। आफ्नो मत दिनुहोस्। आफ्नो देश बनाउनुहोस्।"
+              : "Return to Nepal to vote. Make your voice heard. Build your country.",
+        },
       };
 
       res.json({
         success: true,
         data: dashboard,
-        message: 'Campaign dashboard retrieved successfully'
+        message: "Campaign dashboard retrieved successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to retrieve campaign dashboard'
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve campaign dashboard",
       });
     }
   }

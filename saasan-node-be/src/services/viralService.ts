@@ -808,10 +808,10 @@ export class ViralService {
         .limit(5);
 
       return {
-        totalShares: parseInt(totalShares.count) || 0,
-        totalVotes: parseInt(totalVotes.count) || 0,
-        totalComments: parseInt(totalComments.count) || 0,
-        activeUsers: parseInt(activeUsers.count) || 0,
+        totalShares: parseInt(String(totalShares?.count || 0)),
+        totalVotes: parseInt(String(totalVotes?.count || 0)),
+        totalComments: parseInt(String(totalComments?.count || 0)),
+        activeUsers: parseInt(String(activeUsers?.count || 0)),
         viralScore: 75, // TODO: Calculate based on engagement metrics
         topSharedContent: topSharedContent.map((item: any) => ({
           id: item.item_id,
@@ -823,6 +823,77 @@ export class ViralService {
       };
     } catch (error) {
       console.error("Error getting viral metrics:", error);
+      throw error;
+    }
+  }
+
+  // Share functionality
+  static async generateShareContent(
+    shareData: any,
+    userId: string
+  ): Promise<any> {
+    try {
+      // Generate viral text based on content type
+      let viralText = "";
+      let shareText = "";
+
+      switch (shareData.type) {
+        case "corruption_report":
+          viralText = `🚨 Corruption Alert: ${shareData.title}\n\n${
+            shareData.description
+          }\n\nLocation: ${shareData.location}\nAmount: ₹${
+            shareData.amountInvolved?.toLocaleString() || "Unknown"
+          }\n\n#CorruptionFight #Transparency #Saasan`;
+          shareText = `Check out this corruption report on Saasan: ${shareData.title}`;
+          break;
+        case "poll_result":
+          viralText = `📊 Poll Results: ${shareData.title}\n\n${
+            shareData.description
+          }\n\nTotal Votes: ${
+            shareData.total_votes
+          }\n\nVote breakdown:\n${shareData.options
+            ?.map(
+              (opt: any) =>
+                `• ${opt.option}: ${opt.votes} votes (${opt.percentage}%)`
+            )
+            .join("\n")}\n\n#PollResults #Democracy #Saasan`;
+          shareText = `See the poll results: ${shareData.title}`;
+          break;
+        case "politician_rating":
+          viralText = `⭐ Politician Rating: ${shareData.name}\n\nPosition: ${shareData.position}\nConstituency: ${shareData.constituency}\nRating: ${shareData.rating}/5 stars\n\n#PoliticianRating #Transparency #Saasan`;
+          shareText = `Check out this politician rating: ${shareData.name}`;
+          break;
+        default:
+          viralText = `Check this out on Saasan: ${shareData.title}`;
+          shareText = `Check this out on Saasan: ${shareData.title}`;
+      }
+
+      return {
+        viralText,
+        shareText,
+      };
+    } catch (error) {
+      console.error("Error generating share content:", error);
+      throw error;
+    }
+  }
+
+  static async trackShare(
+    itemId: string,
+    itemType: string,
+    platform: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      await db("viral_shares").insert({
+        item_id: itemId,
+        item_type: itemType,
+        platform: platform,
+        user_id: userId,
+        shared_at: new Date(),
+      });
+    } catch (error) {
+      console.error("Error tracking share:", error);
       throw error;
     }
   }

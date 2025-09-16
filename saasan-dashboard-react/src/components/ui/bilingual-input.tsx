@@ -3,7 +3,6 @@ import { Input } from "./input";
 import { Textarea } from "./textarea";
 import { Label } from "./label";
 import { Button } from "./button";
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Languages, Globe, FileText } from "lucide-react";
 
@@ -295,7 +294,7 @@ export function BilingualArrayInput({
 
 interface BilingualFormProps {
   children: React.ReactNode;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: unknown) => void;
   className?: string;
 }
 

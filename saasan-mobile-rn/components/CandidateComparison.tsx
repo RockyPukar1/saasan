@@ -9,9 +9,9 @@ import {
   Alert,
   Modal,
 } from "react-native";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import {
   Users,
   Vote,
@@ -34,11 +34,11 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react-native";
-import { useBilingual } from "@/hooks/useBilingual";
+import { useBilingual } from "~/hooks/useBilingual";
 import {
   campaignApi,
   type ElectionCandidate as Candidate,
-} from "@/services/campaignApi";
+} from "~/services/campaignApi";
 
 interface CandidateComparisonProps {
   constituencyId: number;
@@ -315,20 +315,22 @@ export default function CandidateComparison({
                 <View className="flex-1">
                   <Text className="text-base text-gray-900">
                     {getText(
-                      selectedCandidates.candidate1?.educationNepali ||
-                        selectedCandidates.candidate1?.education ||
+                      selectedCandidates.candidate1
+                        ?.educationBackgroundNepali ||
+                        selectedCandidates.candidate1?.educationBackground ||
                         "",
-                      selectedCandidates.candidate1?.education || ""
+                      selectedCandidates.candidate1?.educationBackground || ""
                     )}
                   </Text>
                 </View>
                 <View className="flex-1">
                   <Text className="text-base text-gray-900">
                     {getText(
-                      selectedCandidates.candidate2?.educationNepali ||
-                        selectedCandidates.candidate2?.education ||
+                      selectedCandidates.candidate2
+                        ?.educationBackgroundNepali ||
+                        selectedCandidates.candidate2?.educationBackground ||
                         "",
-                      selectedCandidates.candidate2?.education || ""
+                      selectedCandidates.candidate2?.educationBackground || ""
                     )}
                   </Text>
                 </View>
@@ -344,7 +346,7 @@ export default function CandidateComparison({
 
             <View className="space-y-4">
               {selectedCandidates.candidate1?.keyPromises?.map(
-                (promise, index) => (
+                (promise: any, index: number) => (
                   <View key={index} className="flex-row gap-4">
                     <View className="flex-1">
                       <View className="flex-row items-start gap-2">

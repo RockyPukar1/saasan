@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 package-lock.json
+android
+ios
 
 # Environment variables
 .env*

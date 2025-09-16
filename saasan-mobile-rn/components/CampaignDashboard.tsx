@@ -9,9 +9,9 @@ import {
   Alert,
   RefreshControl,
 } from "react-native";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import {
   Users,
   Vote,
@@ -25,11 +25,11 @@ import {
   UserX,
   HelpCircle,
 } from "lucide-react-native";
-import { useBilingual } from "@/hooks/useBilingual";
+import { useBilingual } from "~/hooks/useBilingual";
 import {
   campaignApi,
   type CampaignDashboard as CampaignDashboardData,
-} from "@/services/campaignApi";
+} from "~/services/campaignApi";
 
 export default function CampaignDashboard() {
   const { language, getText, getLanguageName } = useBilingual();
@@ -334,7 +334,7 @@ export default function CampaignDashboard() {
           <View className="space-y-3">
             {dashboardData?.recentRegistrations
               .slice(0, 5)
-              .map((registration) => (
+              .map((registration: any) => (
                 <View
                   key={registration.id}
                   className="flex-row items-center gap-3 p-2 bg-gray-50 rounded-lg"
@@ -379,7 +379,7 @@ export default function CampaignDashboard() {
                 </View>
               )) || []}
 
-            {dashboardData?.recentSurveys.slice(0, 3).map((survey) => (
+            {dashboardData?.recentSurveys.slice(0, 3).map((survey: any) => (
               <View
                 key={survey.id}
                 className="flex-row items-center gap-3 p-2 bg-gray-50 rounded-lg"
