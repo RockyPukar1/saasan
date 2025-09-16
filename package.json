@@ -41,5 +41,10 @@
   "bugs": {
     "url": "https://github.com/your-username/saasan/issues"
   },
-  "homepage": "https://github.com/your-username/saasan#readme"
+  "homepage": "https://github.com/your-username/saasan#readme",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "knex": "^3.1.0",
+    "pg": "^8.16.3"
+  }
 }

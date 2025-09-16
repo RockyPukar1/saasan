@@ -51,9 +51,21 @@ async function createAllTables() {
     
     const backendPath = path.join(__dirname, '../saasan-node-be');
     
-    // Import the database configuration
-    const dbPath = path.join(backendPath, 'src/config/database.js');
-    const db = require(dbPath);
+    // Load environment variables
+    require('dotenv').config({ path: path.join(backendPath, '.env') });
+    
+    // Create database connection using knex directly
+    const knex = require('knex');
+    const db = knex({
+      client: 'postgresql',
+      connection: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'saasan',
+      },
+    });
     
     // Create all necessary tables
     const createTablesSQL = `
@@ -542,6 +554,9 @@ ON CONFLICT (email) DO NOTHING;
     // Execute SQL directly using the database connection
     await db.raw(createTablesSQL);
     
+    // Close database connection
+    await db.destroy();
+    
     log(`${colors.green}✅ All database tables created successfully!${colors.reset}`);
   } catch (error) {
     log(`${colors.red}❌ Error creating tables: ${error.message}${colors.reset}`);
@@ -555,12 +570,199 @@ async function seedAllData() {
     
     const backendPath = path.join(__dirname, '../saasan-node-be');
     
-    // Import and run the seed script directly
-    const seedScriptPath = path.join(backendPath, 'scripts/seed-complete-data.js');
-    const seedScript = require(seedScriptPath);
+    // Load environment variables
+    require('dotenv').config({ path: path.join(backendPath, '.env') });
     
-    // Run the seed function
-    await seedScript.seedCompleteData();
+    // Create database connection
+    const knex = require('knex');
+    const db = knex({
+      client: 'postgresql',
+      connection: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'saasan',
+      },
+    });
+
+    // Comprehensive Nepali Data
+    const completeData = {
+      provinces: [
+        { id: 1, name: "Koshi Province", name_nepali: "कोशी प्रदेश", capital: "Biratnagar", capital_nepali: "विराटनगर" },
+        { id: 2, name: "Madhesh Province", name_nepali: "मधेश प्रदेश", capital: "Janakpur", capital_nepali: "जनकपुर" },
+        { id: 3, name: "Bagmati Province", name_nepali: "बागमती प्रदेश", capital: "Kathmandu", capital_nepali: "काठमाडौं" },
+        { id: 4, name: "Gandaki Province", name_nepali: "गण्डकी प्रदेश", capital: "Pokhara", capital_nepali: "पोखरा" },
+        { id: 5, name: "Lumbini Province", name_nepali: "लुम्बिनी प्रदेश", capital: "Deukhuri", capital_nepali: "देउखुरी" },
+        { id: 6, name: "Karnali Province", name_nepali: "कर्णाली प्रदेश", capital: "Birendranagar", capital_nepali: "वीरेन्द्रनगर" },
+        { id: 7, name: "Sudurpashchim Province", name_nepali: "सुदूरपश्चिम प्रदेश", capital: "Dhangadhi", capital_nepali: "धनगढी" }
+      ],
+
+      districts: [
+        { id: 1, name: "Kathmandu", name_nepali: "काठमाडौं", province_id: 3 },
+        { id: 2, name: "Lalitpur", name_nepali: "ललितपुर", province_id: 3 },
+        { id: 3, name: "Bhaktapur", name_nepali: "भक्तपुर", province_id: 3 },
+        { id: 4, name: "Chitwan", name_nepali: "चितवन", province_id: 3 },
+        { id: 5, name: "Makwanpur", name_nepali: "मकवानपुर", province_id: 3 },
+        { id: 6, name: "Kaski", name_nepali: "कास्की", province_id: 4 },
+        { id: 7, name: "Syangja", name_nepali: "स्याङ्जा", province_id: 4 },
+        { id: 8, name: "Banke", name_nepali: "बाँके", province_id: 5 },
+        { id: 9, name: "Bardiya", name_nepali: "बर्दिया", province_id: 5 },
+        { id: 10, name: "Morang", name_nepali: "मोरङ", province_id: 1 },
+        { id: 11, name: "Sunsari", name_nepali: "सुनसरी", province_id: 1 }
+      ],
+
+      constituencies: [
+        { id: 1, name: "Kathmandu-1", name_nepali: "काठमाडौं-१", district_id: 1, province_id: 3, total_voters: 45000 },
+        { id: 2, name: "Kathmandu-2", name_nepali: "काठमाडौं-२", district_id: 1, province_id: 3, total_voters: 42000 },
+        { id: 3, name: "Kathmandu-3", name_nepali: "काठमाडौं-३", district_id: 1, province_id: 3, total_voters: 48000 },
+        { id: 4, name: "Lalitpur-1", name_nepali: "ललितपुर-१", district_id: 2, province_id: 3, total_voters: 38000 },
+        { id: 5, name: "Bhaktapur", name_nepali: "भक्तपुर", district_id: 3, province_id: 3, total_voters: 35000 },
+        { id: 6, name: "Pokhara-1", name_nepali: "पोखरा-१", district_id: 6, province_id: 4, total_voters: 40000 },
+        { id: 7, name: "Chitwan", name_nepali: "चितवन", district_id: 4, province_id: 3, total_voters: 42000 },
+        { id: 8, name: "Biratnagar", name_nepali: "विराटनगर", district_id: 10, province_id: 1, total_voters: 43000 },
+        { id: 9, name: "Nepalgunj", name_nepali: "नेपालगञ्ज", district_id: 8, province_id: 5, total_voters: 38000 }
+      ],
+
+      politicalParties: [
+        {
+          id: 1,
+          name: "Nepal Communist Party (Unified Marxist-Leninist)",
+          name_nepali: "नेपाल कम्युनिस्ट पार्टी (एकीकृत मार्क्सवादी-लेनिनवादी)",
+          abbreviation: "CPN-UML",
+          abbreviation_nepali: "नेकपा-एमाले",
+          ideology: "Communism",
+          ideology_nepali: "कम्युनिज्म",
+          founded_year: 2021,
+          logo_url: "https://example.com/cpn-uml-logo.png",
+          color: "#FF0000"
+        },
+        {
+          id: 2,
+          name: "Nepali Congress",
+          name_nepali: "नेपाली कांग्रेस",
+          abbreviation: "NC",
+          abbreviation_nepali: "नेकां",
+          ideology: "Social Democracy",
+          ideology_nepali: "सामाजिक लोकतन्त्र",
+          founded_year: 1950,
+          logo_url: "https://example.com/nc-logo.png",
+          color: "#0066CC"
+        },
+        {
+          id: 3,
+          name: "Maoist Center",
+          name_nepali: "माओवादी केन्द्र",
+          abbreviation: "MC",
+          abbreviation_nepali: "माके",
+          ideology: "Maoism",
+          ideology_nepali: "माओवाद",
+          founded_year: 1994,
+          logo_url: "https://example.com/mc-logo.png",
+          color: "#FF6600"
+        },
+        {
+          id: 4,
+          name: "Rastriya Prajatantra Party",
+          name_nepali: "राष्ट्रिय प्रजातन्त्र पार्टी",
+          abbreviation: "RPP",
+          abbreviation_nepali: "राप्रपा",
+          ideology: "Monarchism",
+          ideology_nepali: "राजतन्त्रवाद",
+          founded_year: 1990,
+          logo_url: "https://example.com/rpp-logo.png",
+          color: "#FFD700"
+        },
+        {
+          id: 5,
+          name: "Janata Samajwadi Party",
+          name_nepali: "जनता समाजवादी पार्टी",
+          abbreviation: "JSP",
+          abbreviation_nepali: "जसपा",
+          ideology: "Socialism",
+          ideology_nepali: "समाजवाद",
+          founded_year: 2020,
+          logo_url: "https://example.com/jsp-logo.png",
+          color: "#00AA00"
+        }
+      ],
+
+      politicians: [
+        {
+          id: 1,
+          full_name: "Dr. Rajesh Sharma",
+          full_name_nepali: "डा. राजेश शर्मा",
+          age: 45,
+          education: "PhD in Computer Science, Harvard University",
+          education_nepali: "कम्प्युटर साइन्समा पिएचडी, हार्वर्ड विश्वविद्यालय",
+          profession: "Technology Entrepreneur",
+          profession_nepali: "प्रविधि उद्यमी",
+          constituency_id: 1,
+          party_id: 1,
+          position: "Member of Parliament",
+          position_nepali: "संसद सदस्य",
+          experience_years: 8,
+          photo_url: "https://example.com/rajesh-sharma.jpg",
+          is_active: true,
+          rating: 4.2,
+          total_reports: 12,
+          verified_reports: 8
+        },
+        {
+          id: 2,
+          full_name: "Sita Maharjan",
+          full_name_nepali: "सीता महर्जन",
+          age: 38,
+          education: "Masters in Environmental Science, Tribhuvan University",
+          education_nepali: "वातावरण विज्ञानमा स्नातकोत्तर, त्रिभुवन विश्वविद्यालय",
+          profession: "Environmental Activist",
+          profession_nepali: "वातावरण कार्यकर्ता",
+          constituency_id: 1,
+          party_id: 2,
+          position: "Member of Parliament",
+          position_nepali: "संसद सदस्य",
+          experience_years: 5,
+          photo_url: "https://example.com/sita-maharjan.jpg",
+          is_active: true,
+          rating: 4.5,
+          total_reports: 8,
+          verified_reports: 6
+        }
+      ]
+    };
+
+    // Seed Provinces
+    log('📍 Seeding provinces...');
+    for (const province of completeData.provinces) {
+      await db('provinces').insert(province).onConflict('id').ignore();
+    }
+
+    // Seed Districts
+    log('🏘️ Seeding districts...');
+    for (const district of completeData.districts) {
+      await db('districts').insert(district).onConflict('id').ignore();
+    }
+
+    // Seed Constituencies
+    log('🗳️ Seeding constituencies...');
+    for (const constituency of completeData.constituencies) {
+      await db('constituencies').insert(constituency).onConflict('id').ignore();
+    }
+
+    // Seed Political Parties
+    log('🏛️ Seeding political parties...');
+    for (const party of completeData.politicalParties) {
+      await db('political_parties').insert(party).onConflict('id').ignore();
+    }
+
+    // Seed Politicians
+    log('👥 Seeding politicians...');
+    for (const politician of completeData.politicians) {
+      await db('politicians').insert(politician).onConflict('id').ignore();
+    }
+
+    // Close database connection
+    await db.destroy();
     
     log(`${colors.green}✅ All data seeded successfully!${colors.reset}`);
   } catch (error) {
