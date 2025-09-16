@@ -15,6 +15,7 @@ DB_PASSWORD=postgres
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_REFRESH_TOKEN=jwt_refresh_token
 JWT_EXPIRES_IN=7d
 
 # Server Configuration
