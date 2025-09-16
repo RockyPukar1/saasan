@@ -99,6 +99,7 @@ DROP TABLE IF EXISTS districts CASCADE;
 DROP TABLE IF EXISTS provinces CASCADE;
 DROP TABLE IF EXISTS wards CASCADE;
 DROP TABLE IF EXISTS municipalities CASCADE;
+DROP TABLE IF EXISTS major_cases CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Create Users table
@@ -614,6 +615,28 @@ CREATE TABLE historical_events (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create Major Cases table
+CREATE TABLE major_cases (
+    id SERIAL PRIMARY KEY,
+    reference_number VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'unsolved' CHECK (status IN ('unsolved', 'ongoing', 'solved')),
+    priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('urgent', 'high', 'medium', 'low')),
+    amount_involved DECIMAL(15,2) DEFAULT 0,
+    upvotes_count INTEGER DEFAULT 0,
+    downvotes_count INTEGER DEFAULT 0,
+    views_count INTEGER DEFAULT 0,
+    shares_count INTEGER DEFAULT 0,
+    district VARCHAR(100),
+    municipality VARCHAR(100),
+    date_occurred DATE,
+    people_affected_count INTEGER DEFAULT 0,
+    is_public BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_reports_constituency_id ON reports(constituency_id);
 CREATE INDEX idx_reports_status ON reports(status);
@@ -632,6 +655,10 @@ CREATE INDEX idx_voter_intent_surveys_constituency_id ON voter_intent_surveys(co
 CREATE INDEX idx_user_votes_user_id ON user_votes(user_id);
 CREATE INDEX idx_user_votes_voting_session_id ON user_votes(voting_session_id);
 CREATE INDEX idx_voting_centers_constituency_id ON voting_centers(constituency_id);
+CREATE INDEX idx_major_cases_status ON major_cases(status);
+CREATE INDEX idx_major_cases_priority ON major_cases(priority);
+CREATE INDEX idx_major_cases_reference ON major_cases(reference_number);
+CREATE INDEX idx_major_cases_created_at ON major_cases(created_at);
 
 -- Note: Admin users are created via JavaScript seeding in seedUsers() function
 `;
