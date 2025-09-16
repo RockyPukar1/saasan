@@ -10,6 +10,7 @@ import {
   formatBilingualResponse,
 } from "../lib/bilingual";
 import db from "../config/database";
+import { ParsedQs } from "qs";
 
 export class PoliticianController {
   static async getAll(req: Request, res: Response): Promise<void> {
@@ -25,7 +26,7 @@ export class PoliticianController {
         search,
       } = req.query;
 
-      const language = getLanguageFromRequest(req.headers, req.query);
+      const language = getLanguageFromRequest(req.headers, req.query as Record<string, string | string[] | undefined>);
       const offset = (Number(page) - 1) * Number(limit);
 
       let result;
@@ -75,7 +76,7 @@ export class PoliticianController {
   static async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const language = getLanguageFromRequest(req.headers, req.query);
+      const language = getLanguageFromRequest(req.headers, req.query as Record<string, string | string[] | undefined>);
       const politician = await PoliticianModel.findById(id);
 
       if (!politician) {

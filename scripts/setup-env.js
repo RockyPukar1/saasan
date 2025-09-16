@@ -9,9 +9,9 @@ console.log('🚀 Setting up environment files...\n');
 const backendEnvTemplate = `# Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=saasan_db
-DB_USER=saasan_user
-DB_PASSWORD=saasan_password
+DB_NAME=saasan
+DB_USER=postgres
+DB_PASSWORD=postgres
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production

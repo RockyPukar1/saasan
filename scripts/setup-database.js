@@ -771,29 +771,82 @@ async function seedAllData() {
   }
 }
 
+async function createDatabaseIfNotExists() {
+  try {
+    const backendPath = path.join(__dirname, '../saasan-node-be');
+    const envPath = path.join(backendPath, '.env');
+    require('dotenv').config({ path: envPath, override: true });
+    
+    const dbConfig = {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+    };
+    
+    const dbName = process.env.DB_NAME || 'saasan';
+    
+    log(`${colors.yellow}🔍 Checking if database '${dbName}' exists...${colors.reset}`);
+    
+    // Connect to postgres database to create our database
+    const knex = require('knex');
+    const adminDb = knex({
+      client: 'postgresql',
+      connection: {
+        ...dbConfig,
+        database: 'postgres', // Connect to default postgres db
+      },
+    });
+    
+    // Check if database exists
+    const result = await adminDb.raw("SELECT 1 FROM pg_database WHERE datname = ?", [dbName]);
+    
+    if (result.rows.length === 0) {
+      log(`${colors.yellow}📝 Creating database '${dbName}'...${colors.reset}`);
+      await adminDb.raw(`CREATE DATABASE "${dbName}"`);
+      log(`${colors.green}✅ Database '${dbName}' created successfully!${colors.reset}`);
+    } else {
+      log(`${colors.green}✅ Database '${dbName}' already exists!${colors.reset}`);
+    }
+    
+    await adminDb.destroy();
+  } catch (error) {
+    log(`${colors.red}❌ Error creating database: ${error.message}${colors.reset}`);
+    throw error;
+  }
+}
+
 async function setupCompleteDatabase() {
   try {
     log(`${colors.bright}${colors.magenta}🚀 Starting Complete Database Setup${colors.reset}`);
-    log(`${colors.cyan}This will create all tables and seed all data${colors.reset}`);
+    log(`${colors.cyan}This will create database, tables, and seed all data${colors.reset}`);
     
     // Check if we're in the right directory
     if (!fs.existsSync(path.join(__dirname, '../saasan-node-be'))) {
       throw new Error('Please run this script from the project root directory');
     }
 
-    // Step 1: Create all tables
+    // Step 1: Create database if it doesn't exist
+    await createDatabaseIfNotExists();
+    
+    // Step 2: Create all tables
     await createAllTables();
     
-    // Step 2: Seed all data
+    // Step 3: Seed all data
     await seedAllData();
     
     log(`${colors.bright}${colors.green}🎉 Complete Database Setup Finished Successfully!${colors.reset}`);
+    log(`${colors.cyan}✅ Database created${colors.reset}`);
     log(`${colors.cyan}✅ All tables created${colors.reset}`);
     log(`${colors.cyan}✅ All data seeded${colors.reset}`);
     log(`${colors.cyan}✅ Ready for development!${colors.reset}`);
     
   } catch (error) {
     log(`${colors.red}💥 Database setup failed: ${error.message}${colors.reset}`);
+    if (error.message.includes('password authentication failed')) {
+      log(`${colors.yellow}💡 Make sure PostgreSQL is running and the credentials in saasan-node-be/.env are correct${colors.reset}`);
+      log(`${colors.yellow}💡 Default credentials: user=postgres, password=postgres${colors.reset}`);
+    }
     process.exit(1);
   }
 }
