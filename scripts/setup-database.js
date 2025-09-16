@@ -51,6 +51,10 @@ async function createAllTables() {
     
     const backendPath = path.join(__dirname, '../saasan-node-be');
     
+    // Import the database configuration
+    const dbPath = path.join(backendPath, 'src/config/database.js');
+    const db = require(dbPath);
+    
     // Create all necessary tables
     const createTablesSQL = `
 -- Drop existing tables if they exist (in correct order due to foreign keys)
@@ -535,34 +539,9 @@ VALUES ('dev', 'dev@saasan.com', '$2b$10$example_hash_here', 'Development User',
 ON CONFLICT (email) DO NOTHING;
 `;
 
-    // Write SQL to temporary file
-    const sqlFile = path.join(backendPath, 'temp_create_tables.sql');
-    fs.writeFileSync(sqlFile, createTablesSQL);
-
-    try {
-      // Execute SQL using psql or node script
-      await runCommand('node', ['-e', `
-        const db = require('./src/config/database');
-        const fs = require('fs');
-        const sql = fs.readFileSync('temp_create_tables.sql', 'utf8');
-        
-        db.raw(sql)
-          .then(() => {
-            console.log('✅ All tables created successfully');
-            process.exit(0);
-          })
-          .catch((error) => {
-            console.error('❌ Error creating tables:', error);
-            process.exit(1);
-          });
-      `], backendPath);
-    } finally {
-      // Clean up temporary file
-      if (fs.existsSync(sqlFile)) {
-        fs.unlinkSync(sqlFile);
-      }
-    }
-
+    // Execute SQL directly using the database connection
+    await db.raw(createTablesSQL);
+    
     log(`${colors.green}✅ All database tables created successfully!${colors.reset}`);
   } catch (error) {
     log(`${colors.red}❌ Error creating tables: ${error.message}${colors.reset}`);
@@ -575,7 +554,13 @@ async function seedAllData() {
     log(`${colors.bright}${colors.cyan}🌱 Seeding all data...${colors.reset}`);
     
     const backendPath = path.join(__dirname, '../saasan-node-be');
-    await runCommand('npm', ['run', 'seed'], backendPath);
+    
+    // Import and run the seed script directly
+    const seedScriptPath = path.join(backendPath, 'scripts/seed-complete-data.js');
+    const seedScript = require(seedScriptPath);
+    
+    // Run the seed function
+    await seedScript.seedCompleteData();
     
     log(`${colors.green}✅ All data seeded successfully!${colors.reset}`);
   } catch (error) {
