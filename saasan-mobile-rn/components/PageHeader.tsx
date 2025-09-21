@@ -1,20 +1,54 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity, Alert, Platform } from "react-native";
+import { LogOut } from "lucide-react-native";
 import { LanguageToggle } from "./LanguageToggle";
 import { useLanguage } from "~/contexts/LanguageContext";
+import { useAuthContext } from "~/contexts/AuthContext";
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
   showLanguageToggle?: boolean;
+  showLogout?: boolean;
 }
 
 export function PageHeader({
   title,
   subtitle,
   showLanguageToggle = true,
+  showLogout = false,
 }: PageHeaderProps) {
   const { t } = useLanguage();
+  const { logout } = useAuthContext();
+
+  const handleLogout = () => {
+    console.log("Logout button clicked, platform:", Platform.OS);
+    if (Platform.OS === "web") {
+      // For web, use confirm instead of Alert
+      const confirmed = window.confirm(
+        `${t("auth.logout") || "Logout"}\n\n${
+          t("auth.logoutConfirm") || "Are you sure you want to logout?"
+        }`
+      );
+      console.log("Web confirm result:", confirmed);
+      if (confirmed) {
+        logout();
+      }
+    } else {
+      Alert.alert(
+        t("auth.logout") || "Logout",
+        t("auth.logoutConfirm") || "Are you sure you want to logout?",
+        [
+          { text: t("common.cancel") || "Cancel", style: "cancel" },
+          {
+            text: t("auth.logout") || "Logout",
+            style: "destructive",
+            onPress: logout,
+          },
+        ]
+      );
+    }
+  };
 
   return (
     <View className="bg-white px-4 py-3 border-b border-gray-200">
@@ -25,7 +59,33 @@ export function PageHeader({
             <Text className="text-sm text-gray-600 mt-1">{subtitle}</Text>
           )}
         </View>
-        {showLanguageToggle && <LanguageToggle />}
+        <View className="flex-row items-center space-x-2">
+          {showLanguageToggle && <LanguageToggle />}
+          {showLogout && (
+            <TouchableOpacity
+              onPress={() => {
+                console.log("Logout button pressed!");
+                handleLogout();
+              }}
+              className="px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 active:bg-red-200 border border-red-200 flex-row items-center"
+              style={{
+                cursor: Platform.OS === "web" ? "pointer" : "default",
+                minWidth: Platform.OS === "web" ? 44 : "auto",
+                minHeight: Platform.OS === "web" ? 44 : "auto",
+              }}
+              accessible={true}
+              accessibilityLabel="Logout"
+              accessibilityRole="button"
+            >
+              <LogOut className="text-red-600" size={16} />
+              {Platform.OS === "web" && (
+                <Text className="text-red-600 text-sm font-medium ml-1">
+                  Logout
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );

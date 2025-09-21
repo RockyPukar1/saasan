@@ -260,6 +260,7 @@ const PollScreen = () => {
         subtitle={`${polls.filter((p) => p.status === "active").length} ${t(
           "polling.activePolls"
         )}`}
+        showLogout={true}
       />
 
       {/* Search and Filter */}

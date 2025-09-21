@@ -188,6 +188,7 @@ const DashboardScreen = () => {
       <PageHeader
         title={t("dashboard.welcome")}
         subtitle={t("dashboard.overview")}
+        showLogout={true}
       />
 
       <ScrollView

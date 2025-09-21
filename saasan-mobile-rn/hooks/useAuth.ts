@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AppState } from "react-native";
 import { apiService } from "~/services/api";
 
 interface AuthState {
@@ -84,27 +85,51 @@ export const useAuth = () => {
 
   const logout = useCallback(async () => {
     try {
+      console.log("Logout initiated...");
       setState((prev) => ({ ...prev, loading: true }));
       await apiService.logout();
+      console.log("Token removed, setting state...");
       setState({
         isAuthenticated: false,
         user: null,
         loading: false,
         error: null,
       });
+      console.log("Logout completed successfully");
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
+      console.log("Logout error, clearing state anyway:", error);
+      // Even if logout fails, clear local state
+      setState({
+        isAuthenticated: false,
+        user: null,
         loading: false,
-        error: error instanceof Error ? error.message : "Logout failed",
-      }));
+        error: null,
+      });
     }
   }, []);
 
   const checkAuthStatus = useCallback(async () => {
     try {
+      console.log("Checking auth status...");
       setState((prev) => ({ ...prev, loading: true }));
+
+      // Check if token exists first
+      const token = await AsyncStorage.getItem("auth_token");
+      console.log("Token exists:", !!token);
+      if (!token) {
+        console.log("No token found, setting as unauthenticated");
+        setState({
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+          error: null,
+        });
+        return;
+      }
+
+      console.log("Token found, checking with API...");
       const response = await apiService.getProfile();
+      console.log("API response successful, user authenticated");
       setState({
         isAuthenticated: true,
         user: response.data,
@@ -112,6 +137,9 @@ export const useAuth = () => {
         error: null,
       });
     } catch (error) {
+      console.log("API call failed, removing token:", error);
+      // If API call fails, remove token and set as unauthenticated
+      await AsyncStorage.removeItem("auth_token");
       setState({
         isAuthenticated: false,
         user: null,
@@ -123,6 +151,22 @@ export const useAuth = () => {
 
   useEffect(() => {
     checkAuthStatus();
+
+    // Listen for app state changes to check auth when app comes to foreground
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === "active") {
+        checkAuthStatus();
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    return () => {
+      subscription?.remove();
+    };
   }, [checkAuthStatus]);
 
   return {

@@ -62,6 +62,7 @@ const PoliticiansScreen = () => {
       <PageHeader
         title={t("politicians.title")}
         subtitle={t("politicians.searchLeaders")}
+        showLogout={true}
       />
 
       {/* Search Bar */}

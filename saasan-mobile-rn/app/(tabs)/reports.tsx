@@ -454,6 +454,7 @@ const ReportsScreen = () => {
       <PageHeader
         title={t("reports.title")}
         subtitle={t("reports.createReport")}
+        showLogout={true}
       />
 
       {/* Tab Selector */}
