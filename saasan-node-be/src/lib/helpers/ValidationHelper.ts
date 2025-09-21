@@ -43,20 +43,41 @@ export class ValidationHelper {
   static pollCreation = Joi.object({
     title: Joi.string().min(5).max(200).required(),
     description: Joi.string().min(10).max(1000).required(),
+    type: Joi.string()
+      .valid("single_choice", "multiple_choice", "rating")
+      .required(),
     options: Joi.array()
       .items(Joi.string().min(1).max(100))
       .min(2)
       .max(10)
       .required(),
+    status: Joi.string().valid("active", "inactive").required(),
+    category: Joi.string().min(1).max(100).required(),
+    end_date: Joi.string().required(),
+    is_anonymous: Joi.boolean().required(),
+    requires_verification: Joi.boolean().required(),
   });
 
   static pollUpdate = Joi.object({
     title: Joi.string().min(5).max(200).optional(),
     description: Joi.string().min(10).max(1000).optional(),
+    type: Joi.string()
+      .valid("single_choice", "multiple_choice", "rating")
+      .optional(),
+    options: Joi.array()
+      .items(Joi.string().min(1).max(100))
+      .min(2)
+      .max(10)
+      .optional(),
+    status: Joi.string().valid("active", "inactive").optional(),
+    category: Joi.string().min(1).max(100).optional(),
+    end_date: Joi.string().optional(),
+    is_anonymous: Joi.boolean().optional(),
+    requires_verification: Joi.boolean().optional(),
   });
 
   static pollOption = Joi.object({
-    option: Joi.string().min(1).max(100).required(),
+    text: Joi.string().min(1).max(100).required(),
   });
 
   // Historical Event validations
@@ -65,7 +86,9 @@ export class ValidationHelper {
     description: Joi.string().min(10).max(2000).required(),
     date: Joi.string().required(),
     year: Joi.number().min(1900).max(new Date().getFullYear()).required(),
-    category: Joi.string().valid("corruption", "political", "social", "economic").required(),
+    category: Joi.string()
+      .valid("corruption", "political", "social", "economic")
+      .required(),
     significance: Joi.string().valid("high", "medium", "low").required(),
   });
 
@@ -74,7 +97,9 @@ export class ValidationHelper {
     description: Joi.string().min(10).max(2000).optional(),
     date: Joi.string().optional(),
     year: Joi.number().min(1900).max(new Date().getFullYear()).optional(),
-    category: Joi.string().valid("corruption", "political", "social", "economic").optional(),
+    category: Joi.string()
+      .valid("corruption", "political", "social", "economic")
+      .optional(),
     significance: Joi.string().valid("high", "medium", "low").optional(),
   });
 
@@ -144,7 +169,14 @@ export class ValidationHelper {
   static municipality = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     districtId: Joi.string().required(),
-    type: Joi.string().valid("metropolitan", "sub_metropolitan", "municipality", "rural_municipality").required(),
+    type: Joi.string()
+      .valid(
+        "metropolitan",
+        "sub_metropolitan",
+        "municipality",
+        "rural_municipality"
+      )
+      .required(),
   });
 
   static ward = Joi.object({

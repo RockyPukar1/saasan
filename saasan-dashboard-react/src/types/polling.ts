@@ -66,23 +66,25 @@ export interface PollFilters {
 
 export interface CreatePollData {
   title: string;
+  title_nepali?: string;
   description: string;
+  description_nepali?: string;
   type: PollType;
-  options: { text: string }[];
+  type_nepali?: string;
+  options: string[];
+  options_nepali?: string[];
   category: string;
+  category_nepali?: string;
   end_date: string;
   is_anonymous: boolean;
   requires_verification: boolean;
-  district?: string;
-  municipality?: string;
-  ward?: string;
-  politician_id?: string;
-  party_id?: string;
 }
 
 export interface UpdatePollData {
   title?: string;
+  title_nepali?: string;
   description?: string;
+  description_nepali?: string;
   status?: PollStatus;
   end_date?: string;
   is_anonymous?: boolean;

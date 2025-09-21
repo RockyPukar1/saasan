@@ -16,18 +16,40 @@ export class PollModel {
     return poll;
   }
 
-  static async findById(id: string): Promise<Poll | null> {
+  static async findById(id: string, userId?: string): Promise<Poll | null> {
     const poll = await db("polls").where({ id }).first();
     if (!poll) return null;
 
     // Get poll options
     const options = await db("poll_options")
       .where({ poll_id: id })
+      .select(
+        "id",
+        "poll_id",
+        "text",
+        "text_nepali",
+        "votes_count",
+        "percentage",
+        "created_at",
+        "updated_at"
+      )
       .orderBy("created_at", "asc");
+
+    // Get user vote if userId provided
+    let user_vote = undefined;
+    if (userId) {
+      const userVote = await db("poll_votes")
+        .where({ poll_id: id, user_id: userId })
+        .first();
+      if (userVote) {
+        user_vote = userVote.option_id;
+      }
+    }
 
     return {
       ...poll,
       options,
+      user_vote,
     };
   }
 
@@ -36,6 +58,7 @@ export class PollModel {
       limit?: number;
       offset?: number;
       search?: string;
+      userId?: string;
     } = {}
   ): Promise<{ polls: Poll[]; total: number }> {
     // Build base query for filtering
@@ -58,13 +81,35 @@ export class PollModel {
 
     const polls = await mainQuery;
 
-    // Get options for each poll
+    // Get options and user votes for each poll
     const pollsWithOptions = await Promise.all(
       polls.map(async (poll) => {
         const options = await db("poll_options")
           .where({ poll_id: poll.id })
+          .select(
+            "id",
+            "poll_id",
+            "text",
+            "text_nepali",
+            "votes_count",
+            "percentage",
+            "created_at",
+            "updated_at"
+          )
           .orderBy("created_at", "asc");
-        return { ...poll, options };
+
+        // Get user vote if userId provided
+        let user_vote = undefined;
+        if (filters.userId) {
+          const userVote = await db("poll_votes")
+            .where({ poll_id: poll.id, user_id: filters.userId })
+            .first();
+          if (userVote) {
+            user_vote = userVote.option_id;
+          }
+        }
+
+        return { ...poll, options, user_vote };
       })
     );
 
@@ -101,8 +146,9 @@ export class PollModel {
       .insert({
         id,
         poll_id: pollId,
-        option: optionText,
-        votes: 0,
+        text: optionText,
+        votes_count: 0,
+        percentage: 0,
         created_at: new Date(),
         updated_at: new Date(),
       })
@@ -150,15 +196,32 @@ export class PollModel {
       .count("* as count")
       .groupBy("option_id");
 
-    // Reset all options to 0 votes
-    await db("poll_options").where({ poll_id: pollId }).update({ votes: 0 });
+    // Calculate total votes for this poll
+    const totalVotesResult = await db("poll_votes")
+      .where({ poll_id: pollId })
+      .count("* as total")
+      .first();
+    const totalVotes = parseInt(totalVotesResult?.total as string) || 0;
 
-    // Update vote counts
+    // Reset all options to 0 votes
+    await db("poll_options")
+      .where({ poll_id: pollId })
+      .update({ votes_count: 0, percentage: 0 });
+
+    // Update vote counts and percentages
     for (const voteCount of voteCounts) {
-      await db("poll_options")
-        .where({ id: voteCount.option_id })
-        .update({ votes: parseInt(voteCount.count as string) });
+      const votes = parseInt(voteCount.count as string);
+      const percentage =
+        totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+
+      await db("poll_options").where({ id: voteCount.option_id }).update({
+        votes_count: votes,
+        percentage: percentage,
+      });
     }
+
+    // Update total votes in polls table
+    await db("polls").where({ id: pollId }).update({ total_votes: totalVotes });
   }
 
   static async getPollStats(pollId: string): Promise<any> {
@@ -169,8 +232,8 @@ export class PollModel {
 
     const optionStats = await db("poll_options")
       .where({ poll_id: pollId })
-      .select("id", "option", "votes")
-      .orderBy("votes", "desc");
+      .select("id", "text", "votes_count")
+      .orderBy("votes_count", "desc");
 
     return {
       totalVotes: parseInt(totalVotes?.count as string) || 0,
@@ -178,19 +241,45 @@ export class PollModel {
     };
   }
 
-  static async searchByTitle(searchTerm: string, limit = 10): Promise<Poll[]> {
+  static async searchByTitle(
+    searchTerm: string,
+    limit = 10,
+    userId?: string
+  ): Promise<Poll[]> {
     const polls = await db("polls")
       .where("title", "ilike", `%${searchTerm}%`)
       .limit(limit)
       .orderBy("created_at", "desc");
 
-    // Get options for each poll
+    // Get options and user votes for each poll
     const pollsWithOptions = await Promise.all(
       polls.map(async (poll) => {
         const options = await db("poll_options")
           .where({ poll_id: poll.id })
+          .select(
+            "id",
+            "poll_id",
+            "text",
+            "text_nepali",
+            "votes_count",
+            "percentage",
+            "created_at",
+            "updated_at"
+          )
           .orderBy("created_at", "asc");
-        return { ...poll, options };
+
+        // Get user vote if userId provided
+        let user_vote = undefined;
+        if (userId) {
+          const userVote = await db("poll_votes")
+            .where({ poll_id: poll.id, user_id: userId })
+            .first();
+          if (userVote) {
+            user_vote = userVote.option_id;
+          }
+        }
+
+        return { ...poll, options, user_vote };
       })
     );
 

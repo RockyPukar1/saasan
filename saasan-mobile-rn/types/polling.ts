@@ -14,7 +14,7 @@ export interface PollOption {
   id: string;
   text: string;
   votes_count: number;
-  percentage?: number;
+  percentage: number;
 }
 
 export interface Poll {

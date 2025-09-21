@@ -97,26 +97,41 @@ export interface CorruptionReport {
 export interface Poll {
   id: string;
   title: string;
+  title_nepali?: string;
   description: string;
+  description_nepali?: string;
+  type: string;
+  type_nepali?: string;
+  status: string;
+  category: string;
+  category_nepali?: string;
+  start_date: string;
+  end_date?: string;
+  created_by: string;
+  total_votes: number;
+  is_anonymous: boolean;
+  requires_verification: boolean;
   options: PollOption[];
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PollOption {
   id: string;
-  pollId: string;
-  option: string;
-  votes: number;
-  createdAt: Date;
-  updatedAt: Date;
+  poll_id: string;
+  text: string;
+  text_nepali?: string;
+  votes_count: number;
+  percentage: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PollVote {
   id: string;
-  pollId: string;
-  userId: string;
-  optionId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  poll_id: string;
+  option_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }

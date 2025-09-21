@@ -29,10 +29,15 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<CreatePollData>({
     title: "",
+    title_nepali: "",
     description: "",
+    description_nepali: "",
     type: PollType.SINGLE_CHOICE,
-    options: [{ text: "" }, { text: "" }],
+    type_nepali: "",
+    options: ["Option 1", "Option 2"],
+    options_nepali: ["विकल्प १", "विकल्प २"],
     category: "",
+    category_nepali: "",
     end_date: "",
     is_anonymous: false,
     requires_verification: false,
@@ -40,7 +45,10 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: keyof CreatePollData, value: any) => {
+  const handleInputChange = (
+    field: keyof CreatePollData,
+    value: string | boolean
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -55,28 +63,49 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
     }
   };
 
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...formData.options];
-    newOptions[index] = { text: value };
-    setFormData((prev) => ({
-      ...prev,
-      options: newOptions,
-    }));
+  const handleOptionChange = (
+    index: number,
+    value: string,
+    isNepali = false
+  ) => {
+    if (isNepali) {
+      const newOptionsNepali = [...(formData.options_nepali || [])];
+      newOptionsNepali[index] = value;
+      setFormData((prev) => ({
+        ...prev,
+        options_nepali: newOptionsNepali,
+      }));
+    } else {
+      const newOptions = [...formData.options];
+      newOptions[index] = value;
+      setFormData((prev) => ({
+        ...prev,
+        options: newOptions,
+      }));
+    }
   };
 
   const addOption = () => {
     setFormData((prev) => ({
       ...prev,
-      options: [...prev.options, { text: "" }],
+      options: [...prev.options, "Option " + (prev.options.length + 1)],
+      options_nepali: [
+        ...(prev.options_nepali || []),
+        "विकल्प " + (prev.options.length + 1),
+      ],
     }));
   };
 
   const removeOption = (index: number) => {
     if (formData.options.length > 2) {
       const newOptions = formData.options.filter((_, i) => i !== index);
+      const newOptionsNepali = (formData.options_nepali || []).filter(
+        (_, i) => i !== index
+      );
       setFormData((prev) => ({
         ...prev,
         options: newOptions,
+        options_nepali: newOptionsNepali,
       }));
     }
   };
@@ -106,9 +135,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
       }
     }
 
-    const validOptions = formData.options.filter((option) =>
-      option.text.trim()
-    );
+    const validOptions = formData.options.filter((option) => option.trim());
     if (validOptions.length < 2) {
       newErrors.options = "At least 2 options are required";
     }
@@ -121,9 +148,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
     e.preventDefault();
 
     if (validateForm()) {
-      const validOptions = formData.options.filter((option) =>
-        option.text.trim()
-      );
+      const validOptions = formData.options.filter((option) => option.trim());
       onSubmit({
         ...formData,
         options: validOptions,
@@ -132,10 +157,15 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
       // Reset form
       setFormData({
         title: "",
+        title_nepali: "",
         description: "",
+        description_nepali: "",
         type: PollType.SINGLE_CHOICE,
-        options: [{ text: "" }, { text: "" }],
+        type_nepali: "",
+        options: ["Option 1", "Option 2"],
+        options_nepali: ["विकल्प १", "विकल्प २"],
         category: "",
+        category_nepali: "",
         end_date: "",
         is_anonymous: false,
         requires_verification: false,
@@ -165,83 +195,144 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
-          <div>
-            <Label htmlFor="title">Poll Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="Enter poll title"
-              className={errors.title ? "border-red-500" : ""}
-            />
-            {errors.title && (
-              <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="title">Poll Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                placeholder="Enter poll title"
+                className={errors.title ? "border-red-500" : ""}
+              />
+              {errors.title && (
+                <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="title_nepali">Poll Title (Nepali)</Label>
+              <Input
+                id="title_nepali"
+                value={formData.title_nepali}
+                onChange={(e) =>
+                  handleInputChange("title_nepali", e.target.value)
+                }
+                placeholder="शीर्षक नेपालीमा लेख्नुहोस्"
+              />
+            </div>
           </div>
 
           {/* Description */}
-          <div>
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              placeholder="Enter poll description"
-              rows={3}
-              className={errors.description ? "border-red-500" : ""}
-            />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
+                placeholder="Enter poll description"
+                rows={3}
+                className={errors.description ? "border-red-500" : ""}
+              />
+              {errors.description && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.description}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="description_nepali">Description (Nepali)</Label>
+              <Textarea
+                id="description_nepali"
+                value={formData.description_nepali}
+                onChange={(e) =>
+                  handleInputChange("description_nepali", e.target.value)
+                }
+                placeholder="विवरण नेपालीमा लेख्नुहोस्"
+                rows={3}
+              />
+            </div>
           </div>
 
           {/* Type and Category */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="type">Poll Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) =>
-                  handleInputChange("type", value as PollType)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={PollType.SINGLE_CHOICE}>
-                    Single Choice
-                  </SelectItem>
-                  <SelectItem value={PollType.MULTIPLE_CHOICE}>
-                    Multiple Choice
-                  </SelectItem>
-                  <SelectItem value={PollType.RATING}>Rating</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="type">Poll Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) =>
+                    handleInputChange("type", value as PollType)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={PollType.SINGLE_CHOICE}>
+                      Single Choice
+                    </SelectItem>
+                    <SelectItem value={PollType.MULTIPLE_CHOICE}>
+                      Multiple Choice
+                    </SelectItem>
+                    <SelectItem value={PollType.RATING}>Rating</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="type_nepali">Poll Type (Nepali)</Label>
+                <Input
+                  id="type_nepali"
+                  value={formData.type_nepali}
+                  onChange={(e) =>
+                    handleInputChange("type_nepali", e.target.value)
+                  }
+                  placeholder="प्रकार नेपालीमा लेख्नुहोस्"
+                />
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => handleInputChange("category", value)}
-              >
-                <SelectTrigger
-                  className={errors.category ? "border-red-500" : ""}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="category">Category *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) =>
+                    handleInputChange("category", value)
+                  }
                 >
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.category && (
-                <p className="text-red-500 text-sm mt-1">{errors.category}</p>
-              )}
+                  <SelectTrigger
+                    className={errors.category ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.category && (
+                  <p className="text-red-500 text-sm mt-1">{errors.category}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="category_nepali">Category (Nepali)</Label>
+                <Input
+                  id="category_nepali"
+                  value={formData.category_nepali}
+                  onChange={(e) =>
+                    handleInputChange("category_nepali", e.target.value)
+                  }
+                  placeholder="श्रेणी नेपालीमा लेख्नुहोस्"
+                />
+              </div>
             </div>
           </div>
 
@@ -263,25 +354,39 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
           {/* Options */}
           <div>
             <Label>Poll Options *</Label>
-            <div className="space-y-2 mt-2">
+            <div className="space-y-3 mt-2">
               {formData.options.map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={option.text}
-                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                    className="flex-1"
-                  />
+                <div key={index} className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <Input
+                      value={option}
+                      onChange={(e) =>
+                        handleOptionChange(index, e.target.value, false)
+                      }
+                      placeholder={`Option ${index + 1}`}
+                      className="flex-1"
+                    />
+                    <Input
+                      value={formData.options_nepali?.[index] || ""}
+                      onChange={(e) =>
+                        handleOptionChange(index, e.target.value, true)
+                      }
+                      placeholder={`विकल्प ${index + 1}`}
+                      className="flex-1"
+                    />
+                  </div>
                   {formData.options.length > 2 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeOption(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeOption(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -311,7 +416,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                 id="is_anonymous"
                 checked={formData.is_anonymous}
                 onChange={(e) =>
-                  handleInputChange("is_anonymous", e.target.checked)
+                  handleInputChange("is_anonymous", e.target.checked as boolean)
                 }
                 className="rounded border-gray-300"
               />
@@ -326,7 +431,10 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                 id="requires_verification"
                 checked={formData.requires_verification}
                 onChange={(e) =>
-                  handleInputChange("requires_verification", e.target.checked)
+                  handleInputChange(
+                    "requires_verification",
+                    e.target.checked as boolean
+                  )
                 }
                 className="rounded border-gray-300"
               />

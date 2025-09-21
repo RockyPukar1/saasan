@@ -21,8 +21,8 @@ interface TrendingPoll {
   trending_score: number;
   options: Array<{
     id: string;
-    option: string;
-    votes: number;
+    text: string;
+    votes_count: number;
     percentage: number;
   }>;
   created_at: string;
@@ -54,13 +54,23 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
       options: [
         {
           id: "1a",
-          option: "Yes, completely trust",
-          votes: 3240,
+          text: "Yes, completely trust",
+          votes_count: 3240,
           percentage: 21,
         },
-        { id: "1b", option: "Somewhat trust", votes: 4620, percentage: 30 },
-        { id: "1c", option: "Don't trust much", votes: 4620, percentage: 30 },
-        { id: "1d", option: "No trust at all", votes: 2940, percentage: 19 },
+        { id: "1b", text: "Somewhat trust", votes_count: 4620, percentage: 30 },
+        {
+          id: "1c",
+          text: "Don't trust much",
+          votes_count: 4620,
+          percentage: 30,
+        },
+        {
+          id: "1d",
+          text: "No trust at all",
+          votes_count: 2940,
+          percentage: 19,
+        },
       ],
       created_at: "2024-01-15T10:00:00Z",
       viral_potential: "explosive",
@@ -78,15 +88,15 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
       options: [
         {
           id: "2a",
-          option: "Yes, mandatory retirement at 65",
-          votes: 7740,
+          text: "Yes, mandatory retirement at 65",
+          votes_count: 7740,
           percentage: 60,
         },
-        { id: "2b", option: "Yes, but at 70", votes: 2580, percentage: 20 },
+        { id: "2b", text: "Yes, but at 70", votes_count: 2580, percentage: 20 },
         {
           id: "2c",
-          option: "No age limit needed",
-          votes: 2570,
+          text: "No age limit needed",
+          votes_count: 2570,
           percentage: 20,
         },
       ],
@@ -106,14 +116,14 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
       options: [
         {
           id: "3a",
-          option: "Government Administration",
-          votes: 2680,
+          text: "Government Administration",
+          votes_count: 2680,
           percentage: 30,
         },
-        { id: "3b", option: "Police", votes: 1780, percentage: 20 },
-        { id: "3c", option: "Judiciary", votes: 1780, percentage: 20 },
-        { id: "3d", option: "Education", votes: 1340, percentage: 15 },
-        { id: "3e", option: "Health", votes: 1350, percentage: 15 },
+        { id: "3b", text: "Police", votes_count: 1780, percentage: 20 },
+        { id: "3c", text: "Judiciary", votes_count: 1780, percentage: 20 },
+        { id: "3d", text: "Education", votes_count: 1340, percentage: 15 },
+        { id: "3e", text: "Health", votes_count: 1350, percentage: 15 },
       ],
       created_at: "2024-01-13T09:15:00Z",
       viral_potential: "high",
@@ -129,10 +139,20 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
       total_votes: 6720,
       trending_score: 65,
       options: [
-        { id: "4a", option: "Strongly support", votes: 2020, percentage: 30 },
-        { id: "4b", option: "Somewhat support", votes: 2680, percentage: 40 },
-        { id: "4c", option: "Neutral", votes: 1340, percentage: 20 },
-        { id: "4d", option: "Don't support", votes: 680, percentage: 10 },
+        {
+          id: "4a",
+          text: "Strongly support",
+          votes_count: 2020,
+          percentage: 30,
+        },
+        {
+          id: "4b",
+          text: "Somewhat support",
+          votes_count: 2680,
+          percentage: 40,
+        },
+        { id: "4c", text: "Neutral", votes_count: 1340, percentage: 20 },
+        { id: "4d", text: "Don't support", votes_count: 680, percentage: 10 },
       ],
       created_at: "2024-01-12T14:20:00Z",
       viral_potential: "medium",
@@ -173,13 +193,13 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
 
   const getTrendingMessage = (poll: TrendingPoll) => {
     const topOption = poll.options.reduce(
-      (max, opt) => (opt.votes > max.votes ? opt : max),
+      (max, opt) => (opt.votes_count > max.votes_count ? opt : max),
       poll.options[0]
     );
     const percentage = topOption.percentage;
 
     return `⚡ ${percentage}% of ${poll.total_votes.toLocaleString()} citizens say "${
-      topOption.option
+      topOption.text
     }" — Join the conversation!`;
   };
 
@@ -287,11 +307,11 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
                       >
                         <View className="flex-row items-center justify-between">
                           <Text className="flex-1 text-gray-800 font-medium">
-                            {option.option}
+                            {option.text}
                           </Text>
                           <View className="items-end">
                             <Text className="font-bold text-gray-800">
-                              {option.votes.toLocaleString()}
+                              {option.votes_count.toLocaleString()}
                             </Text>
                             <Text className="text-sm text-gray-500">
                               {option.percentage}%

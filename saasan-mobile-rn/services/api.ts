@@ -37,8 +37,8 @@ const transformPoll = (data: any): Poll => {
       formattedData.options?.map((option: any) => ({
         id: option.id,
         text: option.text || option.option, // Backend uses 'option', frontend expects 'text'
-        votes_count: option.votes || 0, // Backend uses 'votes', frontend expects 'votes_count'
-        percentage: 0, // Will be calculated later
+        votes_count: option.votes_count || option.votes || 0, // Handle both field names
+        percentage: parseFloat(option.percentage) || 0, // Convert string percentage to number
       })) || [],
     total_votes: formattedData.total_votes || 0,
     start_date: formattedData.start_date,

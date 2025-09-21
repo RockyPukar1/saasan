@@ -70,6 +70,11 @@ async function createAllTables() {
     // Create all necessary tables
     const createTablesSQL = `
 -- Drop existing tables if they exist (in correct order due to foreign keys)
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 DROP TABLE IF EXISTS user_votes CASCADE;
 DROP TABLE IF EXISTS voting_sessions CASCADE;
 DROP TABLE IF EXISTS voting_centers CASCADE;
@@ -101,6 +106,11 @@ DROP TABLE IF EXISTS wards CASCADE;
 DROP TABLE IF EXISTS municipalities CASCADE;
 DROP TABLE IF EXISTS major_cases CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS levels CASCADE;
+DROP TABLE IF EXISTS positions CASCADE;
+DROP TABLE IF EXISTS corruption_reports CASCADE;
+DROP TABLE IF EXISTS service_status CASCADE;
+DROP TABLE IF EXISTS historical_events CASCADE;
 
 -- Create Users table
 CREATE TABLE users (
@@ -243,38 +253,46 @@ CREATE TABLE reports (
 
 -- Create Polls table
 CREATE TABLE polls (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     title_nepali VARCHAR(255),
-    description TEXT,
+    description TEXT NOT NULL,
     description_nepali TEXT,
-    category VARCHAR(50),
+    type VARCHAR(50) NOT NULL,
+    type_nepali VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'active',
+    category VARCHAR(50) NOT NULL,
     category_nepali VARCHAR(50),
-    constituency_id INTEGER REFERENCES constituencies(id),
+    start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    end_date TIMESTAMP,
     created_by INTEGER REFERENCES users(id),
     total_votes INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT true,
+    is_anonymous BOOLEAN DEFAULT false,
+    requires_verification BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create Poll Options table
 CREATE TABLE poll_options (
-    id SERIAL PRIMARY KEY,
-    poll_id INTEGER REFERENCES polls(id) ON DELETE CASCADE,
-    option_text VARCHAR(255) NOT NULL,
-    option_text_nepali VARCHAR(255),
-    vote_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+    text VARCHAR(255) NOT NULL,
+    text_nepali VARCHAR(255),
+    votes_count INTEGER DEFAULT 0,
+    percentage DECIMAL(5,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create Poll Votes table
 CREATE TABLE poll_votes (
-    id SERIAL PRIMARY KEY,
-    poll_id INTEGER REFERENCES polls(id),
-    option_id INTEGER REFERENCES poll_options(id),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+    option_id UUID REFERENCES poll_options(id) ON DELETE CASCADE,
     user_id INTEGER REFERENCES users(id),
-    voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(poll_id, user_id)
 );
 
@@ -641,8 +659,7 @@ CREATE TABLE major_cases (
 CREATE INDEX idx_reports_constituency_id ON reports(constituency_id);
 CREATE INDEX idx_reports_status ON reports(status);
 CREATE INDEX idx_reports_created_at ON reports(created_at);
-CREATE INDEX idx_polls_constituency_id ON polls(constituency_id);
-CREATE INDEX idx_polls_is_active ON polls(is_active);
+CREATE INDEX idx_polls_status ON polls(status);
 CREATE INDEX idx_poll_options_poll_id ON poll_options(poll_id);
 CREATE INDEX idx_politicians_constituency_id ON politicians(constituency_id);
 CREATE INDEX idx_politicians_party_id ON politicians(party_id);
@@ -664,7 +681,14 @@ CREATE INDEX idx_major_cases_created_at ON major_cases(created_at);
 `;
 
     // Execute SQL directly using the database connection
-    await db.raw(createTablesSQL);
+    try {
+      await db.raw(createTablesSQL);
+      log(`${colors.green}✅ All tables created successfully!${colors.reset}`);
+    } catch (error) {
+      log(`${colors.red}❌ SQL Error: ${error.message}${colors.reset}`);
+      log(`${colors.red}Error details: ${JSON.stringify(error, null, 2)}${colors.reset}`);
+      throw error;
+    }
     
     // Close database connection
     await db.destroy();
@@ -840,6 +864,33 @@ async function seedAllData() {
           total_reports: 8,
           verified_reports: 6
         }
+      ],
+
+      samplePolls: [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          title: 'Should Nepal implement electronic voting system?',
+          title_nepali: 'नेपालमा इलेक्ट्रोनिक मतदान प्रणाली लागू गर्नुपर्छ?',
+          description: 'A poll to gauge public opinion on implementing electronic voting in Nepal',
+          description_nepali: 'नेपालमा इलेक्ट्रोनिक मतदान लागू गर्ने बारे जनमत संकलन',
+          type: 'single_choice',
+          type_nepali: 'एकल छनोट',
+          status: 'active',
+          category: 'Election Reform',
+          category_nepali: 'चुनाव सुधार',
+          start_date: new Date(),
+          end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          created_by: null,
+          total_votes: 0,
+          is_anonymous: false,
+          requires_verification: true
+        }
+      ],
+
+      sampleOptions: [
+        { id: '550e8400-e29b-41d4-a716-446655440011', poll_id: '550e8400-e29b-41d4-a716-446655440001', text: 'Yes, implement immediately', text_nepali: 'हो, तुरुन्त लागू गर्नुहोस्', votes_count: 0, percentage: 0 },
+        { id: '550e8400-e29b-41d4-a716-446655440012', poll_id: '550e8400-e29b-41d4-a716-446655440001', text: 'Yes, but after proper testing', text_nepali: 'हो, तर उचित परीक्षण पछि', votes_count: 0, percentage: 0 },
+        { id: '550e8400-e29b-41d4-a716-446655440013', poll_id: '550e8400-e29b-41d4-a716-446655440001', text: 'No, keep traditional system', text_nepali: 'होइन, परम्परागत प्रणाली राख्नुहोस्', votes_count: 0, percentage: 0 }
       ]
     };
 
@@ -871,6 +922,18 @@ async function seedAllData() {
     log('👥 Seeding politicians...');
     for (const politician of completeData.politicians) {
       await db('politicians').insert(politician).onConflict('id').ignore();
+    }
+
+    // Seed Polls
+    log('📊 Seeding polls...');
+    for (const poll of completeData.samplePolls) {
+      await db('polls').insert(poll).onConflict('id').ignore();
+    }
+
+    // Seed Poll Options
+    log('📝 Seeding poll options...');
+    for (const option of completeData.sampleOptions) {
+      await db('poll_options').insert(option).onConflict('id').ignore();
     }
 
     // Close database connection

@@ -8,6 +8,7 @@ export class PollController {
   static async getAll(req: Request, res: Response): Promise<void> {
     try {
       const { page = 1, limit = 20, search } = req.query;
+      const userId = req.user?.userId;
 
       const offset = (Number(page) - 1) * Number(limit);
 
@@ -16,7 +17,8 @@ export class PollController {
       if (search) {
         const polls = await PollModel.searchByTitle(
           search as string,
-          Number(limit)
+          Number(limit),
+          userId
         );
         result = { polls, total: polls.length };
       } else {
@@ -24,6 +26,7 @@ export class PollController {
           limit: Number(limit),
           offset,
           search: search as string,
+          userId: userId,
         });
       }
 
@@ -44,7 +47,8 @@ export class PollController {
   static async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const poll = await PollModel.findById(id);
+      const userId = req.user?.userId;
+      const poll = await PollModel.findById(id, userId);
 
       if (!poll) {
         res.status(404).json(ResponseHelper.error("Poll not found"));
@@ -80,6 +84,15 @@ export class PollController {
       const poll = await PollModel.create({
         title: value.title,
         description: value.description,
+        type: value.type,
+        status: "active",
+        category: value.category,
+        start_date: new Date().toISOString(),
+        end_date: value.end_date,
+        is_anonymous: value.is_anonymous,
+        requires_verification: value.requires_verification,
+        created_by: req.user?.userId || "1",
+        total_votes: 0,
       });
 
       // Add poll options
@@ -176,7 +189,7 @@ export class PollController {
         return;
       }
 
-      const option = await PollModel.addOption(id, value.option);
+      const option = await PollModel.addOption(id, value.text);
 
       res
         .status(201)
@@ -216,7 +229,8 @@ export class PollController {
 
       if (success) {
         // Get updated poll with new vote counts
-        const updatedPoll = await PollModel.findById(id);
+        const userId = req.user?.userId;
+        const updatedPoll = await PollModel.findById(id, userId);
         const stats = await PollModel.getPollStats(id);
 
         res.json(

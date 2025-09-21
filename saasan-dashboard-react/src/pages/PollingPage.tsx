@@ -21,7 +21,7 @@ import {
   TabsTrigger,
 } from "../components/ui/tabs";
 import { usePolling } from "../hooks/usePolling";
-import type { Poll, CreatePollData } from "../types/polling";
+import type { Poll, CreatePollData, UpdatePollData } from "../types/polling";
 import { PollStatus } from "../types/polling";
 import {
   BarChart3,
@@ -40,6 +40,7 @@ import { PoliticianComparisonChart } from "../components/polling/PoliticianCompa
 import { PartyComparisonChart } from "../components/polling/PartyComparisonChart";
 import { CreatePollModal } from "../components/polling/CreatePollModal";
 import { PollDetailsModal } from "../components/polling/PollDetailsModal";
+import { EditPollModal } from "../components/polling/EditPollModal";
 
 const PollingPage: React.FC = () => {
   const {
@@ -52,6 +53,7 @@ const PollingPage: React.FC = () => {
     loadAnalytics,
     loadCategories,
     createPoll,
+    updatePoll,
     deletePoll,
     voteOnPoll,
   } = usePolling();
@@ -62,6 +64,7 @@ const PollingPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadPolls();
@@ -113,6 +116,28 @@ const PollingPage: React.FC = () => {
   const handleViewDetails = (poll: Poll) => {
     setSelectedPoll(poll);
     setShowDetailsModal(true);
+  };
+
+  const handleEditPoll = (poll: Poll) => {
+    setSelectedPoll(poll);
+    setShowDetailsModal(false);
+    setShowEditModal(true);
+  };
+
+  const handleBackToView = () => {
+    setShowEditModal(false);
+    setShowDetailsModal(true);
+  };
+
+  const handleUpdatePoll = async (id: string, data: UpdatePollData) => {
+    try {
+      await updatePoll(id, data);
+      setShowEditModal(false);
+      setShowDetailsModal(true); // Go back to view mode after update
+      loadPolls();
+    } catch (error) {
+      console.error("Failed to update poll:", error);
+    }
   };
 
   const getStatusColor = (status: PollStatus) => {
@@ -380,10 +405,10 @@ const PollingPage: React.FC = () => {
                         className="flex items-center gap-2"
                       >
                         <Eye className="h-4 w-4" />
-                        Edit
+                        View
                       </Button>
                       <div className="text-xs text-gray-500">
-                        Click anywhere to edit
+                        Click anywhere to view details
                       </div>
                     </div>
                   </CardContent>
@@ -465,7 +490,18 @@ const PollingPage: React.FC = () => {
           poll={selectedPoll}
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
-          onVote={handleVote}
+          onEdit={handleEditPoll}
+        />
+      )}
+
+      {selectedPoll && (
+        <EditPollModal
+          poll={selectedPoll}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleUpdatePoll}
+          onBackToView={handleBackToView}
+          categories={categories}
         />
       )}
     </div>

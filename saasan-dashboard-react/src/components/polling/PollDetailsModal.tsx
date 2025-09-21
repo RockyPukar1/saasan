@@ -22,35 +22,21 @@ interface PollDetailsModalProps {
   poll: Poll;
   isOpen: boolean;
   onClose: () => void;
-  onVote: (pollId: string, optionId: string) => void;
+  onEdit: (poll: Poll) => void;
 }
 
 export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
   poll,
   isOpen,
   onClose,
-  onVote,
+  onEdit,
 }) => {
   const [chartType, setChartType] = useState<"bar" | "pie" | "line">("bar");
-  const [hasVoted, setHasVoted] = useState(!!poll.user_vote);
 
   const totalVotes = poll.options.reduce(
     (sum, option) => sum + option.votes_count,
     0
   );
-  const isActive = poll.status === PollStatus.ACTIVE;
-  const canVote = isActive && !hasVoted;
-
-  const handleVote = async (optionId: string) => {
-    if (canVote) {
-      try {
-        await onVote(poll.id, optionId);
-        setHasVoted(true);
-      } catch (error) {
-        console.error("Failed to vote:", error);
-      }
-    }
-  };
 
   const getStatusColor = (status: PollStatus) => {
     switch (status) {
@@ -85,14 +71,24 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">{poll.title}</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(poll)}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              Edit Poll
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -207,10 +203,10 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Voting Options */}
+          {/* Poll Options (View Only) */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Voting Options</CardTitle>
+              <CardTitle className="text-lg">Poll Options</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -219,76 +215,45 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
                     totalVotes > 0
                       ? Math.round((option.votes_count / totalVotes) * 100)
                       : 0;
-                  const isSelected = hasVoted && poll.user_vote === option.id;
 
                   return (
                     <div
                       key={option.id}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        isSelected
-                          ? "border-green-500 bg-green-50"
-                          : canVote
-                          ? "border-gray-200 hover:border-blue-300 cursor-pointer"
-                          : "border-gray-200 bg-gray-50"
-                      }`}
-                      onClick={() => canVote && handleVote(option.id)}
+                      className="p-4 rounded-lg border border-gray-200 bg-gray-50"
                     >
                       <div className="flex justify-between items-center mb-2">
-                        <span
-                          className={`font-medium ${
-                            isSelected ? "text-green-800" : "text-gray-900"
-                          }`}
-                        >
+                        <span className="font-medium text-gray-900">
                           {option.text}
                         </span>
-                        <span
-                          className={`text-sm ${
-                            isSelected ? "text-green-600" : "text-gray-600"
-                          }`}
-                        >
+                        <span className="text-sm text-gray-600">
                           {option.votes_count} votes ({percentage}%)
                         </span>
                       </div>
 
-                      {hasVoted && (
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      )}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              {canVote && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center">
-                    <Vote className="h-4 w-4 text-blue-600 mr-2" />
-                    <span className="text-sm text-blue-800">
-                      Click on an option to vote
-                    </span>
-                  </div>
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center">
+                  <BarChart3 className="h-4 w-4 text-gray-600 mr-2" />
+                  <span className="text-sm text-gray-700">
+                    View-only mode. Use mobile app or edit mode to vote.
+                  </span>
                 </div>
-              )}
-
-              {hasVoted && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                  <div className="flex items-center">
-                    <Vote className="h-4 w-4 text-green-600 mr-2" />
-                    <span className="text-sm text-green-800">
-                      You have already voted in this poll
-                    </span>
-                  </div>
-                </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 
           {/* Results Visualization */}
-          {hasVoted && (
+          {totalVotes > 0 && (
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">

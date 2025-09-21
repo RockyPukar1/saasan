@@ -32,8 +32,15 @@ const PollScreen = () => {
   const router = useRouter();
   const { user } = useAuthContext();
   const { t } = useLanguage();
-  const { loading, error, polls, loadPolls, voteOnPoll, loadPollResults } =
-    usePolling();
+  const {
+    loading,
+    votingLoading,
+    error,
+    polls,
+    loadPolls,
+    voteOnPoll,
+    loadPollResults,
+  } = usePolling();
 
   const [activeTab, setActiveTab] = useState<"all" | "my_votes">("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -64,7 +71,7 @@ const PollScreen = () => {
 
     try {
       await voteOnPoll(pollId, optionId);
-      // No need to show success alert - optimistic update handles UI
+      // Success - UI will update automatically
     } catch (err) {
       Alert.alert(t("common.error"), t("polling.voteFailed"));
     }
@@ -159,7 +166,9 @@ const PollScreen = () => {
               const isMultipleChoice = poll.type === "multiple_choice";
               const canVote = poll.status === PollStatus.ACTIVE && user;
               const isDisabled =
-                !canVote || (!isMultipleChoice && hasVoted && !isSelected);
+                !canVote ||
+                (!isMultipleChoice && hasVoted && !isSelected) ||
+                votingLoading;
 
               return (
                 <TouchableOpacity
@@ -185,6 +194,7 @@ const PollScreen = () => {
                       }`}
                     >
                       {option.text}
+                      {votingLoading && " ⏳"}
                     </Text>
                     <Text
                       className={`text-sm ${
