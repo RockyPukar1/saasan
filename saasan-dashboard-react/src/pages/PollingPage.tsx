@@ -21,8 +21,12 @@ import {
   TabsTrigger,
 } from "../components/ui/tabs";
 import { usePolling } from "../hooks/usePolling";
-import type { Poll, CreatePollData, UpdatePollData } from "../types/polling";
-import { PollStatus } from "../types/polling";
+import type {
+  Poll,
+  CreatePollData,
+  UpdatePollData,
+} from "../../../shared/types/polling";
+import { PollStatus } from "../../../shared/types/polling";
 import {
   BarChart3,
   Plus,
@@ -49,13 +53,14 @@ const PollingPage: React.FC = () => {
     polls,
     analytics,
     categories,
+    statuses,
     loadPolls,
     loadAnalytics,
     loadCategories,
+    loadStatuses,
     createPoll,
     updatePoll,
     deletePoll,
-    voteOnPoll,
   } = usePolling();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,7 +75,8 @@ const PollingPage: React.FC = () => {
     loadPolls();
     loadAnalytics();
     loadCategories();
-  }, [loadPolls, loadAnalytics, loadCategories]);
+    loadStatuses();
+  }, [loadPolls, loadAnalytics, loadCategories, loadStatuses]);
 
   const filteredPolls = polls.filter((poll) => {
     const matchesSearch =
@@ -91,15 +97,6 @@ const PollingPage: React.FC = () => {
       loadPolls();
     } catch (error) {
       console.error("Failed to create poll:", error);
-    }
-  };
-
-  const handleVote = async (pollId: string, optionId: string) => {
-    try {
-      await voteOnPoll(pollId, optionId);
-      loadPolls();
-    } catch (error) {
-      console.error("Failed to vote:", error);
     }
   };
 
@@ -483,6 +480,7 @@ const PollingPage: React.FC = () => {
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreatePoll}
         categories={categories}
+        statuses={statuses}
       />
 
       {selectedPoll && (

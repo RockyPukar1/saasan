@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiService } from "~/services/api";
-import { DashboardStats, MajorCase, ServiceStatus } from "~/types/dashboard";
+import { DashboardStats, MajorCase, ServiceStatus } from "../../shared/types/common";
 
 export const useDashboard = () => {
   const [dashboardStats, setDashboardStats] =

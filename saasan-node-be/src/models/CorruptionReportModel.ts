@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { CorruptionReport, ReportPriority, ReportStatus } from "../types";
+import { CorruptionReport, ReportPriority, ReportStatus } from "../../../shared/types";
 import { generateUUID } from "../lib/utils";
 
 export class CorruptionReportModel {

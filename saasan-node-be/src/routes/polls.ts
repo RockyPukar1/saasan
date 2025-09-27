@@ -8,6 +8,7 @@ const router = express.Router();
 // Public routes - specific routes first
 router.get("/analytics", PollingController.getAnalytics);
 router.get("/categories", PollingController.getCategories);
+router.get("/statuses", PollingController.getStatuses);
 router.get(
   "/politician/:politicianId/comparison",
   PollingController.getPoliticianComparison

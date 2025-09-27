@@ -10,15 +10,21 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import type { CreatePollData } from "../../types/polling";
-import { PollType } from "../../types/polling";
+import type { CreatePollData } from "../../../../shared/types/polling";
+
+import {
+  PollStatus,
+  PollType,
+  PollCategory,
+} from "../../../../shared/types/polling";
 import { X, Plus, Trash2 } from "lucide-react";
 
 interface CreatePollModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreatePollData) => void;
-  categories: string[];
+  categories: PollCategory[];
+  statuses: PollStatus[];
 }
 
 export const CreatePollModal: React.FC<CreatePollModalProps> = ({
@@ -26,17 +32,20 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
   onClose,
   onSubmit,
   categories,
+  statuses,
 }) => {
   const [formData, setFormData] = useState<CreatePollData>({
     title: "",
     title_nepali: "",
     description: "",
     description_nepali: "",
+    status: PollStatus.ACTIVE,
+    status_nepali: "",
     type: PollType.SINGLE_CHOICE,
     type_nepali: "",
     options: ["Option 1", "Option 2"],
     options_nepali: ["विकल्प १", "विकल्प २"],
-    category: "",
+    category: PollCategory.GENERAL,
     category_nepali: "",
     end_date: "",
     is_anonymous: false,
@@ -160,11 +169,13 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
         title_nepali: "",
         description: "",
         description_nepali: "",
+        status: PollStatus.ACTIVE,
+        status_nepali: "",
         type: PollType.SINGLE_CHOICE,
         type_nepali: "",
         options: ["Option 1", "Option 2"],
         options_nepali: ["विकल्प १", "विकल्प २"],
-        category: "",
+        category: PollCategory.GENERAL,
         category_nepali: "",
         end_date: "",
         is_anonymous: false,
@@ -258,6 +269,55 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
           {/* Type and Category */}
           <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleInputChange("status", value)}
+                >
+                  <SelectTrigger
+                    className={errors.status ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.status && (
+                  <p className="text-red-500 text-sm mt-1">{errors.status}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="status_nepali">Status (Nepali)</Label>
+                <Input
+                  id="status_nepali"
+                  value={formData.status_nepali}
+                  onChange={(e) =>
+                    handleInputChange("status_nepali", e.target.value)
+                  }
+                  placeholder="स्थिति नेपालीमा लेख्नुहोस्"
+                />
+              </div>
+              <div>
+                <Label htmlFor="category_nepali">Category (Nepali)</Label>
+                <Input
+                  id="category_nepali"
+                  value={formData.category_nepali}
+                  onChange={(e) =>
+                    handleInputChange("category_nepali", e.target.value)
+                  }
+                  placeholder="श्रेणी नेपालीमा लेख्नुहोस्"
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="type">Poll Type</Label>

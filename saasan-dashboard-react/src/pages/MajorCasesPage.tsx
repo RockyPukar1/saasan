@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { majorCasesApi } from "@/services/api";
 import { majorCaseSchema, type MajorCaseFormData } from "@/lib/validations";
-import type { MajorCase } from "../types/index";
+import type { MajorCase } from "../../../shared/types/reports";
 
 export const MajorCasesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");

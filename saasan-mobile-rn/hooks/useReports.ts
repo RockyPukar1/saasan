@@ -6,8 +6,8 @@ import type {
   ReportCreateData,
   ReportUpdateData,
   Evidence,
-} from "~/types/reports";
-import type { MediaPickerResult } from "~/types/media";
+} from "../../shared/types/reports";
+import type { MediaPickerResult } from "../../shared/types/common";
 
 export const useReports = (initialFilters?: ReportFilters) => {
   const [reports, setReports] = useState<CorruptionReport[]>([]);

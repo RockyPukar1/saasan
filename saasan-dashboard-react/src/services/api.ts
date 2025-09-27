@@ -1,18 +1,24 @@
 import axios from "axios";
+import type { User } from "../../../shared/types/user";
+import type { Politician } from "../../../shared/types/politician";
+import type { CorruptionReport } from "../../../shared/types/reports";
 import type {
-  ApiResponse,
-  User,
-  Politician,
+  HistoricalEvent,
+  MajorCase,
   District,
   Municipality,
   Ward,
-  CorruptionReport,
-  HistoricalEvent,
-  MajorCase,
   DashboardStats,
+  GovernmentLevel,
+  ServiceStatus,
+  PollOption,
+  PollVote,
+} from "../../../shared/types";
+import type {
+  ApiResponse,
   PaginatedResponse,
   UploadResult,
-} from "../types/index";
+} from "../../../shared/types/common";
 import type {
   Poll,
   PollFilters,
@@ -20,34 +26,36 @@ import type {
   UpdatePollData,
   PollAnalytics,
   PollComparison,
-} from "../types/polling";
+  PollCategory,
+  PollStatus,
+} from "../../../shared/types/polling";
 
 // Utility function to transform snake_case to camelCase
-const transformPolitician = (data: any): Politician => ({
+const transformPolitician = (data: Partial<Politician>) => ({
   id: data.id,
-  fullName: data.full_name || data.fullName,
-  positionId: data.position_id || data.positionId,
-  partyId: data.party_id || data.partyId,
-  constituencyId: data.constituency_id || data.constituencyId,
+  fullName: data.fullName,
+  positionId: data.positionId,
+  partyId: data.partyId,
+  constituencyId: data.constituencyId,
   biography: data.biography,
   education: data.education,
-  experienceYears: data.experience_years || data.experienceYears,
-  dateOfBirth: data.date_of_birth || data.dateOfBirth,
-  profileImageUrl: data.profile_image_url || data.profileImageUrl,
-  contactPhone: data.contact_phone || data.contactPhone,
-  contactEmail: data.contact_email || data.contactEmail,
-  officialWebsite: data.official_website || data.officialWebsite,
-  socialMediaLinks: data.social_media_links || data.socialMediaLinks || {},
+  experienceYears: data.experienceYears,
+  dateOfBirth: data.dateOfBirth,
+  profileImageUrl: data.profileImageUrl,
+  contactPhone: data.contactPhone,
+  contactEmail: data.contactEmail,
+  officialWebsite: data.officialWebsite,
+  socialMediaLinks: data.socialMediaLinks || {},
   status: data.status,
-  termStartDate: data.term_start_date || data.termStartDate,
-  termEndDate: data.term_end_date || data.termEndDate,
-  totalVotesReceived: data.total_votes_received || data.totalVotesReceived,
-  createdAt: data.created_at || data.createdAt,
-  updatedAt: data.updated_at || data.updatedAt,
+  termStartDate: data.termStartDate,
+  termEndDate: data.termEndDate,
+  totalVotesReceived: data.totalVotesReceived,
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
 });
 
 // Utility function to transform camelCase to snake_case for API requests
-const transformPoliticianForApi = (data: Partial<Politician>): any => ({
+const transformPoliticianForApi = (data: Partial<Politician>) => ({
   full_name: data.fullName,
   position_id: data.positionId,
   party_id: data.partyId,
@@ -68,15 +76,15 @@ const transformPoliticianForApi = (data: Partial<Politician>): any => ({
 });
 
 // Utility function to transform report data from snake_case to camelCase
-const transformReport = (data: any): CorruptionReport => ({
+const transformReport = (data: Partial<CorruptionReport>) => ({
   id: data.id,
-  referenceNumber: data.reference_number || data.referenceNumber,
+  referenceNumber: data.referenceNumber,
   title: data.title,
   description: data.description,
-  categoryId: data.category_id || data.categoryId,
-  reporterId: data.reporter_id || data.reporterId,
-  isAnonymous: data.is_anonymous || data.isAnonymous,
-  locationDescription: data.location_description || data.locationDescription,
+  categoryId: data.categoryId,
+  reporterId: data.reporterId,
+  isAnonymous: data.isAnonymous,
+  locationDescription: data.locationDescription,
   latitude: data.latitude,
   longitude: data.longitude,
   district: data.district,
@@ -84,18 +92,18 @@ const transformReport = (data: any): CorruptionReport => ({
   ward: data.ward,
   status: data.status,
   priority: data.priority,
-  assignedToOfficerId: data.assigned_to_officer_id || data.assignedToOfficerId,
-  dateOccurred: data.date_occurred || data.dateOccurred,
-  amountInvolved: data.amount_involved || data.amountInvolved,
-  peopleAffectedCount: data.people_affected_count || data.peopleAffectedCount,
-  publicVisibility: data.public_visibility || data.publicVisibility,
-  upvotesCount: data.upvotes_count || data.upvotesCount,
-  downvotesCount: data.downvotes_count || data.downvotesCount,
-  viewsCount: data.views_count || data.viewsCount,
-  sharesCount: data.shares_count || data.sharesCount,
-  resolvedAt: data.resolved_at || data.resolvedAt,
-  createdAt: data.created_at || data.createdAt,
-  updatedAt: data.updated_at || data.updatedAt,
+  assignedToOfficerId: data.assignedToOfficerId,
+  dateOccurred: data.dateOccurred,
+  amountInvolved: data.amountInvolved,
+  peopleAffectedCount: data.peopleAffectedCount,
+  publicVisibility: data.publicVisibility,
+  upvotesCount: data.upvotesCount,
+  downvotesCount: data.downvotesCount,
+  viewsCount: data.viewsCount,
+  sharesCount: data.sharesCount,
+  resolvedAt: data.resolvedAt,
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
 });
 
 const API_BASE_URL =
@@ -180,7 +188,7 @@ export const dashboardApi = {
     return response.data;
   },
 
-  getLiveServices: async (): Promise<ApiResponse<any[]>> => {
+  getLiveServices: async (): Promise<ApiResponse<ServiceStatus[]>> => {
     const response = await api.get("/dashboard/live-services");
     return response.data;
   },
@@ -216,7 +224,7 @@ export const politiciansApi = {
 
   getByLevel: async (
     level: string,
-    params?: any
+    params?: Partial<Politician>
   ): Promise<PaginatedResponse<Politician>> => {
     const response = await api.get(`/politicians/level/${level}`, { params });
     const transformedData = response.data.data?.map(transformPolitician) || [];
@@ -226,7 +234,7 @@ export const politiciansApi = {
     };
   },
 
-  getGovernmentLevels: async (): Promise<ApiResponse<any[]>> => {
+  getGovernmentLevels: async (): Promise<ApiResponse<GovernmentLevel[]>> => {
     const response = await api.get("/politicians/levels");
     return response.data;
   },
@@ -538,7 +546,7 @@ export const pollingApi = {
     return response.data;
   },
 
-  getStats: async (id: string): Promise<ApiResponse<any>> => {
+  getStats: async (id: string): Promise<ApiResponse<PollAnalytics>> => {
     const response = await api.get(`/polls/${id}/stats`);
     return response.data;
   },
@@ -564,12 +572,12 @@ export const pollingApi = {
   addOption: async (
     id: string,
     option: { option: string }
-  ): Promise<ApiResponse<any>> => {
+  ): Promise<ApiResponse<PollOption>> => {
     const response = await api.post(`/polls/${id}/options`, option);
     return response.data;
   },
 
-  vote: async (pollId: string, optionId: string): Promise<ApiResponse<any>> => {
+  vote: async (pollId: string, optionId: string): Promise<ApiResponse<PollVote>> => {
     const response = await api.post(`/polls/${pollId}/vote/${optionId}`);
     return response.data;
   },
@@ -595,8 +603,13 @@ export const pollingApi = {
     return response.data;
   },
 
-  getCategories: async (): Promise<ApiResponse<string[]>> => {
+  getCategories: async (): Promise<ApiResponse<PollCategory[]>> => {
     const response = await api.get("/polls/categories");
+    return response.data;
+  },
+
+  getStatuses: async (): Promise<ApiResponse<PollStatus[]>> => {
+    const response = await api.get("/polls/statuses");
     return response.data;
   },
 };

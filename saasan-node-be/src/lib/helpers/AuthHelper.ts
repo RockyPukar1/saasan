@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-import { User } from "../../types";
+import { User } from "../../../../shared/types";
 import { ResponseHelper } from "./ResponseHelper";
 import { Response } from "express";
 

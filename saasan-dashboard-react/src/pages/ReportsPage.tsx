@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { reportsApi } from "@/services/api";
-import type { CorruptionReport } from "../types/index";
+import type { CorruptionReport } from "../../../shared/types/reports";
 
 export const ReportsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");

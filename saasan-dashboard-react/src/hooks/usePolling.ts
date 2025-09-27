@@ -6,8 +6,9 @@ import type {
   CreatePollData,
   UpdatePollData,
   PollAnalytics,
-} from "../types/polling";
-import { PollStatus } from "../types/polling";
+  PollCategory,
+} from "../../../shared/types/polling";
+import { PollStatus } from "../../../shared/types/polling";
 
 export function usePolling() {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,8 @@ export function usePolling() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [currentPoll, setCurrentPoll] = useState<Poll | null>(null);
   const [analytics, setAnalytics] = useState<PollAnalytics | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<PollCategory[]>([]);
+  const [statuses, setStatuses] = useState<PollStatus[]>([]);
 
   const loadPolls = useCallback(async (filters?: PollFilters) => {
     setLoading(true);
@@ -189,6 +191,17 @@ export function usePolling() {
     }
   }, []);
 
+  const loadStatuses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await pollingApi.getStatuses();
+      setStatuses(response.data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const endPoll = useCallback(
     async (id: string) => {
       return updatePoll(id, { status: PollStatus.ENDED });
@@ -203,6 +216,7 @@ export function usePolling() {
     currentPoll,
     analytics,
     categories,
+    statuses,
     loadPolls,
     loadPollById,
     createPoll,
@@ -214,6 +228,7 @@ export function usePolling() {
     loadPoliticianComparison,
     loadPartyComparison,
     loadCategories,
+    loadStatuses,
     endPoll,
   };
 }

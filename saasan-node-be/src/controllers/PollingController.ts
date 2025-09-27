@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 import { PollModel } from "../models/PollModel";
 import { ValidationHelper } from "../lib/helpers/ValidationHelper";
-import { PollOption } from "../types";
+import { PollOption } from "../../../shared/types";
 
 export class PollingController {
   static async getAll(req: Request, res: Response): Promise<void> {
@@ -288,6 +288,16 @@ export class PollingController {
     } catch (error) {
       console.error("Get categories error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch categories"));
+    }
+  }
+
+  static async getStatuses(req: Request, res: Response): Promise<void> {
+    try {
+      const statuses = await PollModel.getStatuses();
+      res.json(ResponseHelper.success(statuses));
+    } catch (error) {
+      console.error("Get statuses error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch statuses"));
     }
   }
 

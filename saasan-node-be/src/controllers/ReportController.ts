@@ -4,7 +4,7 @@ import { ValidationHelper } from "../lib/helpers/ValidationHelper";
 import { CorruptionReportModel } from "../models/CorruptionReportModel";
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
-import { ReportStatus } from "../types";
+import { ReportStatus } from "../../../shared/types";
 
 export class ReportController {
   static async create(req: Request, res: Response): Promise<void> {

@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { useReports } from "~/hooks/useReports";
-import { CorruptionReport, Evidence } from "~/types/reports";
+import { CorruptionReport, Evidence } from "../../../../shared/types/reports";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { Audio } from "expo-av";

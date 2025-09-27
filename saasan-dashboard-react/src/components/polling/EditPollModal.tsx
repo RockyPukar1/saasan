@@ -10,8 +10,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import type { Poll, UpdatePollData } from "../../types/polling";
-import { PollType, PollStatus } from "../../types/polling";
+import type { Poll, UpdatePollData, PollType, PollStatus } from "../../../../shared/types/polling";
 import { X } from "lucide-react";
 
 interface EditPollModalProps {

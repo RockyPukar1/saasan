@@ -1,42 +1,40 @@
-export const PollStatus = {
-  ACTIVE: "active",
-  ENDED: "ended",
-  DRAFT: "draft",
-} as const;
+import { PollStatus, PollType, PollCategory } from "./index";
 
-export const PollType = {
-  SINGLE_CHOICE: "single_choice",
-  MULTIPLE_CHOICE: "multiple_choice",
-  RATING: "rating",
-} as const;
-
-export type PollStatus = (typeof PollStatus)[keyof typeof PollStatus];
-export type PollType = (typeof PollType)[keyof typeof PollType];
+export { PollStatus, PollType, PollCategory };
 
 export interface PollOption {
   id: string;
+  poll_id?: string;
   text: string;
+  text_nepali?: string;
   votes_count: number;
   percentage: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Poll {
   id: string;
   title: string;
+  title_nepali?: string;
   description: string;
+  description_nepali?: string;
   type: PollType;
+  type_nepali?: string;
   status: PollStatus;
-  category: string;
-  options: PollOption[];
-  total_votes: number;
+  status_nepali?: string;
+  category: PollCategory;
+  category_nepali?: string;
   start_date: string;
   end_date: string;
   created_by: string;
+  total_votes: number;
+  is_anonymous: boolean;
+  requires_verification: boolean;
+  options: PollOption[];
   created_at: string;
   updated_at: string;
   user_vote?: string | string[];
-  is_anonymous: boolean;
-  requires_verification: boolean;
   district?: string;
   municipality?: string;
   ward?: string;
@@ -45,10 +43,12 @@ export interface Poll {
 }
 
 export interface PollVote {
+  id?: string;
   poll_id: string;
   option_id: string | string[];
   user_id: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface PollFilters {
@@ -73,8 +73,10 @@ export interface CreatePollData {
   type_nepali?: string;
   options: string[];
   options_nepali?: string[];
-  category: string;
+  category: PollCategory;
   category_nepali?: string;
+  status: PollStatus;
+  status_nepali?: string;
   end_date: string;
   is_anonymous: boolean;
   requires_verification: boolean;
@@ -86,6 +88,7 @@ export interface UpdatePollData {
   description?: string;
   description_nepali?: string;
   status?: PollStatus;
+  status_nepali?: string;
   end_date?: string;
   is_anonymous?: boolean;
   requires_verification?: boolean;

@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { usePolling } from "~/hooks/usePolling";
-import { Poll, PollStatus, PollType } from "~/types/polling";
+import { Poll, PollStatus, PollType } from "../../../shared/types/polling";
 import { useAuthContext } from "~/contexts/AuthContext";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { PageHeader } from "~/components/PageHeader";
@@ -221,7 +221,9 @@ const PollScreen = () => {
             <View className="flex-row items-center">
               <Clock className="text-gray-500" size={14} />
               <Text className="text-gray-500 text-xs ml-1">
-                {new Date(poll.end_date).toLocaleDateString()}
+                {poll.end_date
+                  ? new Date(poll.end_date).toLocaleDateString()
+                  : "N/A"}
               </Text>
             </View>
             <Text className="text-gray-600 text-xs">
@@ -270,7 +272,7 @@ const PollScreen = () => {
           <View className="flex-row items-center">
             <CheckCircle2 className="text-green-600 mr-1" size={14} />
             <Text className="text-xs text-gray-600">
-              {polls.filter((p) => p.user_vote !== undefined).length} voted
+              {polls.filter((p) => p.total_votes !== undefined).length} voted
             </Text>
           </View>
         </View>

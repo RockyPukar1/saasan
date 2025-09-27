@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 import { PollModel } from "../models/PollModel";
 import { ValidationHelper } from "../lib/helpers/ValidationHelper";
-import { PollOption } from "../types";
+import { PollOption } from "../../../shared/types";
 
 export class PollController {
   static async getAll(req: Request, res: Response): Promise<void> {
@@ -85,7 +85,7 @@ export class PollController {
         title: value.title,
         description: value.description,
         type: value.type,
-        status: "active",
+        status: value.status,
         category: value.category,
         start_date: new Date().toISOString(),
         end_date: value.end_date,

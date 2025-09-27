@@ -1,6 +1,6 @@
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
-import { Poll, PollOption } from "../types";
+import { Poll, PollCategory, PollOption } from "../../../shared/types";
 
 export class PollModel {
   static async create(pollData: Partial<Poll>): Promise<Poll> {
@@ -395,7 +395,7 @@ export class PollModel {
     };
   }
 
-  static async getCategories(): Promise<string[]> {
+  static async getCategories(): Promise<PollCategory[]> {
     const categories = await db("polls")
       .select("category")
       .distinct()
@@ -403,6 +403,16 @@ export class PollModel {
       .orderBy("category");
 
     return categories.map((item) => item.category);
+  }
+
+  static async getStatuses(): Promise<string[]> {
+    const statuses = await db("polls")
+      .select("status")
+      .distinct()
+      .whereNotNull("status")
+      .orderBy("status");
+
+    return statuses.map((item) => item.status);
   }
 
   static async getPoliticianComparison(politicianId: string): Promise<any[]> {

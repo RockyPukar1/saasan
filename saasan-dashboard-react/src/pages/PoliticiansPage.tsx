@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { politiciansApi } from "@/services/api";
 import { politicianSchema, type PoliticianFormData } from "@/lib/validations";
-import type { Politician } from "../types/index";
+import type { Politician } from "../../../shared/types/politician";
 
 export const PoliticiansPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");

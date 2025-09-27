@@ -1,6 +1,6 @@
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
-import { Politician, PoliticianStatus } from "../types";
+import { Politician, PoliticianStatus } from "../../../shared/types";
 
 export class PoliticianModel {
   static async create(

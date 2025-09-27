@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import type { Poll } from "../../types/polling";
-import { PollStatus } from "../../types/polling";
+import type { Poll, PollStatus } from "../../../../shared/types/polling";
 import { PollResultsChart } from "./PollResultsChart";
 import {
   X,

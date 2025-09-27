@@ -35,7 +35,7 @@ import {
   historicalEventSchema,
   type HistoricalEventFormData,
 } from "@/lib/validations";
-import type { HistoricalEvent } from "../types/index";
+import type { HistoricalEvent } from "../../../shared/types/common";
 
 export const HistoricalEventsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");

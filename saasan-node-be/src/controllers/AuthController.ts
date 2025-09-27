@@ -3,7 +3,7 @@ import { ValidationHelper } from "../lib/helpers/ValidationHelper";
 import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 import { UserModel } from "../models/UserModel";
 import { AuthHelper } from "../lib/helpers/AuthHelper";
-import { UserRole } from "../types";
+import { UserRole } from "../../../shared/types";
 
 export class AuthController {
   static async register(req: Request, res: Response): Promise<void> {

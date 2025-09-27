@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 
-import { User } from "../types";
+import { User } from "../../../shared/types";
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
 
