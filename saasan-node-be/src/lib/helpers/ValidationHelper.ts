@@ -107,6 +107,53 @@ export class ValidationHelper {
     text_nepali: Joi.string().min(1).max(100).optional(),
   });
 
+  // Geographic validations
+  static provinceSchema = Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    name_nepali: Joi.string().min(2).max(100).required(),
+    capital: Joi.string().min(2).max(100).required(),
+    capital_nepali: Joi.string().min(2).max(100).required(),
+    coordinates: Joi.array().items(Joi.number()).length(2).optional(),
+  });
+
+  static districtSchema = Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    name_nepali: Joi.string().min(2).max(100).required(),
+    province_id: Joi.string().required(),
+    coordinates: Joi.array().items(Joi.number()).length(2).optional(),
+  });
+
+  static municipalitySchema = Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    name_nepali: Joi.string().min(2).max(100).required(),
+    district_id: Joi.string().required(),
+    type: Joi.string()
+      .valid(
+        "metropolitan",
+        "sub_metropolitan",
+        "municipality",
+        "rural_municipality"
+      )
+      .required(),
+    coordinates: Joi.array().items(Joi.number()).length(2).optional(),
+  });
+
+  static wardSchema = Joi.object({
+    number: Joi.number().min(1).max(35).required(),
+    municipality_id: Joi.string().required(),
+    name: Joi.string().min(1).max(100).optional(),
+    name_nepali: Joi.string().min(1).max(100).optional(),
+    coordinates: Joi.array().items(Joi.number()).length(2).optional(),
+  });
+
+  static constituencySchema = Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    name_nepali: Joi.string().min(2).max(100).required(),
+    district_id: Joi.string().required(),
+    type: Joi.string().valid("federal", "provincial").optional(),
+    coordinates: Joi.array().items(Joi.number()).length(2).optional(),
+  });
+
   // Historical Event validations
   static historicalEvent = Joi.object({
     title: Joi.string().min(2).max(200).required(),

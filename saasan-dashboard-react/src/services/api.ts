@@ -279,27 +279,25 @@ export const politiciansApi = {
 
 // Geographic API
 export const geographicApi = {
-  getDistricts: async (): Promise<ApiResponse<District[]>> => {
-    const response = await api.get("/locations/districts");
+  // Provinces
+  getProvinces: async (): Promise<ApiResponse<any[]>> => {
+    const response = await api.get("/locations/provinces");
     return response.data;
   },
 
-  getMunicipalities: async (
-    districtId: string
-  ): Promise<ApiResponse<Municipality[]>> => {
-    const response = await api.get(
-      `/locations/districts/${districtId}/municipalities`
-    );
+  createProvince: async (provinceData: any): Promise<ApiResponse<any>> => {
+    const response = await api.post("/locations/provinces", provinceData);
     return response.data;
   },
 
-  getWards: async (
-    districtId: string,
-    municipalityId: string
-  ): Promise<ApiResponse<Ward[]>> => {
-    const response = await api.get(
-      `/locations/districts/${districtId}/municipalities/${municipalityId}/wards`
-    );
+  // Districts
+  getDistricts: async (
+    provinceId?: string
+  ): Promise<ApiResponse<District[]>> => {
+    const url = provinceId
+      ? `/locations/provinces/${provinceId}/districts`
+      : "/locations/districts";
+    const response = await api.get(url);
     return response.data;
   },
 
@@ -307,6 +305,16 @@ export const geographicApi = {
     districtData: Partial<District>
   ): Promise<ApiResponse<District>> => {
     const response = await api.post("/locations/districts", districtData);
+    return response.data;
+  },
+
+  // Municipalities
+  getMunicipalities: async (
+    districtId: string
+  ): Promise<ApiResponse<Municipality[]>> => {
+    const response = await api.get(
+      `/locations/districts/${districtId}/municipalities`
+    );
     return response.data;
   },
 
@@ -320,11 +328,44 @@ export const geographicApi = {
     return response.data;
   },
 
+  // Wards
+  getWards: async (
+    districtId: string,
+    municipalityId: string
+  ): Promise<ApiResponse<Ward[]>> => {
+    const response = await api.get(
+      `/locations/districts/${districtId}/municipalities/${municipalityId}/wards`
+    );
+    return response.data;
+  },
+
   createWard: async (wardData: Partial<Ward>): Promise<ApiResponse<Ward>> => {
     const response = await api.post("/locations/wards", wardData);
     return response.data;
   },
 
+  // Constituencies
+  getConstituencies: async (
+    districtId?: string
+  ): Promise<ApiResponse<any[]>> => {
+    const url = districtId
+      ? `/locations/districts/${districtId}/constituencies`
+      : "/locations/constituencies";
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  createConstituency: async (
+    constituencyData: any
+  ): Promise<ApiResponse<any>> => {
+    const response = await api.post(
+      "/locations/constituencies",
+      constituencyData
+    );
+    return response.data;
+  },
+
+  // Bulk uploads
   bulkUploadDistricts: async (
     file: File
   ): Promise<ApiResponse<UploadResult>> => {

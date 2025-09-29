@@ -1,9 +1,18 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
-import { Plus, Upload, Download, Building, Map, Home } from "lucide-react";
+import {
+  Plus,
+  Upload,
+  Download,
+  Building,
+  Map,
+  Home,
+  Users,
+  Eye,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,17 +36,60 @@ import {
   districtSchema,
   municipalitySchema,
   wardSchema,
+  provinceSchema,
+  constituencySchema,
   type DistrictFormData,
   type MunicipalityFormData,
   type WardFormData,
+  type ProvinceFormData,
+  type ConstituencyFormData,
 } from "@/lib/validations";
 
-export const GeographicPage: React.FC = () => {
-  // const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("districts");
+// Type alias for form errors to simplify error handling
+type FormErrors = Record<string, { message?: string }>;
+
+// Type for API error responses
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+// Types for API data
+interface DistrictApiData {
+  name: string;
+  provinceId: number;
+}
+
+interface MunicipalityApiData {
+  name: string;
+  districtId: string;
+  type:
+    | "metropolitan"
+    | "sub_metropolitan"
+    | "municipality"
+    | "rural_municipality";
+}
+
+interface WardApiData {
+  number: number;
+  municipalityId: string;
+  name?: string;
+}
+
+interface ConstituencyApiData {
+  name: string;
+  district_id: string;
+  type?: "federal" | "provincial";
+}
+
+export const GeographicPage = () => {
+  const [activeTab, setActiveTab] = useState("provinces");
   const [showForm, setShowForm] = useState(false);
-  // const [editingItem, setEditingItem] = useState<any>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedMunicipality, setSelectedMunicipality] = useState("");
 
@@ -48,20 +100,37 @@ export const GeographicPage: React.FC = () => {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<DistrictFormData | MunicipalityFormData | WardFormData>({
+  } = useForm<
+    | ProvinceFormData
+    | DistrictFormData
+    | MunicipalityFormData
+    | WardFormData
+    | ConstituencyFormData
+  >({
     resolver: zodResolver(
-      activeTab === "districts"
+      activeTab === "provinces"
+        ? provinceSchema
+        : activeTab === "districts"
         ? districtSchema
         : activeTab === "municipalities"
         ? municipalitySchema
-        : wardSchema
+        : activeTab === "wards"
+        ? wardSchema
+        : constituencySchema
     ),
+  });
+
+  // Fetch provinces
+  const { data: provincesData, isLoading: provincesLoading } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: () => geographicApi.getProvinces(),
   });
 
   // Fetch districts
   const { data: districtsData, isLoading: districtsLoading } = useQuery({
-    queryKey: ["districts"],
-    queryFn: () => geographicApi.getDistricts(),
+    queryKey: ["districts", selectedProvince],
+    queryFn: () => geographicApi.getDistricts(selectedProvince),
+    enabled: activeTab === "districts",
   });
 
   // Fetch municipalities
@@ -80,6 +149,31 @@ export const GeographicPage: React.FC = () => {
     enabled: !!selectedDistrict && !!selectedMunicipality,
   });
 
+  // Fetch constituencies
+  const { data: constituenciesData, isLoading: constituenciesLoading } =
+    useQuery({
+      queryKey: ["constituencies", selectedDistrict],
+      queryFn: () => geographicApi.getConstituencies(selectedDistrict),
+      enabled: activeTab === "constituencies",
+    });
+
+  // Create province mutation
+  const createProvinceMutation = useMutation({
+    mutationFn: geographicApi.createProvince,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["provinces"] });
+      toast.success("Province created successfully!");
+      setShowForm(false);
+      reset();
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        "Failed to create province";
+      toast.error(errorMessage);
+    },
+  });
+
   // Create district mutation
   const createDistrictMutation = useMutation({
     mutationFn: geographicApi.createDistrict,
@@ -89,8 +183,11 @@ export const GeographicPage: React.FC = () => {
       setShowForm(false);
       reset();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create district");
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        "Failed to create district";
+      toast.error(errorMessage);
     },
   });
 
@@ -103,10 +200,11 @@ export const GeographicPage: React.FC = () => {
       setShowForm(false);
       reset();
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to create municipality"
-      );
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        "Failed to create municipality";
+      toast.error(errorMessage);
     },
   });
 
@@ -119,8 +217,27 @@ export const GeographicPage: React.FC = () => {
       setShowForm(false);
       reset();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create ward");
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message || "Failed to create ward";
+      toast.error(errorMessage);
+    },
+  });
+
+  // Create constituency mutation
+  const createConstituencyMutation = useMutation({
+    mutationFn: geographicApi.createConstituency,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["constituencies"] });
+      toast.success("Constituency created successfully!");
+      setShowForm(false);
+      reset();
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        "Failed to create constituency";
+      toast.error(errorMessage);
     },
   });
 
@@ -134,10 +251,11 @@ export const GeographicPage: React.FC = () => {
       );
       setShowUploadModal(false);
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to upload districts"
-      );
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        "Failed to upload districts";
+      toast.error(errorMessage);
     },
   });
 
@@ -150,10 +268,11 @@ export const GeographicPage: React.FC = () => {
       );
       setShowUploadModal(false);
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to upload municipalities"
-      );
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        "Failed to upload municipalities";
+      toast.error(errorMessage);
     },
   });
 
@@ -164,18 +283,50 @@ export const GeographicPage: React.FC = () => {
       toast.success(`Successfully imported ${response.data.imported} wards`);
       setShowUploadModal(false);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to upload wards");
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as ApiError).response?.data?.message || "Failed to upload wards";
+      toast.error(errorMessage);
     },
   });
 
-  const handleFormSubmit = (data: any) => {
-    if (activeTab === "districts") {
-      createDistrictMutation.mutate(data);
+  const handleFormSubmit = (
+    data:
+      | ProvinceFormData
+      | DistrictFormData
+      | MunicipalityFormData
+      | WardFormData
+      | ConstituencyFormData
+  ) => {
+    if (activeTab === "provinces") {
+      createProvinceMutation.mutate(data as ProvinceFormData);
+    } else if (activeTab === "districts") {
+      const districtData = data as DistrictFormData;
+      createDistrictMutation.mutate({
+        name: districtData.name,
+        provinceId: parseInt(districtData.provinceId),
+      } as DistrictApiData);
     } else if (activeTab === "municipalities") {
-      createMunicipalityMutation.mutate(data);
-    } else {
-      createWardMutation.mutate(data);
+      const municipalityData = data as MunicipalityFormData;
+      createMunicipalityMutation.mutate({
+        name: municipalityData.name,
+        districtId: municipalityData.districtId,
+        type: municipalityData.type,
+      } as MunicipalityApiData);
+    } else if (activeTab === "wards") {
+      const wardData = data as WardFormData;
+      createWardMutation.mutate({
+        number: wardData.number,
+        municipalityId: wardData.municipalityId,
+        name: wardData.name,
+      } as WardApiData);
+    } else if (activeTab === "constituencies") {
+      const constituencyData = data as ConstituencyFormData;
+      createConstituencyMutation.mutate({
+        name: constituencyData.name,
+        district_id: constituencyData.districtId,
+        type: constituencyData.type,
+      } as ConstituencyApiData);
     }
   };
 
@@ -192,9 +343,27 @@ export const GeographicPage: React.FC = () => {
     }
   };
 
-  const districts = districtsData?.data || [];
+  const provinces = provincesData?.data || [];
+  const allDistricts = districtsData?.data || [];
   const municipalities = municipalitiesData?.data || [];
   const wards = wardsData?.data || [];
+  const allConstituencies = constituenciesData?.data || [];
+
+  // Filter districts by selected province
+  const districts =
+    selectedProvince && selectedProvince !== "all"
+      ? allDistricts.filter(
+          (district) => district.provinceId === parseInt(selectedProvince)
+        )
+      : allDistricts;
+
+  // Filter constituencies by selected district
+  const constituencies =
+    selectedDistrict && selectedDistrict !== "all"
+      ? allConstituencies.filter(
+          (constituency) => constituency.district_id === selectedDistrict
+        )
+      : allConstituencies;
 
   // const getCurrentData = () => {
   //   switch (activeTab) {
@@ -211,12 +380,16 @@ export const GeographicPage: React.FC = () => {
 
   const getCurrentLoading = () => {
     switch (activeTab) {
+      case "provinces":
+        return provincesLoading;
       case "districts":
         return districtsLoading;
       case "municipalities":
         return municipalitiesLoading;
       case "wards":
         return wardsLoading;
+      case "constituencies":
+        return constituenciesLoading;
       default:
         return false;
     }
@@ -224,14 +397,18 @@ export const GeographicPage: React.FC = () => {
 
   const getCurrentMutation = () => {
     switch (activeTab) {
+      case "provinces":
+        return createProvinceMutation;
       case "districts":
         return createDistrictMutation;
       case "municipalities":
         return createMunicipalityMutation;
       case "wards":
         return createWardMutation;
+      case "constituencies":
+        return createConstituencyMutation;
       default:
-        return createDistrictMutation;
+        return createProvinceMutation;
     }
   };
 
@@ -260,37 +437,118 @@ export const GeographicPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Geographic Data</h1>
           <p className="text-gray-600">
-            Manage districts, municipalities, and wards
+            Manage provinces, districts, municipalities, wards, and
+            constituencies
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowUploadModal(true)}
-            disabled={currentUploadMutation.isPending}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload CSV
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add{" "}
-            {activeTab === "districts"
-              ? "District"
-              : activeTab === "municipalities"
-              ? "Municipality"
-              : "Ward"}
-          </Button>
+          {activeTab !== "provinces" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadModal(true)}
+                disabled={currentUploadMutation.isPending}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload CSV
+              </Button>
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add{" "}
+                {activeTab === "districts"
+                  ? "District"
+                  : activeTab === "municipalities"
+                  ? "Municipality"
+                  : activeTab === "wards"
+                  ? "Ward"
+                  : "Constituency"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="provinces">Provinces</TabsTrigger>
           <TabsTrigger value="districts">Districts</TabsTrigger>
           <TabsTrigger value="municipalities">Municipalities</TabsTrigger>
           <TabsTrigger value="wards">Wards</TabsTrigger>
+          <TabsTrigger value="constituencies">Constituencies</TabsTrigger>
         </TabsList>
+
+        {/* Provinces Tab */}
+        <TabsContent value="provinces">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Provinces ({provinces.length})</CardTitle>
+                  <CardDescription>Manage province information</CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : provinces.length === 0 ? (
+                <div className="text-center py-8">
+                  <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No provinces found</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {provinces.map((province) => (
+                    <div
+                      key={province.id}
+                      className="flex items-center space-x-4 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedProvince(province.id);
+                        // Map will handle province selection
+                      }}
+                    >
+                      <div className="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Map className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {province.name}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {province.name_nepali} • Capital: {province.capital}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProvince(province.id);
+                            // Map will handle province selection
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Districts Tab */}
         <TabsContent value="districts">
@@ -301,10 +559,28 @@ export const GeographicPage: React.FC = () => {
                   <CardTitle>Districts ({districts.length})</CardTitle>
                   <CardDescription>Manage district information</CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
+                <div className="flex space-x-2">
+                  <Select
+                    value={selectedProvince}
+                    onValueChange={setSelectedProvince}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by province" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Provinces</SelectItem>
+                      {provinces.map((province) => (
+                        <SelectItem key={province.id} value={province.id}>
+                          {province.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -522,6 +798,88 @@ export const GeographicPage: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Constituencies Tab */}
+        <TabsContent value="constituencies">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>
+                    Constituencies ({constituencies.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Manage constituency information
+                  </CardDescription>
+                </div>
+                <div className="flex space-x-2">
+                  <Select
+                    value={selectedDistrict}
+                    onValueChange={setSelectedDistrict}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by district" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Districts</SelectItem>
+                      {districts.map((district) => (
+                        <SelectItem key={district.id} value={district.id}>
+                          {district.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : constituencies.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">
+                    {selectedDistrict
+                      ? "No constituencies found"
+                      : "Select a district to view constituencies"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {constituencies.map((constituency) => (
+                    <div
+                      key={constituency.id}
+                      className="flex items-center space-x-4 p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="h-10 w-10 bg-purple-500 rounded-full flex items-center justify-center">
+                        <Users className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {constituency.name}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {constituency.name_nepali} • District:{" "}
+                          {constituency.district_id}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Add/Edit Form Modal */}
@@ -569,6 +927,71 @@ export const GeographicPage: React.FC = () => {
                 onSubmit={handleSubmit(handleFormSubmit)}
                 className="space-y-4"
               >
+                {activeTab === "provinces" && (
+                  <>
+                    <div>
+                      <Label htmlFor="name">Province Name</Label>
+                      <Input
+                        id="name"
+                        {...register("name")}
+                        className={errors.name ? "border-red-500" : ""}
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-red-600">
+                          {errors.name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="name_nepali">
+                        Province Name (Nepali)
+                      </Label>
+                      <Input
+                        id="name_nepali"
+                        {...register("name_nepali")}
+                        className={errors.name_nepali ? "border-red-500" : ""}
+                      />
+                      {errors.name_nepali && (
+                        <p className="text-sm text-red-600">
+                          {errors.name_nepali.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="capital">Capital</Label>
+                      <Input
+                        id="capital"
+                        {...register("capital")}
+                        className={
+                          (errors as FormErrors).capital ? "border-red-500" : ""
+                        }
+                      />
+                      {(errors as FormErrors).capital && (
+                        <p className="text-sm text-red-600">
+                          {(errors as FormErrors).capital.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="capital_nepali">Capital (Nepali)</Label>
+                      <Input
+                        id="capital_nepali"
+                        {...register("capital_nepali")}
+                        className={
+                          (errors as FormErrors).capital_nepali
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
+                      {(errors as FormErrors).capital_nepali && (
+                        <p className="text-sm text-red-600">
+                          {(errors as FormErrors).capital_nepali.message}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
                 {activeTab === "districts" && (
                   <>
                     <div>
@@ -585,18 +1008,43 @@ export const GeographicPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="provinceId">Province ID</Label>
+                      <Label htmlFor="name_nepali">
+                        District Name (Nepali)
+                      </Label>
                       <Input
-                        id="provinceId"
-                        type="number"
-                        {...register("provinceId", { valueAsNumber: true })}
-                        className={
-                          (errors as any).provinceId ? "border-red-500" : ""
-                        }
+                        id="name_nepali"
+                        {...register("name_nepali")}
+                        className={errors.name_nepali ? "border-red-500" : ""}
                       />
-                      {(errors as any).provinceId && (
+                      {errors.name_nepali && (
                         <p className="text-sm text-red-600">
-                          {(errors as any).provinceId.message}
+                          {errors.name_nepali.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="provinceId">Province</Label>
+                      <Select {...register("provinceId")}>
+                        <SelectTrigger
+                          className={
+                            (errors as FormErrors).provinceId
+                              ? "border-red-500"
+                              : ""
+                          }
+                        >
+                          <SelectValue placeholder="Select province" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {provinces.map((province) => (
+                            <SelectItem key={province.id} value={province.id}>
+                              {province.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {(errors as FormErrors).provinceId && (
+                        <p className="text-sm text-red-600">
+                          {(errors as FormErrors).provinceId.message}
                         </p>
                       )}
                     </div>
@@ -632,9 +1080,9 @@ export const GeographicPage: React.FC = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      {(errors as any).districtId && (
+                      {(errors as FormErrors).districtId && (
                         <p className="text-sm text-red-600">
-                          {(errors as any).districtId.message}
+                          {(errors as FormErrors).districtId.message}
                         </p>
                       )}
                     </div>
@@ -659,9 +1107,9 @@ export const GeographicPage: React.FC = () => {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      {(errors as any).type && (
+                      {(errors as FormErrors).type && (
                         <p className="text-sm text-red-600">
-                          {(errors as any).type.message}
+                          {(errors as FormErrors).type.message}
                         </p>
                       )}
                     </div>
@@ -677,12 +1125,12 @@ export const GeographicPage: React.FC = () => {
                         type="number"
                         {...register("number", { valueAsNumber: true })}
                         className={
-                          (errors as any).number ? "border-red-500" : ""
+                          (errors as FormErrors).number ? "border-red-500" : ""
                         }
                       />
-                      {(errors as any).number && (
+                      {(errors as FormErrors).number && (
                         <p className="text-sm text-red-600">
-                          {(errors as any).number.message}
+                          {(errors as FormErrors).number.message}
                         </p>
                       )}
                     </div>
@@ -703,9 +1151,9 @@ export const GeographicPage: React.FC = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      {(errors as any).municipalityId && (
+                      {(errors as FormErrors).municipalityId && (
                         <p className="text-sm text-red-600">
-                          {(errors as any).municipalityId.message}
+                          {(errors as FormErrors).municipalityId.message}
                         </p>
                       )}
                     </div>
@@ -719,6 +1167,82 @@ export const GeographicPage: React.FC = () => {
                       {errors.name && (
                         <p className="text-sm text-red-600">
                           {errors.name.message}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "constituencies" && (
+                  <>
+                    <div>
+                      <Label htmlFor="name">Constituency Name</Label>
+                      <Input
+                        id="name"
+                        {...register("name")}
+                        className={errors.name ? "border-red-500" : ""}
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-red-600">
+                          {errors.name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="name_nepali">
+                        Constituency Name (Nepali)
+                      </Label>
+                      <Input
+                        id="name_nepali"
+                        {...register("name_nepali")}
+                        className={errors.name_nepali ? "border-red-500" : ""}
+                      />
+                      {errors.name_nepali && (
+                        <p className="text-sm text-red-600">
+                          {errors.name_nepali.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="districtId">District</Label>
+                      <Select {...register("districtId")}>
+                        <SelectTrigger
+                          className={
+                            (errors as FormErrors).districtId
+                              ? "border-red-500"
+                              : ""
+                          }
+                        >
+                          <SelectValue placeholder="Select district" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {districts.map((district) => (
+                            <SelectItem key={district.id} value={district.id}>
+                              {district.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {(errors as FormErrors).districtId && (
+                        <p className="text-sm text-red-600">
+                          {(errors as FormErrors).districtId.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="type">Type</Label>
+                      <Select {...register("type")}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="federal">Federal</SelectItem>
+                          <SelectItem value="provincial">Provincial</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {(errors as FormErrors).type && (
+                        <p className="text-sm text-red-600">
+                          {(errors as FormErrors).type.message}
                         </p>
                       )}
                     </div>

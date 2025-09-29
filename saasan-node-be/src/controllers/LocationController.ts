@@ -54,13 +54,67 @@ const DISTRICTS: District[] = [
 ];
 
 export class LocationController {
+  // Provinces
+  static async getProvinces(req: Request, res: Response): Promise<void> {
+    try {
+      const provinces = await db("provinces").select("*").orderBy("name");
+
+      res.json(ResponseHelper.success(provinces));
+    } catch (error) {
+      console.error("Get provinces error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch provinces"));
+    }
+  }
+
+  static async createProvince(req: Request, res: Response): Promise<void> {
+    try {
+      const { error, value } = ValidationHelper.provinceSchema.validate(
+        req.body
+      );
+
+      if (error) {
+        res
+          .status(400)
+          .json(ResponseHelper.error("Validation failed", 400, error.details));
+        return;
+      }
+
+      const id = generateUUID();
+      const [province] = await db("provinces")
+        .insert({
+          id,
+          ...value,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning("*");
+
+      res
+        .status(201)
+        .json(
+          ResponseHelper.success(province, "Province created successfully")
+        );
+    } catch (error) {
+      console.error("Create province error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to create province"));
+    }
+  }
+
+  // Districts
   static async getDistricts(req: Request, res: Response): Promise<void> {
     try {
-      // In production, this would be a database query
-      const districts = DISTRICTS.map((d) => ({
-        id: d.id,
-        name: d.name,
-      }));
+      const { provinceId } = req.params;
+
+      let query = db("districts")
+        .select("districts.*", "provinces.name as province_name")
+        .leftJoin("provinces", "districts.province_id", "provinces.id")
+        .orderBy("districts.name");
+
+      if (provinceId) {
+        query = query.where("districts.province_id", provinceId);
+      }
+
+      const districts = await query;
 
       res.json(ResponseHelper.success(districts));
     } catch (error) {
@@ -214,6 +268,84 @@ export class LocationController {
     } catch (error) {
       console.error("Create ward error:", error);
       res.status(500).json(ResponseHelper.error("Failed to create ward"));
+    }
+  }
+
+  // Constituencies
+  static async getAllConstituencies(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const constituencies = await db("constituencies")
+        .select("constituencies.*", "districts.name as district_name")
+        .leftJoin("districts", "constituencies.district_id", "districts.id")
+        .orderBy("constituencies.name");
+
+      res.json(ResponseHelper.success(constituencies));
+    } catch (error) {
+      console.error("Get all constituencies error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch constituencies"));
+    }
+  }
+
+  static async getConstituencies(req: Request, res: Response): Promise<void> {
+    try {
+      const { districtId } = req.params;
+
+      const constituencies = await db("constituencies")
+        .select("constituencies.*", "districts.name as district_name")
+        .leftJoin("districts", "constituencies.district_id", "districts.id")
+        .where("constituencies.district_id", districtId)
+        .orderBy("constituencies.name");
+
+      res.json(ResponseHelper.success(constituencies));
+    } catch (error) {
+      console.error("Get constituencies error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to fetch constituencies"));
+    }
+  }
+
+  static async createConstituency(req: Request, res: Response): Promise<void> {
+    try {
+      const { error, value } = ValidationHelper.constituencySchema.validate(
+        req.body
+      );
+
+      if (error) {
+        res
+          .status(400)
+          .json(ResponseHelper.error("Validation failed", 400, error.details));
+        return;
+      }
+
+      const id = generateUUID();
+      const [constituency] = await db("constituencies")
+        .insert({
+          id,
+          ...value,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning("*");
+
+      res
+        .status(201)
+        .json(
+          ResponseHelper.success(
+            constituency,
+            "Constituency created successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Create constituency error:", error);
+      res
+        .status(500)
+        .json(ResponseHelper.error("Failed to create constituency"));
     }
   }
 

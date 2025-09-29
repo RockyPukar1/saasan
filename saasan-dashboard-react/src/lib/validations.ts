@@ -40,26 +40,66 @@ export const politicianSchema = z.object({
 export const politicianUpdateSchema = politicianSchema.partial();
 
 // Geographic schemas
+export const provinceSchema = z.object({
+  name: z.string().min(2, "Province name is required"),
+  name_nepali: z.string().min(2, "Province name in Nepali is required"),
+  capital: z.string().min(2, "Capital is required"),
+  capital_nepali: z.string().min(2, "Capital in Nepali is required"),
+  coordinates: z.array(z.number()).length(2).optional(),
+});
+
 export const districtSchema = z.object({
   name: z.string().min(2, "District name is required"),
-  provinceId: z.number().min(1, "Province ID is required"),
+  name_nepali: z.string().min(2, "District name in Nepali is required"),
+  provinceId: z.string().min(1, "Province is required"),
+  coordinates: z.array(z.number()).length(2).optional(),
 });
 
 export const municipalitySchema = z.object({
   name: z.string().min(2, "Municipality name is required"),
-  districtId: z.string().min(1, "District ID is required"),
-  type: z.enum(["metropolitan", "sub_metropolitan", "municipality", "rural_municipality"]),
+  name_nepali: z.string().min(2, "Municipality name in Nepali is required"),
+  districtId: z.string().min(1, "District is required"),
+  type: z.enum([
+    "metropolitan",
+    "sub_metropolitan",
+    "municipality",
+    "rural_municipality",
+  ]),
+  coordinates: z.array(z.number()).length(2).optional(),
 });
 
 export const wardSchema = z.object({
   number: z.number().min(1, "Ward number is required"),
-  municipalityId: z.string().min(1, "Municipality ID is required"),
+  municipalityId: z.string().min(1, "Municipality is required"),
   name: z.string().optional(),
+  name_nepali: z.string().optional(),
+  coordinates: z.array(z.number()).length(2).optional(),
 });
+
+export const constituencySchema = z.object({
+  name: z.string().min(2, "Constituency name is required"),
+  name_nepali: z.string().min(2, "Constituency name in Nepali is required"),
+  districtId: z.string().min(1, "District is required"),
+  type: z.enum(["federal", "provincial"]).optional(),
+  coordinates: z.array(z.number()).length(2).optional(),
+});
+
+// Type exports
+export type ProvinceFormData = z.infer<typeof provinceSchema>;
+export type DistrictFormData = z.infer<typeof districtSchema>;
+export type MunicipalityFormData = z.infer<typeof municipalitySchema>;
+export type WardFormData = z.infer<typeof wardSchema>;
+export type ConstituencyFormData = z.infer<typeof constituencySchema>;
 
 // Report schemas
 export const reportStatusUpdateSchema = z.object({
-  status: z.enum(["submitted", "under_review", "verified", "resolved", "dismissed"]),
+  status: z.enum([
+    "submitted",
+    "under_review",
+    "verified",
+    "resolved",
+    "dismissed",
+  ]),
   comment: z.string().optional(),
 });
 
@@ -137,9 +177,13 @@ export type PoliticianUpdateFormData = z.infer<typeof politicianUpdateSchema>;
 export type DistrictFormData = z.infer<typeof districtSchema>;
 export type MunicipalityFormData = z.infer<typeof municipalitySchema>;
 export type WardFormData = z.infer<typeof wardSchema>;
-export type ReportStatusUpdateFormData = z.infer<typeof reportStatusUpdateSchema>;
+export type ReportStatusUpdateFormData = z.infer<
+  typeof reportStatusUpdateSchema
+>;
 export type HistoricalEventFormData = z.infer<typeof historicalEventSchema>;
-export type HistoricalEventUpdateFormData = z.infer<typeof historicalEventUpdateSchema>;
+export type HistoricalEventUpdateFormData = z.infer<
+  typeof historicalEventUpdateSchema
+>;
 export type MajorCaseFormData = z.infer<typeof majorCaseSchema>;
 export type MajorCaseUpdateFormData = z.infer<typeof majorCaseUpdateSchema>;
 export type FileUploadFormData = z.infer<typeof fileUploadSchema>;
