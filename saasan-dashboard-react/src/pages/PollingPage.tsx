@@ -26,7 +26,6 @@ import type {
   CreatePollData,
   UpdatePollData,
 } from "../../../shared/types/polling";
-import { PollStatus } from "../../../shared/types/polling";
 import {
   BarChart3,
   Plus,
@@ -42,9 +41,8 @@ import {
 import { PollAnalyticsChart } from "../components/polling/PollAnalyticsChart";
 import { PoliticianComparisonChart } from "../components/polling/PoliticianComparisonChart";
 import { PartyComparisonChart } from "../components/polling/PartyComparisonChart";
-import { CreatePollModal } from "../components/polling/CreatePollModal";
+import { PollModal } from "../components/polling/PollModal";
 import { PollDetailsModal } from "../components/polling/PollDetailsModal";
-import { EditPollModal } from "../components/polling/EditPollModal";
 
 const PollingPage: React.FC = () => {
   const {
@@ -54,29 +52,34 @@ const PollingPage: React.FC = () => {
     analytics,
     categories,
     statuses,
+    types,
     loadPolls,
     loadAnalytics,
     loadCategories,
     loadStatuses,
+    loadTypes,
     createPoll,
     updatePoll,
     deletePoll,
+    createCategory,
+    createType,
   } = usePolling();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<PollStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<string | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPollModal, setShowPollModal] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     loadPolls();
     loadAnalytics();
     loadCategories();
     loadStatuses();
-  }, [loadPolls, loadAnalytics, loadCategories, loadStatuses]);
+    loadTypes();
+  }, [loadPolls, loadAnalytics, loadCategories, loadStatuses, loadTypes]);
 
   const filteredPolls = polls.filter((poll) => {
     const matchesSearch =
@@ -90,11 +93,12 @@ const PollingPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const handleCreatePoll = async (data: CreatePollData) => {
+  const handleCreatePoll = async (data: CreatePollData | UpdatePollData) => {
     try {
-      await createPoll(data);
-      setShowCreateModal(false);
-      loadPolls();
+      await createPoll(data as CreatePollData);
+      setShowPollModal(false);
+      setIsEditMode(false);
+      await loadPolls();
     } catch (error) {
       console.error("Failed to create poll:", error);
     }
@@ -118,49 +122,43 @@ const PollingPage: React.FC = () => {
   const handleEditPoll = (poll: Poll) => {
     setSelectedPoll(poll);
     setShowDetailsModal(false);
-    setShowEditModal(true);
+    setIsEditMode(true);
+    setShowPollModal(true);
   };
 
   const handleBackToView = () => {
-    setShowEditModal(false);
+    setShowPollModal(false);
+    setIsEditMode(false);
     setShowDetailsModal(true);
   };
 
-  const handleUpdatePoll = async (id: string, data: UpdatePollData) => {
+  const handleUpdatePoll = async (data: UpdatePollData) => {
+    if (!selectedPoll) return;
     try {
-      await updatePoll(id, data);
-      setShowEditModal(false);
+      await updatePoll(selectedPoll.id, data);
+      setShowPollModal(false);
+      setIsEditMode(false);
       setShowDetailsModal(true); // Go back to view mode after update
-      loadPolls();
+      // Force refresh the polls list
+      await loadPolls();
     } catch (error) {
       console.error("Failed to update poll:", error);
     }
   };
 
-  const getStatusColor = (status: PollStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case PollStatus.ACTIVE:
+      case "active":
         return "bg-green-100 text-green-800";
-      case PollStatus.ENDED:
+      case "inactive":
         return "bg-gray-100 text-gray-800";
-      case PollStatus.DRAFT:
-        return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getStatusText = (status: PollStatus) => {
-    switch (status) {
-      case PollStatus.ACTIVE:
-        return "Active";
-      case PollStatus.ENDED:
-        return "Ended";
-      case PollStatus.DRAFT:
-        return "Draft";
-      default:
-        return status;
-    }
+  const getStatusText = (status: string) => {
+    return status;
   };
 
   if (error) {
@@ -187,7 +185,11 @@ const PollingPage: React.FC = () => {
           </p>
         </div>
         <Button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            setSelectedPoll(null);
+            setIsEditMode(false);
+            setShowPollModal(true);
+          }}
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
@@ -291,17 +293,31 @@ const PollingPage: React.FC = () => {
                 <Select
                   value={statusFilter}
                   onValueChange={(value) =>
-                    setStatusFilter(value as PollStatus | "all")
+                    setStatusFilter(value as string | "all")
                   }
                 >
                   <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value={PollStatus.ACTIVE}>Active</SelectItem>
-                    <SelectItem value={PollStatus.ENDED}>Ended</SelectItem>
-                    <SelectItem value={PollStatus.DRAFT}>Draft</SelectItem>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                    <SelectItem
+                      value="all"
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      All Status
+                    </SelectItem>
+                    <SelectItem
+                      value="active"
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      Active
+                    </SelectItem>
+                    <SelectItem
+                      value="inactive"
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      Inactive
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <Select
@@ -311,10 +327,19 @@ const PollingPage: React.FC = () => {
                   <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                    <SelectItem
+                      value="all"
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      All Categories
+                    </SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
+                      <SelectItem
+                        key={category}
+                        value={category}
+                        className="bg-white hover:bg-gray-50"
+                      >
                         {category}
                       </SelectItem>
                     ))}
@@ -475,12 +500,20 @@ const PollingPage: React.FC = () => {
       </Tabs>
 
       {/* Modals */}
-      <CreatePollModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreatePoll}
+      <PollModal
+        isOpen={showPollModal}
+        onClose={() => {
+          setShowPollModal(false);
+          setIsEditMode(false);
+        }}
+        onSubmit={isEditMode ? handleUpdatePoll : handleCreatePoll}
+        poll={isEditMode ? selectedPoll : undefined}
         categories={categories}
         statuses={statuses}
+        types={types}
+        createCategory={createCategory}
+        createType={createType}
+        onBackToView={isEditMode ? handleBackToView : undefined}
       />
 
       {selectedPoll && (
@@ -489,17 +522,6 @@ const PollingPage: React.FC = () => {
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
           onEdit={handleEditPoll}
-        />
-      )}
-
-      {selectedPoll && (
-        <EditPollModal
-          poll={selectedPoll}
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          onSubmit={handleUpdatePoll}
-          onBackToView={handleBackToView}
-          categories={categories}
         />
       )}
     </div>

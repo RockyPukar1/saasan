@@ -3,6 +3,7 @@ import { ResponseHelper } from "../lib/helpers/ResponseHelper";
 import { PollModel } from "../models/PollModel";
 import { ValidationHelper } from "../lib/helpers/ValidationHelper";
 import { PollOption } from "../../../shared/types";
+import db from "../config/database";
 
 export class PollingController {
   static async getAll(req: Request, res: Response): Promise<void> {
@@ -121,13 +122,41 @@ export class PollingController {
         return;
       }
 
+      // Update poll basic information
       const updatedPoll = await PollModel.update(id, {
         title: value.title,
+        title_nepali: value.title_nepali,
         description: value.description,
+        description_nepali: value.description_nepali,
+        type: value.type,
+        type_nepali: value.type_nepali,
+        status: value.status,
+        status_nepali: value.status_nepali,
+        category: value.category,
+        category_nepali: value.category_nepali,
+        end_date: value.end_date,
+        is_anonymous: value.is_anonymous,
+        requires_verification: value.requires_verification,
       });
 
+      // Handle options update if provided
+      if (value.options && Array.isArray(value.options)) {
+        // Delete existing options
+        await db("poll_options").where({ poll_id: id }).del();
+
+        // Add new options
+        for (let i = 0; i < value.options.length; i++) {
+          const optionText = value.options[i];
+          const optionTextNepali = value.options_nepali?.[i] || "";
+          await PollModel.addOption(id, optionText, optionTextNepali);
+        }
+      }
+
+      // Get the complete poll with options
+      const completePoll = await PollModel.findById(id);
+
       res.json(
-        ResponseHelper.success(updatedPoll, "Poll updated successfully")
+        ResponseHelper.success(completePoll, "Poll updated successfully")
       );
     } catch (error) {
       console.error("Update poll error:", error);
@@ -260,19 +289,7 @@ export class PollingController {
 
   static async getAnalytics(req: Request, res: Response): Promise<void> {
     try {
-      // Return mock data for now to test the endpoint
-      const analytics = {
-        total_polls: 3,
-        active_polls: 3,
-        total_votes: 0,
-        participation_rate: 0,
-        category_breakdown: [
-          { category: "General", count: 3, percentage: 100 },
-        ],
-        district_breakdown: [],
-        politician_performance: [],
-        party_performance: [],
-      };
+      const analytics = await PollModel.getAnalytics();
       res.json(ResponseHelper.success(analytics));
     } catch (error) {
       console.error("Get analytics error:", error);
@@ -282,8 +299,7 @@ export class PollingController {
 
   static async getCategories(req: Request, res: Response): Promise<void> {
     try {
-      // Return mock data for now to test the endpoint
-      const categories = ["General", "Politics", "Corruption", "Government"];
+      const categories = await PollModel.getCategories();
       res.json(ResponseHelper.success(categories));
     } catch (error) {
       console.error("Get categories error:", error);
@@ -298,6 +314,16 @@ export class PollingController {
     } catch (error) {
       console.error("Get statuses error:", error);
       res.status(500).json(ResponseHelper.error("Failed to fetch statuses"));
+    }
+  }
+
+  static async getTypes(req: Request, res: Response): Promise<void> {
+    try {
+      const types = await PollModel.getTypes();
+      res.json(ResponseHelper.success(types));
+    } catch (error) {
+      console.error("Get types error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to fetch types"));
     }
   }
 
@@ -327,6 +353,72 @@ export class PollingController {
       res
         .status(500)
         .json(ResponseHelper.error("Failed to fetch party comparison"));
+    }
+  }
+
+  static async createCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, name_nepali } = req.body;
+
+      if (!name || !name.trim()) {
+        res.status(400).json(ResponseHelper.error("Category name is required"));
+        return;
+      }
+
+      const categoryName = name.trim();
+
+      const categories = await PollModel.getCategories();
+
+      if (categories.includes(categoryName)) {
+        res.status(400).json(ResponseHelper.error("Category already exists"));
+        return;
+      }
+
+      const newCategory = {
+        name: categoryName,
+        name_nepali: name_nepali?.trim() || "",
+      };
+
+      res
+        .status(201)
+        .json(
+          ResponseHelper.success(newCategory, "Category created successfully")
+        );
+    } catch (error) {
+      console.error("Create category error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to create category"));
+    }
+  }
+
+  static async createType(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, name_nepali } = req.body;
+
+      if (!name || !name.trim()) {
+        res.status(400).json(ResponseHelper.error("Type name is required"));
+        return;
+      }
+
+      const typeName = name.trim();
+
+      const types = await PollModel.getTypes();
+
+      if (types.includes(typeName)) {
+        res.status(400).json(ResponseHelper.error("Type already exists"));
+        return;
+      }
+
+      const newType = {
+        name: typeName,
+        name_nepali: name_nepali?.trim() || "",
+      };
+
+      res
+        .status(201)
+        .json(ResponseHelper.success(newType, "Type created successfully"));
+    } catch (error) {
+      console.error("Create type error:", error);
+      res.status(500).json(ResponseHelper.error("Failed to create type"));
     }
   }
 }

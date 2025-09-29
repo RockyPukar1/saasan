@@ -83,7 +83,7 @@ export class AuthController {
       // Validate password
       const isValid = await AuthHelper.comparePassword(
         password,
-        user.password_hash
+        user.password_hash || ""
       );
       if (!isValid) {
         res.status(401).json(ResponseHelper.error("Invalid credentials"));

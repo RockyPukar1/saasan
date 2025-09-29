@@ -21,6 +21,7 @@ import { dashboardApi, reportsApi, politiciansApi } from "@/services/api";
 import { viralApi } from "@/services/viralApi";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { safeFormatDate } from "../lib/utils";
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -254,7 +255,7 @@ export const DashboardPage: React.FC = () => {
                         {report.status}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {format(new Date(report.createdAt), "MMM dd")}
+                        {safeFormatDate(report.createdAt, "MMM dd")}
                       </span>
                     </div>
                   </div>

@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { usePolling } from "~/hooks/usePolling";
-import { Poll, PollStatus, PollType } from "../../../shared/types/polling";
+import { Poll, PollStatus, PollType } from "~/shared-types";
 import { useAuthContext } from "~/contexts/AuthContext";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { PageHeader } from "~/components/PageHeader";

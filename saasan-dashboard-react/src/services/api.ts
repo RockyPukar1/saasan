@@ -26,8 +26,6 @@ import type {
   UpdatePollData,
   PollAnalytics,
   PollComparison,
-  PollCategory,
-  PollStatus,
 } from "../../../shared/types/polling";
 
 // Utility function to transform snake_case to camelCase
@@ -577,7 +575,10 @@ export const pollingApi = {
     return response.data;
   },
 
-  vote: async (pollId: string, optionId: string): Promise<ApiResponse<PollVote>> => {
+  vote: async (
+    pollId: string,
+    optionId: string
+  ): Promise<ApiResponse<PollVote>> => {
     const response = await api.post(`/polls/${pollId}/vote/${optionId}`);
     return response.data;
   },
@@ -603,13 +604,28 @@ export const pollingApi = {
     return response.data;
   },
 
-  getCategories: async (): Promise<ApiResponse<PollCategory[]>> => {
+  getCategories: async () => {
     const response = await api.get("/polls/categories");
     return response.data;
   },
 
-  getStatuses: async (): Promise<ApiResponse<PollStatus[]>> => {
+  getStatuses: async () => {
     const response = await api.get("/polls/statuses");
+    return response.data;
+  },
+
+  getTypes: async () => {
+    const response = await api.get("/polls/types");
+    return response.data;
+  },
+
+  createCategory: async (data: { name: string; name_nepali?: string }) => {
+    const response = await api.post("/polls/categories", data);
+    return response.data;
+  },
+
+  createType: async (data: { name: string; name_nepali?: string }) => {
+    const response = await api.post("/polls/types", data);
     return response.data;
   },
 };

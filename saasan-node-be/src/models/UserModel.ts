@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 
-import { User } from "../../../shared/types";
+import { User } from "../../../shared/types/user";
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
 
@@ -48,7 +48,7 @@ export class UserModel {
     user: User,
     password: string
   ): Promise<boolean> {
-    return bcrypt.compare(password, user.password_hash);
+    return bcrypt.compare(password, user.password_hash || "");
   }
 
   static async updateLastActive(id: string): Promise<void> {

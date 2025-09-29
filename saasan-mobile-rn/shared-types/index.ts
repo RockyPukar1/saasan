@@ -48,6 +48,34 @@ export const ReportPriority = {
 export type ReportPriority =
   (typeof ReportPriority)[keyof typeof ReportPriority];
 
+export const PollStatus = {
+  ACTIVE: "active",
+  ENDED: "ended",
+  DRAFT: "draft",
+} as const;
+
+export type PollStatus = (typeof PollStatus)[keyof typeof PollStatus];
+
+export const PollType = {
+  SINGLE_CHOICE: "single_choice",
+  MULTIPLE_CHOICE: "multiple_choice",
+  RATING: "rating",
+} as const;
+
+export type PollType = (typeof PollType)[keyof typeof PollType];
+
+export const PollCategory = {
+  GENERAL: "general",
+  POLITICAL: "political",
+  SOCIAL: "social",
+  ECONOMIC: "economic",
+  EDUCATION: "education",
+  HEALTH: "health",
+  ENVIRONMENT: "environment",
+} as const;
+
+export type PollCategory = (typeof PollCategory)[keyof typeof PollCategory];
+
 // User types
 export interface User {
   id: string;
@@ -222,11 +250,11 @@ export interface Poll {
   title_nepali?: string;
   description: string;
   description_nepali?: string;
-  type: string;
+  type: PollType;
   type_nepali?: string;
-  status: string;
+  status: PollStatus;
   status_nepali?: string;
-  category: string;
+  category: PollCategory;
   category_nepali?: string;
   start_date: string;
   end_date?: string;
@@ -325,7 +353,7 @@ export type MediaPickerResult = MediaFile;
 
 // Poll-specific interfaces
 export interface PollFilters {
-  status?: string;
+  status?: PollStatus;
   category?: string;
   district?: string;
   municipality?: string;
@@ -342,13 +370,13 @@ export interface CreatePollData {
   title_nepali?: string;
   description: string;
   description_nepali?: string;
-  type: string;
+  type: PollType;
   type_nepali?: string;
   options: string[];
   options_nepali?: string[];
-  category: string;
+  category: PollCategory;
   category_nepali?: string;
-  status: string;
+  status: PollStatus;
   status_nepali?: string;
   end_date: string;
   is_anonymous: boolean;
@@ -360,12 +388,8 @@ export interface UpdatePollData {
   title_nepali?: string;
   description?: string;
   description_nepali?: string;
-  status?: string;
+  status?: PollStatus;
   status_nepali?: string;
-  category?: string;
-  category_nepali?: string;
-  type?: string;
-  type_nepali?: string;
   end_date?: string;
   is_anonymous?: boolean;
   requires_verification?: boolean;

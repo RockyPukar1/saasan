@@ -1,6 +1,6 @@
 import db from "../config/database";
 import { generateUUID } from "../lib/utils";
-import { Poll, PollCategory, PollOption } from "../../../shared/types";
+import { Poll, PollOption } from "../../../shared/types/polling";
 
 export class PollModel {
   static async create(pollData: Partial<Poll>): Promise<Poll> {
@@ -139,7 +139,8 @@ export class PollModel {
 
   static async addOption(
     pollId: string,
-    optionText: string
+    optionText: string,
+    optionTextNepali?: string
   ): Promise<PollOption> {
     const id = generateUUID();
     const [option] = await db("poll_options")
@@ -147,6 +148,7 @@ export class PollModel {
         id,
         poll_id: pollId,
         text: optionText,
+        text_nepali: optionTextNepali || null,
         votes_count: 0,
         percentage: 0,
         created_at: new Date(),
@@ -325,63 +327,63 @@ export class PollModel {
     }));
 
     // Get district breakdown
-    const districtBreakdown = await db("polls")
-      .select("district")
-      .count("id as count")
-      .whereNotNull("district")
-      .groupBy("district")
-      .orderBy("count", "desc");
+    // const districtBreakdown = await db("polls")
+    //   .select("district")
+    //   .count("id as count")
+    //   .whereNotNull("district")
+    //   .groupBy("district")
+    //   .orderBy("count", "desc");
 
-    const districtData = districtBreakdown.map((item) => ({
-      district: item.district,
-      count: parseInt(item.count as string),
-      percentage:
-        totalPolls > 0
-          ? Math.round((parseInt(item.count as string) / totalPolls) * 100)
-          : 0,
-    }));
+    // const districtData = districtBreakdown.map((item) => ({
+    //   district: item.district,
+    //   count: parseInt(item.count as string),
+    //   percentage:
+    //     totalPolls > 0
+    //       ? Math.round((parseInt(item.count as string) / totalPolls) * 100)
+    //       : 0,
+    // }));
 
     // Get politician performance (mock data for now)
-    const politicianPerformance = await db("polls")
-      .leftJoin("politicians", "polls.politician_id", "politicians.id")
-      .select(
-        "politicians.id as politician_id",
-        "politicians.full_name as politician_name"
-      )
-      .count("polls.id as polls_created")
-      .whereNotNull("polls.politician_id")
-      .groupBy("politicians.id", "politicians.full_name")
-      .orderBy("polls_created", "desc")
-      .limit(10);
+    // const politicianPerformance = await db("polls")
+    //   .leftJoin("politicians", "polls.politician_id", "politicians.id")
+    //   .select(
+    //     "politicians.id as politician_id",
+    //     "politicians.full_name as politician_name"
+    //   )
+    //   .count("polls.id as polls_created")
+    //   .whereNotNull("polls.politician_id")
+    //   .groupBy("politicians.id", "politicians.full_name")
+    //   .orderBy("polls_created", "desc")
+    //   .limit(10);
 
-    const politicianData = politicianPerformance.map((item) => ({
-      politician_id: item.politician_id,
-      politician_name: item.politician_name,
-      polls_created: parseInt(item.polls_created as string),
-      total_votes_received: Math.floor(Math.random() * 1000), // Mock data
-      average_rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Mock data: 3-5 rating
-    }));
+    // const politicianData = politicianPerformance.map((item) => ({
+    //   politician_id: item.politician_id,
+    //   politician_name: item.politician_name,
+    //   polls_created: parseInt(item.polls_created as string),
+    //   total_votes_received: Math.floor(Math.random() * 1000), // Mock data
+    //   average_rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Mock data: 3-5 rating
+    // }));
 
     // Get party performance (mock data for now)
-    const partyPerformance = await db("polls")
-      .leftJoin("political_parties", "polls.party_id", "political_parties.id")
-      .select(
-        "political_parties.id as party_id",
-        "political_parties.name as party_name"
-      )
-      .count("polls.id as polls_created")
-      .whereNotNull("polls.party_id")
-      .groupBy("political_parties.id", "political_parties.name")
-      .orderBy("polls_created", "desc")
-      .limit(10);
+    // const partyPerformance = await db("polls")
+    //   .leftJoin("political_parties", "polls.party_id", "political_parties.id")
+    //   .select(
+    //     "political_parties.id as party_id",
+    //     "political_parties.name as party_name"
+    //   )
+    //   .count("polls.id as polls_created")
+    //   .whereNotNull("polls.party_id")
+    //   .groupBy("political_parties.id", "political_parties.name")
+    //   .orderBy("polls_created", "desc")
+    //   .limit(10);
 
-    const partyData = partyPerformance.map((item) => ({
-      party_id: item.party_id,
-      party_name: item.party_name,
-      polls_created: parseInt(item.polls_created as string),
-      total_votes_received: Math.floor(Math.random() * 2000), // Mock data
-      average_rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Mock data: 3-5 rating
-    }));
+    // const partyData = partyPerformance.map((item) => ({
+    //   party_id: item.party_id,
+    //   party_name: item.party_name,
+    //   polls_created: parseInt(item.polls_created as string),
+    //   total_votes_received: Math.floor(Math.random() * 2000), // Mock data
+    //   average_rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Mock data: 3-5 rating
+    // }));
 
     return {
       total_polls: totalPolls,
@@ -389,13 +391,13 @@ export class PollModel {
       total_votes: totalVotes,
       participation_rate: participationRate,
       category_breakdown: categoryData,
-      district_breakdown: districtData,
-      politician_performance: politicianData,
-      party_performance: partyData,
+      district_breakdown: [],
+      politician_performance: [],
+      party_performance: [],
     };
   }
 
-  static async getCategories(): Promise<PollCategory[]> {
+  static async getCategories(): Promise<string[]> {
     const categories = await db("polls")
       .select("category")
       .distinct()
@@ -413,6 +415,16 @@ export class PollModel {
       .orderBy("status");
 
     return statuses.map((item) => item.status);
+  }
+
+  static async getTypes(): Promise<string[]> {
+    const types = await db("polls")
+      .select("type")
+      .distinct()
+      .whereNotNull("type")
+      .orderBy("type");
+
+    return types.map((item) => item.type);
   }
 
   static async getPoliticianComparison(politicianId: string): Promise<any[]> {

@@ -6,9 +6,7 @@ import type {
   CreatePollData,
   UpdatePollData,
   PollAnalytics,
-  PollCategory,
 } from "../../../shared/types/polling";
-import { PollStatus } from "../../../shared/types/polling";
 
 export function usePolling() {
   const [loading, setLoading] = useState(false);
@@ -16,8 +14,9 @@ export function usePolling() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [currentPoll, setCurrentPoll] = useState<Poll | null>(null);
   const [analytics, setAnalytics] = useState<PollAnalytics | null>(null);
-  const [categories, setCategories] = useState<PollCategory[]>([]);
-  const [statuses, setStatuses] = useState<PollStatus[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [types, setTypes] = useState<string[]>([]);
 
   const loadPolls = useCallback(async (filters?: PollFilters) => {
     setLoading(true);
@@ -202,9 +201,69 @@ export function usePolling() {
     }
   }, []);
 
+  const loadTypes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await pollingApi.getTypes();
+      setTypes(response.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load types");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createCategory = useCallback(
+    async (name: string, name_nepali?: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await pollingApi.createCategory({ name, name_nepali });
+        // Add the new category to the local state immediately
+        setCategories((prev) => {
+          const newCategory = response.data.name;
+          if (!prev.includes(newCategory)) {
+            return [...prev, newCategory];
+          }
+          return prev;
+        });
+        return response.data;
+      } catch (error: any) {
+        setError(error.response?.data?.message || "Failed to create category");
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const createType = useCallback(async (name: string, name_nepali?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await pollingApi.createType({ name, name_nepali });
+      // Add the new type to the local state immediately
+      setTypes((prev) => {
+        const newType = response.data.name;
+        if (!prev.includes(newType)) {
+          return [...prev, newType];
+        }
+        return prev;
+      });
+      return response.data;
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Failed to create type");
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const endPoll = useCallback(
     async (id: string) => {
-      return updatePoll(id, { status: PollStatus.ENDED });
+      return updatePoll(id, { status: "ended" });
     },
     [updatePoll]
   );
@@ -217,6 +276,7 @@ export function usePolling() {
     analytics,
     categories,
     statuses,
+    types,
     loadPolls,
     loadPollById,
     createPoll,
@@ -229,6 +289,9 @@ export function usePolling() {
     loadPartyComparison,
     loadCategories,
     loadStatuses,
+    loadTypes,
+    createCategory,
+    createType,
     endPoll,
   };
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import type { Poll, PollStatus } from "../../../../shared/types/polling";
+import type { Poll } from "../../../../shared/types/polling";
 import { PollResultsChart } from "./PollResultsChart";
 import {
   X,
@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   Shield,
-  Vote,
   BarChart3,
   PieChart,
   TrendingUp,
@@ -37,26 +36,26 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
     0
   );
 
-  const getStatusColor = (status: PollStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case PollStatus.ACTIVE:
+      case "ACTIVE":
         return "bg-green-100 text-green-800";
-      case PollStatus.ENDED:
+      case "ENDED":
         return "bg-gray-100 text-gray-800";
-      case PollStatus.DRAFT:
+      case "DRAFT":
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getStatusText = (status: PollStatus) => {
+  const getStatusText = (status: string) => {
     switch (status) {
-      case PollStatus.ACTIVE:
+      case "ACTIVE":
         return "Active";
-      case PollStatus.ENDED:
+      case "ENDED":
         return "Ended";
-      case PollStatus.DRAFT:
+      case "DRAFT":
         return "Draft";
       default:
         return status;

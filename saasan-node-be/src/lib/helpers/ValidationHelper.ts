@@ -15,8 +15,12 @@ export class ValidationHelper {
 
   static corruptionReport = Joi.object({
     title: Joi.string().min(5).max(200).required(),
+    title_nepali: Joi.string().min(5).max(200).optional(),
     description: Joi.string().min(20).max(5000).required(),
+    description_nepali: Joi.string().min(20).max(5000).optional(),
     categoryId: Joi.number().required(),
+    category: Joi.string().min(1).max(100).optional(),
+    category_nepali: Joi.string().min(1).max(100).optional(),
     locationDescription: Joi.string().max(500).optional(),
     latitude: Joi.number().min(-90).max(90).optional(),
     longitude: Joi.number().min(-180).max(180).optional(),
@@ -30,6 +34,8 @@ export class ValidationHelper {
     publicVisibility: Joi.string()
       .valid("public", "private", "restricted")
       .default("public"),
+    tags: Joi.array().items(Joi.string()).optional(),
+    tags_nepali: Joi.array().items(Joi.string()).optional(),
   });
 
   static politicianRating = Joi.object({
@@ -42,17 +48,27 @@ export class ValidationHelper {
 
   static pollCreation = Joi.object({
     title: Joi.string().min(5).max(200).required(),
+    title_nepali: Joi.string().min(5).max(200).optional(),
     description: Joi.string().min(10).max(1000).required(),
-    type: Joi.string()
-      .valid("single_choice", "multiple_choice", "rating")
-      .required(),
+    description_nepali: Joi.string().min(10).max(1000).optional(),
+    type: Joi.string().min(1).max(100).required(),
+    type_nepali: Joi.string().min(1).max(100).optional(),
     options: Joi.array()
       .items(Joi.string().min(1).max(100))
       .min(2)
       .max(10)
       .required(),
-    status: Joi.string().valid("active", "inactive").required(),
+    options_nepali: Joi.array()
+      .items(Joi.string().min(1).max(100))
+      .min(2)
+      .max(10)
+      .optional(),
+    status: Joi.string()
+      .valid("active", "inactive", "Active", "Inactive")
+      .required(),
+    status_nepali: Joi.string().min(1).max(100).optional(),
     category: Joi.string().min(1).max(100).required(),
+    category_nepali: Joi.string().min(1).max(100).optional(),
     end_date: Joi.string().required(),
     is_anonymous: Joi.boolean().required(),
     requires_verification: Joi.boolean().required(),
@@ -60,17 +76,27 @@ export class ValidationHelper {
 
   static pollUpdate = Joi.object({
     title: Joi.string().min(5).max(200).optional(),
+    title_nepali: Joi.string().min(5).max(200).optional(),
     description: Joi.string().min(10).max(1000).optional(),
-    type: Joi.string()
-      .valid("single_choice", "multiple_choice", "rating")
-      .optional(),
+    description_nepali: Joi.string().min(10).max(1000).optional(),
+    type: Joi.string().min(1).max(100).optional(),
+    type_nepali: Joi.string().min(1).max(100).optional(),
     options: Joi.array()
       .items(Joi.string().min(1).max(100))
       .min(2)
       .max(10)
       .optional(),
-    status: Joi.string().valid("active", "inactive").optional(),
+    options_nepali: Joi.array()
+      .items(Joi.string().min(1).max(100))
+      .min(2)
+      .max(10)
+      .optional(),
+    status: Joi.string()
+      .valid("active", "inactive", "Active", "Inactive")
+      .optional(),
+    status_nepali: Joi.string().min(1).max(100).optional(),
     category: Joi.string().min(1).max(100).optional(),
+    category_nepali: Joi.string().min(1).max(100).optional(),
     end_date: Joi.string().optional(),
     is_anonymous: Joi.boolean().optional(),
     requires_verification: Joi.boolean().optional(),
@@ -78,29 +104,42 @@ export class ValidationHelper {
 
   static pollOption = Joi.object({
     text: Joi.string().min(1).max(100).required(),
+    text_nepali: Joi.string().min(1).max(100).optional(),
   });
 
   // Historical Event validations
   static historicalEvent = Joi.object({
     title: Joi.string().min(2).max(200).required(),
+    title_nepali: Joi.string().min(2).max(200).optional(),
     description: Joi.string().min(10).max(2000).required(),
+    description_nepali: Joi.string().min(10).max(2000).optional(),
     date: Joi.string().required(),
     year: Joi.number().min(1900).max(new Date().getFullYear()).required(),
     category: Joi.string()
       .valid("corruption", "political", "social", "economic")
       .required(),
+    category_nepali: Joi.string().min(1).max(100).optional(),
     significance: Joi.string().valid("high", "medium", "low").required(),
+    significance_nepali: Joi.string().min(1).max(500).optional(),
+    location: Joi.string().min(1).max(255).optional(),
+    location_nepali: Joi.string().min(1).max(255).optional(),
   });
 
   static historicalEventUpdate = Joi.object({
     title: Joi.string().min(2).max(200).optional(),
+    title_nepali: Joi.string().min(2).max(200).optional(),
     description: Joi.string().min(10).max(2000).optional(),
+    description_nepali: Joi.string().min(10).max(2000).optional(),
     date: Joi.string().optional(),
     year: Joi.number().min(1900).max(new Date().getFullYear()).optional(),
     category: Joi.string()
       .valid("corruption", "political", "social", "economic")
       .optional(),
+    category_nepali: Joi.string().min(1).max(100).optional(),
     significance: Joi.string().valid("high", "medium", "low").optional(),
+    significance_nepali: Joi.string().min(1).max(500).optional(),
+    location: Joi.string().min(1).max(255).optional(),
+    location_nepali: Joi.string().min(1).max(255).optional(),
   });
 
   // Major Case validations
@@ -163,11 +202,13 @@ export class ValidationHelper {
   // Geographic validations
   static district = Joi.object({
     name: Joi.string().min(2).max(100).required(),
+    name_nepali: Joi.string().min(2).max(100).optional(),
     provinceId: Joi.number().min(1).max(7).required(),
   });
 
   static municipality = Joi.object({
     name: Joi.string().min(2).max(100).required(),
+    name_nepali: Joi.string().min(2).max(100).optional(),
     districtId: Joi.string().required(),
     type: Joi.string()
       .valid(
@@ -188,11 +229,15 @@ export class ValidationHelper {
   // Politician validations
   static politician = Joi.object({
     fullName: Joi.string().min(2).max(100).required(),
+    full_name_nepali: Joi.string().min(2).max(100).optional(),
     positionId: Joi.number().min(1).required(),
     partyId: Joi.number().min(1).required(),
     constituencyId: Joi.number().min(1).required(),
     biography: Joi.string().min(10).max(2000).required(),
     education: Joi.string().min(2).max(200).required(),
+    education_nepali: Joi.string().min(2).max(500).optional(),
+    profession: Joi.string().min(2).max(100).optional(),
+    profession_nepali: Joi.string().min(2).max(100).optional(),
     experienceYears: Joi.number().min(0).required(),
     dateOfBirth: Joi.string().required(),
     profileImageUrl: Joi.string().uri().optional(),
@@ -208,11 +253,15 @@ export class ValidationHelper {
 
   static politicianUpdate = Joi.object({
     fullName: Joi.string().min(2).max(100).optional(),
+    full_name_nepali: Joi.string().min(2).max(100).optional(),
     positionId: Joi.number().min(1).optional(),
     partyId: Joi.number().min(1).optional(),
     constituencyId: Joi.number().min(1).optional(),
     biography: Joi.string().min(10).max(2000).optional(),
     education: Joi.string().min(2).max(200).optional(),
+    education_nepali: Joi.string().min(2).max(500).optional(),
+    profession: Joi.string().min(2).max(100).optional(),
+    profession_nepali: Joi.string().min(2).max(100).optional(),
     experienceYears: Joi.number().min(0).optional(),
     dateOfBirth: Joi.string().optional(),
     profileImageUrl: Joi.string().uri().optional(),

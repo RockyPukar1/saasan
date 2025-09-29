@@ -141,7 +141,7 @@ export const PoliticiansPage: React.FC = () => {
 
   const handleFormSubmit = (data: PoliticianFormData) => {
     if (editingPolitician) {
-      updateMutation.mutate({ id: editingPolitician.id, data });
+      updateMutation.mutate({ id: editingPolitician.id, data: data as any });
     } else {
       createMutation.mutate(data);
     }
@@ -149,7 +149,23 @@ export const PoliticiansPage: React.FC = () => {
 
   const handleEdit = (politician: Politician) => {
     setEditingPolitician(politician);
-    reset(politician);
+    // Convert Date to string for form handling
+    const formData = {
+      ...politician,
+      dateOfBirth:
+        typeof politician.dateOfBirth === "string"
+          ? politician.dateOfBirth
+          : politician.dateOfBirth.toISOString().split("T")[0],
+      termStartDate:
+        typeof politician.termStartDate === "string"
+          ? politician.termStartDate
+          : politician.termStartDate.toISOString().split("T")[0],
+      termEndDate:
+        typeof politician.termEndDate === "string"
+          ? politician.termEndDate
+          : politician.termEndDate.toISOString().split("T")[0],
+    };
+    reset(formData);
     setShowForm(true);
   };
 
@@ -234,11 +250,28 @@ export const PoliticiansPage: React.FC = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="deceased">Deceased</SelectItem>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                  <SelectItem value="all" className="bg-white hover:bg-gray-50">
+                    All Status
+                  </SelectItem>
+                  <SelectItem
+                    value="active"
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    Active
+                  </SelectItem>
+                  <SelectItem
+                    value="inactive"
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    Inactive
+                  </SelectItem>
+                  <SelectItem
+                    value="deceased"
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    Deceased
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

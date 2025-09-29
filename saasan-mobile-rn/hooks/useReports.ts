@@ -6,8 +6,8 @@ import type {
   ReportCreateData,
   ReportUpdateData,
   Evidence,
-} from "../../shared/types/reports";
-import type { MediaPickerResult } from "../../shared/types/common";
+} from "~/shared-types";
+import type { MediaPickerResult } from "~/shared-types";
 
 export const useReports = (initialFilters?: ReportFilters) => {
   const [reports, setReports] = useState<CorruptionReport[]>([]);
@@ -125,7 +125,10 @@ export const useReports = (initialFilters?: ReportFilters) => {
           } as any);
         }
 
-        const response = await apiService.uploadEvidence(reportId, formData as any);
+        const response = await apiService.uploadEvidence(
+          reportId,
+          formData as any
+        );
 
         if (currentReport?.id === reportId) {
           setCurrentReport((prev) =>
@@ -159,12 +162,12 @@ export const useReports = (initialFilters?: ReportFilters) => {
             report.id === id
               ? {
                   ...report,
-                  upvotes_count: isUpvote
-                    ? (report.upvotes_count || 0) + 1
-                    : report.upvotes_count || 0,
-                  downvotes_count: !isUpvote
-                    ? (report.downvotes_count || 0) + 1
-                    : report.downvotes_count || 0,
+                  upvotesCount: isUpvote
+                    ? (report.upvotesCount || 0) + 1
+                    : report.upvotesCount || 0,
+                  downvotesCount: !isUpvote
+                    ? (report.downvotesCount || 0) + 1
+                    : report.downvotesCount || 0,
                   user_vote: isUpvote ? "up" : "down",
                 }
               : report
@@ -176,11 +179,11 @@ export const useReports = (initialFilters?: ReportFilters) => {
               ? {
                   ...prev,
                   upvotes_count: isUpvote
-                    ? (prev.upvotes_count || 0) + 1
-                    : prev.upvotes_count || 0,
+                    ? (prev.upvotesCount || 0) + 1
+                    : prev.upvotesCount || 0,
                   downvotes_count: !isUpvote
-                    ? (prev.downvotes_count || 0) + 1
-                    : prev.downvotes_count || 0,
+                    ? (prev.downvotesCount || 0) + 1
+                    : prev.downvotesCount || 0,
                   user_vote: isUpvote ? "up" : "down",
                 }
               : null

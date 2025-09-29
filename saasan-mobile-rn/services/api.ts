@@ -6,14 +6,14 @@ import {
   ReportCreateData,
   ReportFilters,
   ReportUpdateData,
-} from "~/types/reports";
+} from "~/shared-types";
 import {
   Poll,
   PollFilters,
   CreatePollData,
   UpdatePollData,
   PollVote,
-} from "~/types/polling";
+} from "~/shared-types";
 import {
   getApiHeaders,
   getApiQuery,

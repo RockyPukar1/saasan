@@ -9,6 +9,7 @@ const router = express.Router();
 router.get("/analytics", PollingController.getAnalytics);
 router.get("/categories", PollingController.getCategories);
 router.get("/statuses", PollingController.getStatuses);
+router.get("/types", PollingController.getTypes);
 router.get(
   "/politician/:politicianId/comparison",
   PollingController.getPoliticianComparison
@@ -24,5 +25,7 @@ router.put("/:id", authenticateToken, PollController.update);
 router.delete("/:id", authenticateToken, PollController.delete);
 router.post("/:id/options", authenticateToken, PollController.addOption);
 router.post("/:id/vote/:optionId", authenticateToken, PollController.vote);
+router.post("/categories", authenticateToken, PollingController.createCategory);
+router.post("/types", authenticateToken, PollingController.createType);
 
 export default router;

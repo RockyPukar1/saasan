@@ -6,7 +6,7 @@ import {
   CreatePollData,
   UpdatePollData,
   PollStatus,
-} from "~/types/polling";
+} from "~/shared-types";
 
 export function usePolling() {
   const [loading, setLoading] = useState(false);

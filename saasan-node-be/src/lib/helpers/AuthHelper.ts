@@ -1,9 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-import { User } from "../../../../shared/types";
-import { ResponseHelper } from "./ResponseHelper";
-import { Response } from "express";
+import { User } from "../../../../shared/types/user";
 
 export class AuthHelper {
   static generateToken(user: User): string {

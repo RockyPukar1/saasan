@@ -1,3 +1,7 @@
+import { PollStatus, PollType, PollCategory } from "./index";
+
+export { PollStatus, PollType, PollCategory };
+
 export interface PollOption {
   id: string;
   poll_id?: string;
@@ -15,11 +19,11 @@ export interface Poll {
   title_nepali?: string;
   description: string;
   description_nepali?: string;
-  type: string;
+  type: PollType;
   type_nepali?: string;
-  status: string;
+  status: PollStatus;
   status_nepali?: string;
-  category: string;
+  category: PollCategory;
   category_nepali?: string;
   start_date: string;
   end_date: string;
@@ -48,7 +52,7 @@ export interface PollVote {
 }
 
 export interface PollFilters {
-  status?: string;
+  status?: PollStatus;
   category?: string;
   district?: string;
   municipality?: string;
@@ -65,13 +69,13 @@ export interface CreatePollData {
   title_nepali?: string;
   description: string;
   description_nepali?: string;
-  type: string;
+  type: PollType;
   type_nepali?: string;
   options: string[];
   options_nepali?: string[];
-  category: string;
+  category: PollCategory;
   category_nepali?: string;
-  status: string;
+  status: PollStatus;
   status_nepali?: string;
   end_date: string;
   is_anonymous: boolean;
@@ -83,14 +87,8 @@ export interface UpdatePollData {
   title_nepali?: string;
   description?: string;
   description_nepali?: string;
-  status?: string;
+  status?: PollStatus;
   status_nepali?: string;
-  category?: string;
-  category_nepali?: string;
-  options?: string[];
-  options_nepali?: string[];
-  type?: string;
-  type_nepali?: string;
   end_date?: string;
   is_anonymous?: boolean;
   requires_verification?: boolean;
