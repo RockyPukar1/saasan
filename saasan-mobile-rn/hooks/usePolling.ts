@@ -118,6 +118,7 @@ export function usePolling() {
 
         // Then reload the specific poll to get accurate server data
         const response = await apiService.getPollById(pollId);
+        console.log(response.data);
         const updatedPoll = response.data;
 
         // Update the polls array with the fresh data

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import {
   PollOptionEntity,
   PollOptionEntityDocument,
@@ -19,18 +19,15 @@ export class PollOptionRepository {
     return await this.model.create(pollOptionData);
   }
 
-  async incrVoteCount({ pollId, optionId }: VoteDto) {
-    return await this.model.findOneAndUpdate(
-      { pollId, optionId },
+  async incrVoteCount({ pollId, optionId }: VoteDto, session: ClientSession) {
+    return await this.model.findByIdAndUpdate(
+      optionId,
       {
         $inc: {
           voteCount: 1,
         },
       },
+      { session },
     );
-  }
-
-  async getOptionStats(pollId: string) {
-    return await this.model.findById(pollId, { text: 1, voteCount: 1, _id: 0 });
   }
 }

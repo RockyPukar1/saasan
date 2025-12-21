@@ -32,12 +32,7 @@ export class PollService {
       .lean();
     if (!poll) throw new GlobalHttpException('poll404', HttpStatus.NOT_FOUND);
 
-    const statistics = await this.getPollStats({ pollId });
-
-    return ResponseHelper.success({
-      ...poll,
-      statistics,
-    });
+    return ResponseHelper.success(poll, 'Poll data fetched successfully');
   }
 
   async create({ options, ...pollData }: CreatePollDto) {
@@ -84,15 +79,8 @@ export class PollService {
         .findOne({ pollId, userId })
         .populate('options', '_id voteCount text percentage')
         .lean();
-      const statistics = await this.getPollStats({ pollId });
 
-      return ResponseHelper.success(
-        {
-          poll: updatedPoll,
-          statistics,
-        },
-        'Vote recorded successfully',
-      );
+      return ResponseHelper.success(updatedPoll, 'Vote recorded successfully');
     } else {
       throw new GlobalHttpException(
         'vote505',
@@ -108,21 +96,18 @@ export class PollService {
   private async registerVote(userId: string, { pollId, optionId }: VoteDto) {
     const session = await this.connection.startSession();
 
-    await this.pollVoteRepo.incrTotalVotes(pollId, session);
-    await this.pollOptionRepo.incrVoteCount({ pollId, optionId });
+    try {
+      await session.withTransaction(async () => {
+        await this.pollRepo.incrTotalVotes(pollId, session);
+        await this.pollVoteRepo.create({ pollId, optionId });
+        await this.pollOptionRepo.incrVoteCount({ pollId, optionId }, session);
+      });
+    } catch (error) {
+      throw error;
+    } finally {
+      await session.endSession();
+    }
 
     return true;
-  }
-
-  private async getPollStats({ pollId }: PollIdDto) {
-    const [totalVotes, optionStats] = await Promise.all([
-      this.pollVoteRepo.getTotalVotes(pollId),
-      this.pollOptionRepo.getOptionStats(pollId),
-    ]);
-
-    return {
-      totalVotes,
-      optionStats,
-    };
   }
 }

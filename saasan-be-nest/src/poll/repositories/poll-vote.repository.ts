@@ -5,6 +5,7 @@ import {
   PollVoteEntity,
   PollVoteEntityDocument,
 } from '../entities/poll-vote.entity';
+import { VoteDto } from '../dtos/vote.dto';
 
 @Injectable()
 export class PollVoteRepository {
@@ -13,16 +14,8 @@ export class PollVoteRepository {
     private readonly model: Model<PollVoteEntityDocument>,
   ) {}
 
-  async incrTotalVotes(pollId: string, session: ClientSession) {
-    return await this.model.findByIdAndUpdate(
-      pollId,
-      {
-        $inc: {
-          totalVotes: 1,
-        },
-      },
-      { session },
-    );
+  async create(voteData: VoteDto) {
+    await this.model.create(voteData);
   }
 
   async getTotalVotes(pollId: string) {

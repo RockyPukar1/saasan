@@ -106,7 +106,7 @@ const PollScreen = () => {
   const renderPollCard = (poll: Poll) => {
     const hasVoted = poll.user_vote !== undefined;
     const totalVotes = poll.options.reduce(
-      (sum, opt) => sum + opt.votesCount,
+      (sum, opt) => sum + opt.voteCount,
       0
     );
 
@@ -156,7 +156,7 @@ const PollScreen = () => {
             {poll.options.map((option) => {
               const percentage =
                 totalVotes > 0
-                  ? Math.round((option.votesCount / totalVotes) * 100)
+                  ? Math.round((option.voteCount / totalVotes) * 100)
                   : 0;
               const isSelected =
                 poll.user_vote === option._id ||
@@ -201,7 +201,7 @@ const PollScreen = () => {
                         isSelected ? "text-green-800" : "text-gray-600"
                       }`}
                     >
-                      {option.votesCount} {t("polling.votes")} ({percentage}%)
+                      {option.voteCount} {t("polling.votes")} ({percentage}%)
                     </Text>
                   </View>
                   <View className="mt-2 bg-gray-200 rounded-full overflow-hidden">
@@ -264,7 +264,7 @@ const PollScreen = () => {
           <View className="flex-row items-center">
             <CheckCircle2 className="text-green-600 mr-1" size={14} />
             <Text className="text-xs text-gray-600">
-              {polls.filter((p) => p.totalVotes !== undefined).length} voted
+              {polls.filter((p) => p.totalVotes).length} voted
             </Text>
           </View>
         </View>

@@ -414,7 +414,6 @@ class ApiService {
       "GET",
       `/poll${queryParams}`
     );
-    console.log(response);
     return response.data;
   }
 

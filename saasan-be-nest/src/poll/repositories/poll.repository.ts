@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PollEntity, PollEntityDocument } from '../entities/poll.entity';
@@ -27,6 +27,18 @@ export class PollRepository {
 
   findOne(filter: any) {
     return this.model.findOne(filter);
+  }
+
+  async incrTotalVotes(pollId: string, session: ClientSession) {
+    return await this.model.findByIdAndUpdate(
+      pollId,
+      {
+        $inc: {
+          totalVotes: 1,
+        },
+      },
+      { session },
+    );
   }
 
   async updateOne(id: string, data: any) {
