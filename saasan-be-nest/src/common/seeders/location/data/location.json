@@ -1,0 +1,64 @@
+[
+  {
+    "name": "Koshi",
+    "provinceNumber": 1,
+    "capital": "Biratnagar"
+  },
+  {
+    "name": "Madhesh",
+    "provinceNumber": 2,
+    "capital": "Biratnagar"
+  },
+  {
+    "name": "Bagmati",
+    "provinceNumber": 3,
+    "capital": "Hetauda",
+    "districts": [
+      {
+        "name": "Chitwan",
+        "headquarter": "Bharatpur",
+        "constituencies": [
+          {
+            "constituencyNumber": 1
+          },
+          {
+            "constituencyNumber": 2
+          },
+          {
+            "constituencyNumber": 3
+          }
+        ],
+        "municipalities": [
+          {
+            "name": "Bharatpur Metropolitan City",
+            "wards": [
+              {
+                "wardNumber": 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Gandaki",
+    "provinceNumber": 4,
+    "capital": "Pokhara"
+  },
+  {
+    "name": "Lumbini",
+    "provinceNumber": 5,
+    "capital": "Deukhuri"
+  },
+  {
+    "name": "Karnali",
+    "provinceNumber": 6,
+    "capital": "Birendranagar"
+  },
+  {
+    "name": "Sudurpashchim",
+    "provinceNumber": 7,
+    "capital": "Godawari"
+  }
+]

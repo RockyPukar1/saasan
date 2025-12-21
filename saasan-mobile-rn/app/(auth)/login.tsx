@@ -12,7 +12,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await login(email, password);
-      router.replace("/(tabs)");
+      // router.replace("/(tabs)");
     } catch (error) {
       Alert.alert(
         "Login Failed",

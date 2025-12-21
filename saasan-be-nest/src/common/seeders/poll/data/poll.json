@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Poll 1",
+    "description": "Poll 1 Description",
+    "options": [
+      "Option 1",
+      "Option 2"
+    ],
+    "startDate": "2025-12-20T12:18:00Z",
+    "endDate": "2025-12-25T12:18:00Z"
+  }
+]

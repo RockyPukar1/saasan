@@ -18,7 +18,7 @@ router.use("/politicians", politicianRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/locations", locationRoutes);
-router.use("/polls", pollRoutes);
+router.use("/poll", pollRoutes);
 router.use("/historical-events", historicalEventRoutes);
 router.use("/major-cases", majorCaseRoutes);
 router.use("/viral", viralRoutes);

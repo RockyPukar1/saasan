@@ -25,7 +25,7 @@ router.get(
   authenticateToken,
   ViralController.getTrendingPolls
 );
-router.post("/polls/vote", authenticateToken, ViralController.voteOnPoll);
+router.post("/poll/vote", authenticateToken, ViralController.voteOnPoll);
 
 // Transparency feed
 router.get(

@@ -106,12 +106,12 @@ const PollScreen = () => {
   const renderPollCard = (poll: Poll) => {
     const hasVoted = poll.user_vote !== undefined;
     const totalVotes = poll.options.reduce(
-      (sum, opt) => sum + opt.votes_count,
+      (sum, opt) => sum + opt.votesCount,
       0
     );
 
     return (
-      <Card key={poll.id} className="mb-4">
+      <Card key={poll._id} className="mb-4">
         <CardContent className="p-4">
           <View className="flex-row justify-between items-start mb-3">
             <View className="flex-1">
@@ -156,12 +156,12 @@ const PollScreen = () => {
             {poll.options.map((option) => {
               const percentage =
                 totalVotes > 0
-                  ? Math.round((option.votes_count / totalVotes) * 100)
+                  ? Math.round((option.votesCount / totalVotes) * 100)
                   : 0;
               const isSelected =
-                poll.user_vote === option.id ||
+                poll.user_vote === option._id ||
                 (Array.isArray(poll.user_vote) &&
-                  poll.user_vote.includes(option.id));
+                  poll.user_vote.includes(option._id));
 
               const isMultipleChoice = poll.type === "multiple_choice";
               const canVote = poll.status === PollStatus.ACTIVE && user;
@@ -172,10 +172,10 @@ const PollScreen = () => {
 
               return (
                 <TouchableOpacity
-                  key={option.id}
+                  key={option._id}
                   onPress={() => {
                     if (canVote) {
-                      handleVote(poll.id, option.id);
+                      handleVote(poll._id, option._id);
                     }
                   }}
                   disabled={isDisabled}
@@ -201,7 +201,7 @@ const PollScreen = () => {
                         isSelected ? "text-green-800" : "text-gray-600"
                       }`}
                     >
-                      {option.votes_count} {t("polling.votes")} ({percentage}%)
+                      {option.votesCount} {t("polling.votes")} ({percentage}%)
                     </Text>
                   </View>
                   <View className="mt-2 bg-gray-200 rounded-full overflow-hidden">
@@ -221,22 +221,14 @@ const PollScreen = () => {
             <View className="flex-row items-center">
               <Clock className="text-gray-500" size={14} />
               <Text className="text-gray-500 text-xs ml-1">
-                {poll.end_date
-                  ? new Date(poll.end_date).toLocaleDateString()
+                {poll.endDate
+                  ? new Date(poll.endDate).toLocaleDateString()
                   : "N/A"}
               </Text>
             </View>
             <Text className="text-gray-600 text-xs">
-              {poll.total_votes} {t("polling.votes")}
+              {poll.totalVotes} {t("polling.votes")}
             </Text>
-            {poll.is_anonymous && (
-              <View className="flex-row items-center">
-                <AlertCircle className="text-gray-500" size={14} />
-                <Text className="text-gray-500 text-xs ml-1">
-                  {t("polling.anonymous")}
-                </Text>
-              </View>
-            )}
           </View>
         </CardContent>
       </Card>
@@ -272,7 +264,7 @@ const PollScreen = () => {
           <View className="flex-row items-center">
             <CheckCircle2 className="text-green-600 mr-1" size={14} />
             <Text className="text-xs text-gray-600">
-              {polls.filter((p) => p.total_votes !== undefined).length} voted
+              {polls.filter((p) => p.totalVotes !== undefined).length} voted
             </Text>
           </View>
         </View>

@@ -104,8 +104,7 @@ const transformReport = (data: Partial<CorruptionReport>) => ({
   updatedAt: data.updatedAt,
 });
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.SAASAN_API_URL || "http://localhost:7001";
 
 // Create axios instance
 const api = axios.create({
@@ -118,7 +117,7 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -134,7 +133,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("auth_token");
+      localStorage.removeItem("accessToken");
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -146,7 +145,9 @@ export const authApi = {
   login: async (
     email: string,
     password: string
-  ): Promise<ApiResponse<{ token: string; user: User }>> => {
+  ): Promise<
+    ApiResponse<{ accessToken: string; refreshToken: string; user: User }>
+  > => {
     const response = await api.post("/auth/login", { email, password });
     return response.data;
   },
@@ -159,7 +160,9 @@ export const authApi = {
     district?: string;
     municipality?: string;
     wardNumber?: number;
-  }): Promise<ApiResponse<{ token: string; user: User }>> => {
+  }): Promise<
+    ApiResponse<{ accessToken: string; refreshToken: string; user: User }>
+  > => {
     const response = await api.post("/auth/register", userData);
     return response.data;
   },
@@ -170,7 +173,7 @@ export const authApi = {
   },
 
   logout: () => {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem("accessToken");
   },
 };
 
@@ -576,22 +579,22 @@ export const majorCasesApi = {
 // Polling API
 export const pollingApi = {
   getAll: async (filters?: PollFilters): Promise<PaginatedResponse<Poll>> => {
-    const response = await api.get("/polls", { params: filters });
+    const response = await api.get("/poll", { params: filters });
     return response.data;
   },
 
   getById: async (id: string): Promise<ApiResponse<Poll>> => {
-    const response = await api.get(`/polls/${id}`);
+    const response = await api.get(`/poll/${id}`);
     return response.data;
   },
 
   getStats: async (id: string): Promise<ApiResponse<PollAnalytics>> => {
-    const response = await api.get(`/polls/${id}/stats`);
+    const response = await api.get(`/poll/${id}/stats`);
     return response.data;
   },
 
   create: async (pollData: CreatePollData): Promise<ApiResponse<Poll>> => {
-    const response = await api.post("/polls", pollData);
+    const response = await api.post("/poll", pollData);
     return response.data;
   },
 
@@ -599,12 +602,12 @@ export const pollingApi = {
     id: string,
     pollData: UpdatePollData
   ): Promise<ApiResponse<Poll>> => {
-    const response = await api.put(`/polls/${id}`, pollData);
+    const response = await api.put(`/poll/${id}`, pollData);
     return response.data;
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/polls/${id}`);
+    const response = await api.delete(`/poll/${id}`);
     return response.data;
   },
 
@@ -612,7 +615,7 @@ export const pollingApi = {
     id: string,
     option: { option: string }
   ): Promise<ApiResponse<PollOption>> => {
-    const response = await api.post(`/polls/${id}/options`, option);
+    const response = await api.post(`/poll/${id}/options`, option);
     return response.data;
   },
 
@@ -620,12 +623,12 @@ export const pollingApi = {
     pollId: string,
     optionId: string
   ): Promise<ApiResponse<PollVote>> => {
-    const response = await api.post(`/polls/${pollId}/vote/${optionId}`);
+    const response = await api.post(`/poll/${pollId}/vote/${optionId}`);
     return response.data;
   },
 
   getAnalytics: async (): Promise<ApiResponse<PollAnalytics>> => {
-    const response = await api.get("/polls/analytics");
+    const response = await api.get("/poll/analytics");
     return response.data;
   },
 
@@ -633,7 +636,7 @@ export const pollingApi = {
     politicianId: string
   ): Promise<ApiResponse<PollComparison[]>> => {
     const response = await api.get(
-      `/polls/politician/${politicianId}/comparison`
+      `/poll/politician/${politicianId}/comparison`
     );
     return response.data;
   },
@@ -641,32 +644,32 @@ export const pollingApi = {
   getPartyComparison: async (
     partyId: string
   ): Promise<ApiResponse<PollComparison[]>> => {
-    const response = await api.get(`/polls/party/${partyId}/comparison`);
+    const response = await api.get(`/poll/party/${partyId}/comparison`);
     return response.data;
   },
 
   getCategories: async () => {
-    const response = await api.get("/polls/categories");
+    const response = await api.get("/poll/categories");
     return response.data;
   },
 
   getStatuses: async () => {
-    const response = await api.get("/polls/statuses");
+    const response = await api.get("/poll/statuses");
     return response.data;
   },
 
   getTypes: async () => {
-    const response = await api.get("/polls/types");
+    const response = await api.get("/poll/types");
     return response.data;
   },
 
   createCategory: async (data: { name: string; name_nepali?: string }) => {
-    const response = await api.post("/polls/categories", data);
+    const response = await api.post("/poll/categories", data);
     return response.data;
   },
 
   createType: async (data: { name: string; name_nepali?: string }) => {
-    const response = await api.post("/polls/types", data);
+    const response = await api.post("/poll/types", data);
     return response.data;
   },
 };

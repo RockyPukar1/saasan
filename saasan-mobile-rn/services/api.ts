@@ -27,7 +27,7 @@ const transformPoll = (data: any): Poll => {
   const formattedData = formatApiResponse(data, "en");
 
   return {
-    id: formattedData.id,
+    _id: formattedData._id,
     title: formattedData.title,
     description: formattedData.description,
     type: formattedData.type,
@@ -40,25 +40,22 @@ const transformPoll = (data: any): Poll => {
         votes_count: option.votes_count || option.votes || 0, // Handle both field names
         percentage: parseFloat(option.percentage) || 0, // Convert string percentage to number
       })) || [],
-    total_votes: formattedData.total_votes || 0,
-    start_date: formattedData.start_date,
-    end_date:
-      formattedData.end_date ||
+    totalVotes: formattedData.totalVotes || 0,
+    startDate: formattedData.startDate,
+    endDate:
+      formattedData.endDate ||
       new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 7 days from now if null
-    created_by: formattedData.created_by,
-    created_at: formattedData.created_at,
-    updated_at: formattedData.updated_at,
     user_vote: formattedData.user_vote,
-    is_anonymous: formattedData.is_anonymous || false,
-    requires_verification: formattedData.requires_verification || false,
+    createdAt: formattedData.createdAt,
+    updatedAt: formattedData.updated_at,
+    requiresVerification: formattedData.requires_verification || false,
     district: formattedData.district,
     municipality: formattedData.municipality,
     ward: formattedData.ward,
   };
 };
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+const BASE_URL = process.env.SAASAN_API_URL || "http://localhost:7001";
 
 interface ApiResponse<T> {
   success: boolean;
@@ -135,15 +132,19 @@ class ApiService {
   }
 
   private async getAuthToken(): Promise<string | null> {
-    return await AsyncStore.getItem("auth_token");
+    return await AsyncStore.getItem("accessToken");
   }
 
-  private async setAuthToken(token: string): Promise<void> {
-    await AsyncStore.setItem("auth_token", token);
+  private async setAuthToken(
+    accessToken: string,
+    refreshToken: string
+  ): Promise<void> {
+    await AsyncStore.setItem("accessToken", accessToken);
+    await AsyncStore.setItem("refreshToken", refreshToken);
   }
 
   private async removeAuthToken(): Promise<void> {
-    await AsyncStore.removeItem("auth_token");
+    await AsyncStore.removeItem("accessToken");
   }
 
   private async request<T>(
@@ -195,27 +196,41 @@ class ApiService {
   }
 
   // Auth APIs
-  async login(
-    data: LoginData
-  ): Promise<ApiResponse<{ token: string; user: UserProfile }>> {
-    const response = await this.request<{ token: string; user: UserProfile }>(
-      "POST",
-      "/auth/login",
-      data
+  async login(data: LoginData): Promise<
+    ApiResponse<{
+      accessToken: string;
+      refreshToken: string;
+      user: UserProfile;
+    }>
+  > {
+    const response = await this.request<{
+      accessToken: string;
+      refreshToken: string;
+      user: UserProfile;
+    }>("POST", "/auth/login", data);
+    await this.setAuthToken(
+      response.data.accessToken,
+      response.data.refreshToken
     );
-    await this.setAuthToken(response.data.token);
     return response;
   }
 
-  async register(
-    data: RegisterData
-  ): Promise<ApiResponse<{ token: string; user: UserProfile }>> {
-    const response = await this.request<{ token: string; user: UserProfile }>(
-      "POST",
-      "/auth/register",
-      data
+  async register(data: RegisterData): Promise<
+    ApiResponse<{
+      accessToken: string;
+      refreshToken: string;
+      user: UserProfile;
+    }>
+  > {
+    const response = await this.request<{
+      accessToken: string;
+      refreshToken: string;
+      user: UserProfile;
+    }>("POST", "/auth/register", data);
+    await this.setAuthToken(
+      response.data.accessToken,
+      response.data.refreshToken
     );
-    await this.setAuthToken(response.data.token);
     return response;
   }
 
@@ -380,10 +395,10 @@ class ApiService {
 
   // Polling APIs
   async createPoll(data: CreatePollData): Promise<ApiResponse<Poll>> {
-    return this.request<Poll>("POST", "/polls", data);
+    return this.request<Poll>("POST", "/poll", data);
   }
 
-  async getAllPolls(filters?: PollFilters): Promise<ApiResponse<Poll[]>> {
+  async getAllPolls(filters?: PollFilters): Promise<Poll[]> {
     const queryParams = filters
       ? "?" +
         Object.entries(filters)
@@ -395,15 +410,16 @@ class ApiService {
           .join("&")
       : "";
 
-    const response = await this.request<any[]>("GET", `/polls${queryParams}`);
-    return {
-      ...response,
-      data: response.data?.map(transformPoll) || [],
-    };
+    const response = await this.request<Promise<Poll[]>>(
+      "GET",
+      `/poll${queryParams}`
+    );
+    console.log(response);
+    return response.data;
   }
 
   async getPollById(id: string): Promise<ApiResponse<Poll>> {
-    const response = await this.request<any>("GET", `/polls/${id}`);
+    const response = await this.request<any>("GET", `/poll/${id}`);
     return {
       ...response,
       data: transformPoll(response.data),
@@ -411,7 +427,7 @@ class ApiService {
   }
 
   async getUserPolls(): Promise<ApiResponse<Poll[]>> {
-    const response = await this.request<any[]>("GET", "/polls/my-polls");
+    const response = await this.request<any[]>("GET", "/poll/my-polls");
     return {
       ...response,
       data: response.data?.map(transformPoll) || [],
@@ -422,7 +438,7 @@ class ApiService {
     id: string,
     data: UpdatePollData
   ): Promise<ApiResponse<Poll>> {
-    const response = await this.request<any>("PUT", `/polls/${id}`, data);
+    const response = await this.request<any>("PUT", `/poll/${id}`, data);
     return {
       ...response,
       data: transformPoll(response.data),
@@ -430,7 +446,7 @@ class ApiService {
   }
 
   async deletePoll(id: string): Promise<ApiResponse<void>> {
-    return this.request<void>("DELETE", `/polls/${id}`);
+    return this.request<void>("DELETE", `/poll/${id}`);
   }
 
   async voteOnPoll(
@@ -439,17 +455,14 @@ class ApiService {
   ): Promise<ApiResponse<PollVote>> {
     // Handle single choice polls
     if (typeof optionId === "string") {
-      return this.request<PollVote>(
-        "POST",
-        `/polls/${pollId}/vote/${optionId}`
-      );
+      return this.request<PollVote>("POST", `/poll/${pollId}/vote/${optionId}`);
     }
     // Handle multiple choice polls - vote on each option separately
     const results = [];
     for (const id of optionId) {
       const result = await this.request<PollVote>(
         "POST",
-        `/polls/${pollId}/vote/${id}`
+        `/poll/${pollId}/vote/${id}`
       );
       results.push(result.data);
     }
@@ -465,7 +478,7 @@ class ApiService {
   }
 
   async getPollCategories(): Promise<ApiResponse<string[]>> {
-    return this.request<string[]>("GET", "/polls/categories");
+    return this.request<string[]>("GET", "/poll/categories");
   }
 
   // Campaign APIs

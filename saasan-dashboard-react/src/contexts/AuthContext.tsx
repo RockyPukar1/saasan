@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("accessToken");
       if (token) {
         try {
           const response = await authApi.getProfile();
@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } catch (error) {
           console.error("Failed to get user profile:", error);
-          localStorage.removeItem("auth_token");
+          localStorage.removeItem("accessToken");
         }
       }
       setLoading(false);
@@ -57,11 +57,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       const response = await authApi.login(email, password);
+      console.log(response);
+      throw "Hi";
       if (response.success) {
         setUser(response.data.user);
-        localStorage.setItem("auth_token", response.data.token);
+        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
       }
     } catch (error) {
+      console.log(error);
       throw error;
     }
   };

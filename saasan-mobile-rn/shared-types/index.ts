@@ -234,18 +234,18 @@ export interface MajorCase {
 
 // Poll types
 export interface PollOption {
-  id: string;
+  _id: string;
   poll_id?: string;
   text: string;
   text_nepali?: string;
-  votes_count: number;
+  votesCount: number;
   percentage: number;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface Poll {
-  id: string;
+  _id: string;
   title: string;
   title_nepali?: string;
   description: string;
@@ -256,15 +256,14 @@ export interface Poll {
   status_nepali?: string;
   category: PollCategory;
   category_nepali?: string;
-  start_date: string;
-  end_date?: string;
-  created_by: string;
-  total_votes: number;
-  is_anonymous: boolean;
-  requires_verification: boolean;
+  startDate: string;
+  endDate?: string;
+  createdBy?: string;
+  totalVotes: number;
+  requiresVerification: boolean;
   options: PollOption[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   user_vote?: string | string[];
   district?: string;
   municipality?: string;

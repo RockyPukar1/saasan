@@ -210,7 +210,7 @@ export interface PollOption {
   poll_id?: string;
   text: string;
   text_nepali?: string;
-  votes_count: number;
+  votesCount: number;
   percentage: number;
   created_at?: string;
   updated_at?: string;
