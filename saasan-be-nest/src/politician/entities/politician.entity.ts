@@ -29,7 +29,7 @@ export class PoliticianEntity {
   @Prop({ type: Types.ObjectId, ref: ConstituencyEntity.name })
   constituencyId?: Types.ObjectId;
 
-  @Prop({ type: Boolean, default: true })
+  @Prop({ type: Boolean, default: false })
   isIndependent?: boolean;
 
   @Prop({ type: Types.ObjectId, ref: PartyEntity.name })

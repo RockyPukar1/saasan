@@ -1,0 +1,52 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import { CandidateComparisionService } from '../candidate-comparision.service';
+import { CreateCandidateComparisionDto } from '../dto/create-candidate-comparision.dto';
+import { UpdateCandidateComparisionDto } from '../dto/update-candidate-comparision.dto';
+
+@Controller('candidate-comparision')
+export class CandidateComparisionController {
+  constructor(
+    private readonly candidateComparisionService: CandidateComparisionService,
+  ) {}
+
+  @Post()
+  create(@Body() createCandidateComparisionDto: CreateCandidateComparisionDto) {
+    return this.candidateComparisionService.create(
+      createCandidateComparisionDto,
+    );
+  }
+
+  @Get()
+  findAll() {
+    return this.candidateComparisionService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.candidateComparisionService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updateCandidateComparisionDto: UpdateCandidateComparisionDto,
+  ) {
+    return this.candidateComparisionService.update(
+      +id,
+      updateCandidateComparisionDto,
+    );
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.candidateComparisionService.remove(+id);
+  }
+}

@@ -18,6 +18,14 @@ import { ContentModule } from './content/content.module';
 import { ServiceModule } from './service/service.module';
 import { LevelModule } from './level/level.module';
 import { PositionModule } from './position/position.module';
+import { ElectionCandidateModule } from './election-candidate/election-candidate.module';
+import { CandidateComparisionModule } from './candidate-comparision/candidate-comparision.module';
+import { VoterRegistrationModule } from './voter-registration/voter-registration.module';
+import { VoterIntentSurveyModule } from './voter-intent-survey/voter-intent-survey.module';
+import { VotingSessionModule } from './voting-session/voting-session.module';
+import { VotingCenterModule } from './voting-center/voting-center.module';
+import { UserVoteModule } from './user-vote/user-vote.module';
+import { CandidateComparisionCriteriaModule } from './candidate-comparision-criteria/candidate-comparision-criteria.module';
 
 @Module({
   imports: [
@@ -45,6 +53,14 @@ import { PositionModule } from './position/position.module';
     ServiceModule,
     LevelModule,
     PositionModule,
+    ElectionCandidateModule,
+    CandidateComparisionModule,
+    VoterRegistrationModule,
+    VoterIntentSurveyModule,
+    VotingSessionModule,
+    VotingCenterModule,
+    UserVoteModule,
+    CandidateComparisionCriteriaModule,
   ],
   providers: [],
 })
