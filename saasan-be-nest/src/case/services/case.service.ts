@@ -1,6 +1,7 @@
-import { Global, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CaseRepository } from '../repositories/case.repository';
 
 @Injectable()
 export class CaseService {
-  constructor() {}
+  constructor(private readonly caseRepo: CaseRepository) {}
 }
