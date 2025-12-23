@@ -18,8 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-
-    "seed:location": "nest start --entryFile common/seeders/location/seed-location"
+    "seed:location": "nest start --entryFile common/seeders/location/seed-location",
+    "seed:report": "nest start --entryFile common/seeders/report/seed-report"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

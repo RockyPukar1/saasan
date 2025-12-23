@@ -425,7 +425,7 @@ export const reportsApi = {
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<CorruptionReport>> => {
-    const response = await api.get("/reports", { params });
+    const response = await api.get("/report", { params });
     return {
       ...response.data,
       data: response.data.data?.map(transformReport) || [],

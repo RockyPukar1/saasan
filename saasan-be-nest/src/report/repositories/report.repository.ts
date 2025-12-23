@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ReportEntity, ReportEntityDocument } from '../entities/report.entity';
 import { Model } from 'mongoose';
+import { CreateReportDto } from '../dtos/create-report.dto';
 
 @Injectable()
 export class ReportRepository {
@@ -9,6 +10,14 @@ export class ReportRepository {
     @InjectModel(ReportEntity.name)
     private readonly model: Model<ReportEntityDocument>,
   ) {}
+
+  async create(reportData: CreateReportDto) {
+    await this.model.create(reportData);
+  }
+
+  async getAll() {
+    return await this.model.find();
+  }
 
   async getTotalReports() {
     return await this.countDocuments();

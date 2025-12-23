@@ -7,25 +7,22 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LocationSeederModule } from './common/seeders/location/location-seeder.module';
 import { UserModule } from './user/user.module';
-import { PoliticianModule } from './politician/politician.module';
-import { PartyModule } from './party/party.module';
+import { PoliticianModule } from './politics/politician/politician.module';
+import { PartyModule } from './politics/party/party.module';
 import { ReportModule } from './report/report.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventModule } from './event/event.module';
 import { CaseModule } from './case/case.module';
 import { ViralModule } from './viral/viral.module';
-import { ContentModule } from './content/content.module';
 import { ServiceModule } from './service/service.module';
-import { LevelModule } from './level/level.module';
-import { PositionModule } from './position/position.module';
-import { ElectionCandidateModule } from './election-candidate/election-candidate.module';
-import { CandidateComparisionModule } from './candidate-comparision/candidate-comparision.module';
-import { VoterRegistrationModule } from './voter-registration/voter-registration.module';
-import { VoterIntentSurveyModule } from './voter-intent-survey/voter-intent-survey.module';
-import { VotingSessionModule } from './voting-session/voting-session.module';
-import { VotingCenterModule } from './voting-center/voting-center.module';
-import { UserVoteModule } from './user-vote/user-vote.module';
-import { CandidateComparisionCriteriaModule } from './candidate-comparision-criteria/candidate-comparision-criteria.module';
+import { LevelModule } from './politics/level/level.module';
+import { PositionModule } from './politics/position/position.module';
+import { VoterRegistrationModule } from './vote/voter-registration/voter-registration.module';
+import { VoterIntentSurveyModule } from './vote/voter-intent-survey/voter-intent-survey.module';
+import { VotingSessionModule } from './vote/voting-session/voting-session.module';
+import { VotingCenterModule } from './vote/voting-center/voting-center.module';
+import { UserVoteModule } from './vote/user-vote/user-vote.module';
+import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
 
 @Module({
   imports: [
@@ -37,9 +34,13 @@ import { CandidateComparisionCriteriaModule } from './candidate-comparision-crit
       secret: process.env.SAASAN_JWT_SECRET,
       global: true,
     }),
+    // Seeder modules
+    LocationSeederModule,
+    ReportSeederModule,
+
+    // Normal modules
     PollModule,
     LocationModule,
-    LocationSeederModule,
     AuthModule,
     UserModule,
     PoliticianModule,
@@ -49,18 +50,14 @@ import { CandidateComparisionCriteriaModule } from './candidate-comparision-crit
     EventModule,
     CaseModule,
     ViralModule,
-    ContentModule,
     ServiceModule,
     LevelModule,
     PositionModule,
-    ElectionCandidateModule,
-    CandidateComparisionModule,
     VoterRegistrationModule,
     VoterIntentSurveyModule,
     VotingSessionModule,
     VotingCenterModule,
     UserVoteModule,
-    CandidateComparisionCriteriaModule,
   ],
   providers: [],
 })
