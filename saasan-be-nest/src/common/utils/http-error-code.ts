@@ -2,7 +2,8 @@ export const HttpErrorCodeMessage = {
   poll404: 'Poll not found',
   pollOption404: 'Poll option not found',
   vote505: 'Vote record failed',
-  userDoesNotExists: 'User does not exist',
+  user404: 'User does not exist',
+  politician404: 'Politician does not exist',
   invalidCredentials: 'Invalid credentials',
   userAlreadyExistsWithEmail: 'User already exists with this phone number',
   provinceAlreadyExistsWithNameOrProvinceNumber:

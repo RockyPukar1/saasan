@@ -14,6 +14,7 @@ import {
   PollOptionEntity,
   PollOptionEntitySchema,
 } from './entities/poll-option.entity';
+import { TransactionModule } from 'src/common/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import {
       { name: PollVoteEntity.name, schema: PollVoteEntitySchema },
       { name: PollOptionEntity.name, schema: PollOptionEntitySchema },
     ]),
+    TransactionModule,
   ],
   controllers: [PollController],
   providers: [

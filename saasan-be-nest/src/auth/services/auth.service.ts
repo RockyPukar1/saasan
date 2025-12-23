@@ -43,7 +43,7 @@ export class AuthService {
   async login({ email, password }: LoginUserDto) {
     const user = await this.doesUserExists({ email }).lean();
     if (!user) {
-      throw new GlobalHttpException('userDoesNotExists', HttpStatus.NOT_FOUND);
+      throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
     }
 
     const isValidPassword = await AuthHelper.comparePassword(

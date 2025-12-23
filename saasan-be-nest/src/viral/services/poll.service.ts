@@ -9,7 +9,6 @@ import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollIdDto } from '../dtos/poll-id.dto';
 import { Connection, Types } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
-import { TransactionRunner } from 'src/common/transaction/runners/transaction.runner';
 
 @Injectable()
 export class PollService {
@@ -18,7 +17,6 @@ export class PollService {
     private readonly pollRepo: PollRepository,
     private readonly pollVoteRepo: PollVoteRepository,
     private readonly pollOptionRepo: PollOptionRepository,
-    private readonly tx: TransactionRunner,
   ) {}
 
   async getAll() {
@@ -96,11 +94,20 @@ export class PollService {
   }
 
   private async registerVote(userId: string, { pollId, optionId }: VoteDto) {
-    return await this.tx.run(async (session) => {
-      await this.pollRepo.incrTotalVotes(pollId, session);
-      await this.pollVoteRepo.create({ pollId, optionId });
-      await this.pollOptionRepo.incrVoteCount({ pollId, optionId }, session);
-      return true;
-    });
+    const session = await this.connection.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        await this.pollRepo.incrTotalVotes(pollId, session);
+        await this.pollVoteRepo.create({ pollId, optionId });
+        await this.pollOptionRepo.incrVoteCount({ pollId, optionId }, session);
+      });
+    } catch (error) {
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+
+    return true;
   }
 }

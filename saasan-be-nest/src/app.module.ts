@@ -7,6 +7,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LocationSeederModule } from './common/seeders/location/location-seeder.module';
 import { UserModule } from './user/user.module';
+import { PoliticianModule } from './politician/politician.module';
+import { PartyModule } from './party/party.module';
+import { ReportModule } from './report/report.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { EventModule } from './event/event.module';
+import { CaseModule } from './case/case.module';
+import { ViralModule } from './viral/viral.module';
+import { ContentModule } from './content/content.module';
+import { ServiceModule } from './service/service.module';
+import { LevelModule } from './level/level.module';
+import { PositionModule } from './position/position.module';
 
 @Module({
   imports: [
@@ -23,6 +34,18 @@ import { UserModule } from './user/user.module';
     LocationSeederModule,
     AuthModule,
     UserModule,
+    PoliticianModule,
+    PartyModule,
+    ReportModule,
+    DashboardModule,
+    EventModule,
+    CaseModule,
+    ViralModule,
+    ContentModule,
+    ServiceModule,
+    LevelModule,
+    PositionModule,
   ],
+  providers: [],
 })
 export class AppModule {}
