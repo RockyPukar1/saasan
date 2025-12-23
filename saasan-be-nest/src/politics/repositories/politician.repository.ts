@@ -19,6 +19,10 @@ export class PoliticianRepository {
     this.model.create(politicianData);
   }
 
+  async getAll() {
+    return await this.model.find();
+  }
+
   findOne(filter: any) {
     return this.model.findOne(filter);
   }

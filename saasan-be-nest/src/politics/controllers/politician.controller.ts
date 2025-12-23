@@ -8,10 +8,10 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { PoliticianService } from '../services/politician.service';
-import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
 import { PoliticianIdDto } from '../dtos/politician-id.dto';
+import { PoliticianService } from '../services/politician.service';
+import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 
 @Controller('politician')
 export class PoliticianController {
@@ -19,7 +19,7 @@ export class PoliticianController {
 
   @Get()
   async getAll() {
-    return this.politicianService.getAll();
+    return await this.politicianService.getAll();
   }
 
   @HttpCode(201)

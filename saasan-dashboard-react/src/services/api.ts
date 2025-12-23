@@ -207,7 +207,7 @@ export const politiciansApi = {
     limit?: number;
     search?: string;
   }): Promise<PaginatedResponse<Politician>> => {
-    const response = await api.get("/politicians", { params });
+    const response = await api.get("/politician", { params });
     const transformedData = response.data.data?.map(transformPolitician) || [];
     return {
       ...response.data,

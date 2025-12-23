@@ -6,40 +6,47 @@ import {
   IsString,
 } from 'class-validator';
 
-export class CreatePoliticianDto {
+export class UpdatePoliticianDto {
   @IsString()
   fullName: string;
 
+  @IsOptional()
   @IsNumber()
-  age: number;
+  age?: number;
 
+  @IsOptional()
   @IsString()
-  biography: string;
+  biography?: string;
 
+  @IsOptional()
   @IsString()
-  education: string;
+  education?: string;
 
+  @IsOptional()
   @IsString()
-  profession: string;
+  profession?: string;
 
+  @IsOptional()
   @IsMongoId()
   constituencyId?: string;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   isIndependent?: boolean;
 
+  @IsOptional()
   @IsMongoId()
   partyId?: string;
 
+  @IsOptional()
   @IsMongoId()
   positionId?: string;
 
-  @IsNumber()
   @IsOptional()
+  @IsNumber()
   experienceYears?: number;
 
-  @IsNumber()
   @IsOptional()
+  @IsNumber()
   rating?: number;
 }

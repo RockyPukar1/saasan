@@ -18,4 +18,4 @@ import {
   providers: [PoliticianService, PoliticianRepository],
   exports: [PoliticianRepository],
 })
-export class PoliticianModule {}
+export class PoliticsModule {}

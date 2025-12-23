@@ -7,22 +7,20 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LocationSeederModule } from './common/seeders/location/location-seeder.module';
 import { UserModule } from './user/user.module';
-import { PoliticianModule } from './politics/politician/politician.module';
-import { PartyModule } from './politics/party/party.module';
 import { ReportModule } from './report/report.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventModule } from './event/event.module';
 import { CaseModule } from './case/case.module';
 import { ViralModule } from './viral/viral.module';
 import { ServiceModule } from './service/service.module';
-import { LevelModule } from './politics/level/level.module';
-import { PositionModule } from './politics/position/position.module';
 import { VoterRegistrationModule } from './vote/voter-registration/voter-registration.module';
 import { VoterIntentSurveyModule } from './vote/voter-intent-survey/voter-intent-survey.module';
 import { VotingSessionModule } from './vote/voting-session/voting-session.module';
 import { VotingCenterModule } from './vote/voting-center/voting-center.module';
 import { UserVoteModule } from './vote/user-vote/user-vote.module';
 import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
+import { PoliticsModule } from './politics/politics.module';
+import { PoliticianSeederModule } from './common/seeders/politician/politician-seeder.module';
 
 @Module({
   imports: [
@@ -37,22 +35,20 @@ import { ReportSeederModule } from './common/seeders/report/report-seeder.module
     // Seeder modules
     LocationSeederModule,
     ReportSeederModule,
+    PoliticianSeederModule,
 
     // Normal modules
     PollModule,
     LocationModule,
     AuthModule,
     UserModule,
-    PoliticianModule,
-    PartyModule,
     ReportModule,
     DashboardModule,
     EventModule,
     CaseModule,
     ViralModule,
     ServiceModule,
-    LevelModule,
-    PositionModule,
+    PoliticsModule,
     VoterRegistrationModule,
     VoterIntentSurveyModule,
     VotingSessionModule,

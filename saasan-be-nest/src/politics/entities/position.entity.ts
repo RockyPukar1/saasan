@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { LevelEntity } from 'src/politics/level/entities/level.entity';
+import { LevelEntity } from './level.entity';
 
 @Schema({ timestamps: true, collection: PositionEntity.collection })
 export class PositionEntity {

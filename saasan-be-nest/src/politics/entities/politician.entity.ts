@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
-import { PartyEntity } from 'src/politics/party/entities/party.entity';
-import { PositionEntity } from 'src/politics/position/entities/position.entity';
+import { PartyEntity } from 'src/politics/entities/party.entity';
+import { PositionEntity } from 'src/politics/entities/position.entity';
 
 @Schema({ timestamps: true, collection: PoliticianEntity.collection })
 export class PoliticianEntity {
@@ -14,17 +14,17 @@ export class PoliticianEntity {
   @Prop({ type: String, required: true })
   fullName: string;
 
-  @Prop({ type: Number, default: 'N/A' })
-  age: number;
+  @Prop({ type: Number })
+  age?: number;
 
-  @Prop({ type: String, required: 'N/A' })
-  biography: string;
+  @Prop({ type: String })
+  biography?: string;
 
-  @Prop({ type: String, default: 'N/A' })
-  education: string;
+  @Prop({ type: String })
+  education?: string;
 
-  @Prop({ type: String, default: 'N/A' })
-  profession: string;
+  @Prop({ type: String })
+  profession?: string;
 
   @Prop({ type: Types.ObjectId, ref: ConstituencyEntity.name })
   constituencyId?: Types.ObjectId;
@@ -41,7 +41,7 @@ export class PoliticianEntity {
   @Prop({ type: Number, default: 0 })
   experienceYears?: number;
 
-  @Prop({ type: String, default: 'N/A' })
+  @Prop({ type: String })
   photoUrl?: string;
 
   @Prop({ type: Boolean, default: true })

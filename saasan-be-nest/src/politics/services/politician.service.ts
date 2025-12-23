@@ -1,14 +1,18 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PoliticianRepository } from '../repositories/politician.repository';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { Types } from 'mongoose';
+import { PoliticianRepository } from '../repositories/politician.repository';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
 
 @Injectable()
 export class PoliticianService {
   constructor(private readonly politicianRepo: PoliticianRepository) {}
 
-  async getAll() {}
+  async getAll() {
+    const politicians = await this.politicianRepo.getAll();
+    return ResponseHelper.success(politicians);
+  }
 
   async create(politicianData: CreatePoliticianDto) {
     await this.politicianRepo.create(politicianData);

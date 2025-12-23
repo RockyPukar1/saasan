@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
+import { PoliticianRepository } from 'src/politics/repositories/politician.repository';
 import { ReportRepository } from 'src/report/repositories/report.repository';
 import { ServiceRepository } from 'src/service/repositories/service.repository';
 
