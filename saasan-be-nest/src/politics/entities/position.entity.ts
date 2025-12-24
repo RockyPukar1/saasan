@@ -9,7 +9,11 @@ export class PositionEntity {
   createdAt: Date;
   updatedAt: Date;
 
+  @Prop({ type: String, required: true })
   title: string;
+
+  @Prop({ type: String, required: true })
+  description: string;
 
   @Prop({ type: Types.ObjectId, ref: LevelEntity.name })
   levelId: Types.ObjectId;

@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../app.module';
 import { Logger } from '@nestjs/common';
-import { PartySeeder } from './party.seeder';
+import { PoliticsSeeder } from './politics.seeder';
 
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
 
-  const seeder = app.get(PartySeeder);
+  const seeder = app.get(PoliticsSeeder);
   await seeder.seed();
 
   await app.close();

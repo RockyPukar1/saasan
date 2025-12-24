@@ -20,9 +20,8 @@ import { VotingCenterModule } from './vote/voting-center/voting-center.module';
 import { UserVoteModule } from './vote/user-vote/user-vote.module';
 import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
 import { PoliticsModule } from './politics/politics.module';
-import { PoliticianSeederModule } from './common/seeders/politician/politician-seeder.module';
+import { PoliticsSeederModule } from './common/seeders/politics/politics-seeder.module';
 import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
-import { PartySeederModule } from './common/seeders/party/party-seeder.module';
 
 @Module({
   imports: [
@@ -37,9 +36,8 @@ import { PartySeederModule } from './common/seeders/party/party-seeder.module';
     // Seeder modules
     LocationSeederModule,
     ReportSeederModule,
-    PoliticianSeederModule,
+    PoliticsSeederModule,
     PollSeederModule,
-    PartySeederModule,
     // Normal modules
     PollModule,
     LocationModule,

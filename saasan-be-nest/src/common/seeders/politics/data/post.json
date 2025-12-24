@@ -1,0 +1,41 @@
+[
+  {
+    "name": "Federal",
+    "description": "Federal level positions",
+    "positions": [
+      {
+        "title": "Prime Minister",
+        "description": "Head of Government"
+      },
+      {
+        "title": "Minister",
+        "description": "Cabinet Minister"
+      },
+      {
+        "title": "Member of Parliament",
+        "description": "Federal Parliament Member"
+      }
+    ]
+  },
+  {
+    "name": "Provincial",
+    "description": "Provincial level positions",
+    "positions": [
+      {
+        "title": "Chief Minister",
+        "description": "Provincial Head"
+      }
+    ]
+  },
+  {
+    "name": "Local",
+    "description": "Local level positions",
+    "positions": [
+      {
+        "title": "Ward Chairperson",
+        "description": "Ward Level Head"
+      }
+    ]
+
+  }
+]
