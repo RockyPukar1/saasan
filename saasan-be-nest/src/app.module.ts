@@ -21,6 +21,7 @@ import { UserVoteModule } from './vote/user-vote/user-vote.module';
 import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
 import { PoliticsModule } from './politics/politics.module';
 import { PoliticianSeederModule } from './common/seeders/politician/politician-seeder.module';
+import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { PoliticianSeederModule } from './common/seeders/politician/politician-s
     LocationSeederModule,
     ReportSeederModule,
     PoliticianSeederModule,
-
+    PollSeederModule,
     // Normal modules
     PollModule,
     LocationModule,

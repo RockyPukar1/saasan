@@ -26,7 +26,7 @@ export class PollService {
 
   async getPollById({ pollId }: PollIdDto) {
     const poll = await this.doesPollExists({
-      _id: new Types.ObjectId(pollId),
+      _id: pollId,
     })
       .populate('options', '_id voteCount text')
       .lean();

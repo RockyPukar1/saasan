@@ -28,7 +28,7 @@ export class PollService {
 
   async getPollById({ pollId }: PollIdDto) {
     const poll = await this.doesPollExists({
-      _id: new Types.ObjectId(pollId),
+      _id: pollId,
     })
       .populate('options', '_id voteCount text')
       .lean();
@@ -91,8 +91,21 @@ export class PollService {
     }
   }
 
-  private doesPollExists(filter: any) {
-    return this.pollRepo.findOne(filter);
+  async getAnalytics() {}
+
+  async getCategories() {
+    const categories = await this.pollRepo.getCategories();
+    return ResponseHelper.success(categories);
+  }
+
+  async getStatuses() {
+    const statuses = await this.pollRepo.getStatuses();
+    return ResponseHelper.success(statuses);
+  }
+
+  async getTypes() {
+    const types = await this.pollRepo.getStatuses();
+    return ResponseHelper.success(types);
   }
 
   private async registerVote(userId: string, { pollId, optionId }: VoteDto) {
@@ -102,5 +115,9 @@ export class PollService {
       await this.pollOptionRepo.incrVoteCount({ pollId, optionId }, session);
       return true;
     });
+  }
+
+  private doesPollExists(filter: any) {
+    return this.pollRepo.findOne(filter);
   }
 }

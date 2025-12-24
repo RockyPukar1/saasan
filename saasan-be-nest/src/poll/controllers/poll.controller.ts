@@ -25,11 +25,6 @@ export class PollController {
     return this.pollService.getAll();
   }
 
-  @Get(':pollId')
-  async getPollById(@Param() param: PollIdDto) {
-    return this.pollService.getPollById(param);
-  }
-
   @HttpCode(201)
   @Post()
   async create(@Body() data: CreatePollDto) {
@@ -39,5 +34,30 @@ export class PollController {
   @Post(':pollId/vote/:optionId')
   async vote(@Req() req: Request, @Param() data: VoteDto) {
     return this.pollService.vote(req.user.id, data);
+  }
+
+  @Get('analytics')
+  async getAnalytics() {
+    return [];
+  }
+
+  @Get('categories')
+  async getCategories() {
+    return this.pollService.getCategories();
+  }
+
+  @Get('statuses')
+  async getStatuses() {
+    return this.pollService.getStatuses();
+  }
+
+  @Get('types')
+  async getTypes() {
+    return this.pollService.getTypes();
+  }
+
+  @Get(':pollId')
+  async getPollById(@Param() param: PollIdDto) {
+    return this.pollService.getPollById(param);
   }
 }

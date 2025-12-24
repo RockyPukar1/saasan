@@ -46,4 +46,39 @@ export class PollRepository {
       $set: data,
     });
   }
+
+  async getAnalytics() {}
+
+  async getCategories() {
+    const categories = await this.model.aggregate([
+      { $match: { category: { $ne: null } } },
+      { $group: { _id: '$category' } },
+      { $sort: { _id: 1 } },
+      { $project: { _id: 0, category: '$_id' } },
+    ]);
+
+    return categories.map((item) => item.category);
+  }
+
+  async getStatuses() {
+    const statuses = await this.model.aggregate([
+      { $match: { status: { $ne: null } } },
+      { $group: { _id: '$status' } },
+      { $sort: { _id: 1 } },
+      { $project: { _id: 0, status: '$_id' } },
+    ]);
+
+    return statuses.map((item) => item.status);
+  }
+
+  async getTypes() {
+    const types = await this.model.aggregate([
+      { $match: { type: { $ne: null } } },
+      { $group: { _id: '$type' } },
+      { $sort: { _id: 1 } },
+      { $project: { _id: 0, type: '$_id' } },
+    ]);
+
+    return types.map((item) => item.type);
+  }
 }

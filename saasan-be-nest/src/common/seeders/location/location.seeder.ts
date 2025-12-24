@@ -46,7 +46,7 @@ export class LocationSeeder {
       const provinceDoc = await this.provinceModel.findOneAndUpdate(
         { provinceNumber: province.provinceNumber },
         {
-          $setOnInsert: {
+          $set: {
             name: province.name,
             capital: province.capital,
           },
@@ -63,7 +63,7 @@ export class LocationSeeder {
         const districtDoc = await this.districtModel.findOneAndUpdate(
           { name: district.name, provinceId },
           {
-            $setOnInsert: {
+            $set: {
               headquarter: district.headquarter,
             },
           },
@@ -82,7 +82,7 @@ export class LocationSeeder {
                 districtId,
               },
               {
-                $setOnInsert: {
+                $set: {
                   constituencyNumber: constituency.constituencyNumber,
                   provinceId,
                   districtId,
@@ -103,7 +103,7 @@ export class LocationSeeder {
               await this.municipalityModel.findOneAndUpdate(
                 { name: municipality.name, provinceId, districtId },
                 {
-                  $setOnInsert: {
+                  $set: {
                     name: municipality.name,
                     provinceId,
                     districtId,
@@ -124,7 +124,7 @@ export class LocationSeeder {
                   municipalityId,
                 },
                 {
-                  $setOnInsert: {
+                  $set: {
                     wardNumber: ward.wardNumber,
                     provinceId,
                     districtId,

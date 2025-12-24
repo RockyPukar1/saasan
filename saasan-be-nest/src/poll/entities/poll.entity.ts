@@ -21,14 +21,14 @@ export class PollEntity {
   @Prop({ type: String, required: true })
   description: string;
 
-  @Prop({ type: String })
-  type?: string;
+  @Prop({ type: String, default: 'single-choice' })
+  type: string;
 
   @Prop({ type: String, options: ['active', 'inactive'], default: 'active' })
-  status?: string;
+  status: string;
 
-  @Prop({ type: String })
-  category?: string;
+  @Prop({ type: String, default: 'general' })
+  category: string;
 
   @Prop({ type: Date, required: true })
   startDate: Date;

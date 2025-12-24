@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Param,
   Post,
   Put,
   Query,
@@ -31,14 +32,14 @@ export class PoliticianController {
   @Put(':politicianId')
   async update(
     @Body() politicianData: UpdatePoliticianDto,
-    @Query() { politicianId }: PoliticianIdDto,
+    @Param() { politicianId }: PoliticianIdDto,
   ) {
     return await this.politicianService.update(politicianId, politicianData);
   }
 
   @HttpCode(204)
   @Delete(':politicianId')
-  async delete(@Query() { politicianId }: PoliticianIdDto) {
+  async delete(@Param() { politicianId }: PoliticianIdDto) {
     return await this.politicianService.delete(politicianId);
   }
 
