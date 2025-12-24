@@ -1,7 +1,7 @@
 import { ClientSession, Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { PollEntity, PollEntityDocument } from '../entities/poll.entity';
+import { PollEntity, PollEntityDocument } from '../entities/event.entity';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 
 @Injectable()
