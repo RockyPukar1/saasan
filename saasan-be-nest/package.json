@@ -21,6 +21,7 @@
     "seed:location": "nest start --entryFile common/seeders/location/seed-location",
     "seed:report": "nest start --entryFile common/seeders/report/seed-report",
     "seed:politician": "nest start --entryFile common/seeders/politician/seed-politician",
+    "seed:party": "nest start --entryFile common/seeders/party/seed-party",
     "seed:poll": "nest start --entryFile common/seeders/poll/seed-poll"
   },
   "dependencies": {
