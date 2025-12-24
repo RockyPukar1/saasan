@@ -4,6 +4,7 @@ import { GlobalHttpException } from 'src/common/exceptions/global-http.exception
 import { Types } from 'mongoose';
 import { PoliticianRepository } from '../repositories/politician.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { LevelNameDto } from '../dtos/level-name.dto';
 
 @Injectable()
 export class PoliticianService {
@@ -31,7 +32,7 @@ export class PoliticianService {
     );
   }
 
-  async delete(politicianId) {
+  async delete(politicianId: string) {
     const politician = await this.doesPoliticianExists({
       _id: new Types.ObjectId(politicianId),
     });
@@ -41,7 +42,10 @@ export class PoliticianService {
     return await this.politicianRepo.findByIdAndDelete(politicianId);
   }
 
-  async getByLevel() {}
+  async getByLevel(query: LevelNameDto) {
+    const politicians = await this.politicianRepo.getByLevel(query);
+    return ResponseHelper.success(politicians);
+  }
 
   async getDetailedProfile() {}
 

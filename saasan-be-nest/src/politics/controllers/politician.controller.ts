@@ -13,6 +13,7 @@ import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
 import { PoliticianIdDto } from '../dtos/politician-id.dto';
 import { PoliticianService } from '../services/politician.service';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
+import { LevelNameDto } from '../dtos/level-name.dto';
 
 @Controller('politician')
 export class PoliticianController {
@@ -43,9 +44,9 @@ export class PoliticianController {
     return await this.politicianService.delete(politicianId);
   }
 
-  @Get()
-  async getByLevel() {
-    return await this.politicianService.getByLevel();
+  @Get('level/:levelName')
+  async getByLevel(@Param() param: LevelNameDto) {
+    return await this.politicianService.getByLevel(param);
   }
 
   @Get(':politicianId/detailed')

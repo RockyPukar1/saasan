@@ -36,27 +36,32 @@ export const usePoliticians = (initialLevel: string = "federal") => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Use lowercase level names for consistency
       const response = await apiService.getPoliticians(selectedLevel);
-      
+
       if (response.success && response.data) {
         // Transform backend data to frontend format
         const transformedPoliticians = response.data.map((politician: any) => ({
           id: politician.id,
-          name: politician.full_name || politician.name || 'Unknown',
-          position: politician.positionTitle || politician.position || 'Unknown Position',
+          name: politician.full_name || politician.name || "Unknown",
+          position:
+            politician.positionTitle ||
+            politician.position ||
+            "Unknown Position",
           level: politician.levelName?.toLowerCase() || selectedLevel,
-          party: politician.partyName || politician.party || 'Independent',
-          constituency: politician.constituencyName || politician.constituency || 'Unknown',
+          party: politician.partyName || politician.party || "Independent",
+          constituency:
+            politician.constituencyName || politician.constituency || "Unknown",
           rating: politician.rating || 0,
-          totalVotes: politician.total_votes_received || politician.totalVotes || 0,
+          totalVotes:
+            politician.total_votes_received || politician.totalVotes || 0,
           promisesFulfilled: politician.promisesFulfilled || 0,
           totalPromises: politician.totalPromises || 0,
           avatar: politician.profile_image_url || politician.avatar,
-          trends: politician.trends || 'stable',
+          trends: politician.trends || "stable",
         }));
-        
+
         setPoliticians(transformedPoliticians);
       } else {
         setPoliticians([]);

@@ -6,5 +6,7 @@ export class LevelController {
   constructor(private readonly levelService: LevelService) {}
 
   @Get()
-  async getLevels() {}
+  async getLevels() {
+    return await this.levelService.getLevels();
+  }
 }

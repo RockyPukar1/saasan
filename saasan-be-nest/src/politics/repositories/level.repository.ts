@@ -12,7 +12,7 @@ export class LevelRepository {
     private readonly model: Model<LevelEntityDocument>,
   ) {}
 
-  async getGovernmentLevels() {
+  async getLevels() {
     return await this.model.aggregate([
       {
         $lookup: {

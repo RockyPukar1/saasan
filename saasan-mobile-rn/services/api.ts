@@ -264,10 +264,10 @@ class ApiService {
         const lowercaseLevel = level.toLowerCase();
         return this.request<Politician[]>(
           "GET",
-          `/politicians/level/${lowercaseLevel}`
+          `/politician/level/${lowercaseLevel}`
         );
       } else {
-        return this.request<Politician[]>("GET", "/politicians");
+        return this.request<Politician[]>("GET", "/politician");
       }
     } catch (error) {
       console.error("Error fetching politicians:", error);
@@ -276,15 +276,15 @@ class ApiService {
   }
 
   async getPoliticianById(id: string): Promise<ApiResponse<Politician>> {
-    return this.request<Politician>("GET", `/politicians/${id}`);
+    return this.request<Politician>("GET", `/politician/${id}`);
   }
 
   async getGovernmentLevels(): Promise<ApiResponse<GovernmentLevel[]>> {
-    return this.request<GovernmentLevel[]>("GET", "/politicians/levels");
+    return this.request<GovernmentLevel[]>("GET", "/level");
   }
 
   async ratePolitician(id: string, rating: number): Promise<ApiResponse<void>> {
-    return this.request<void>("POST", `/politicians/${id}/rate`, { rating });
+    return this.request<void>("POST", `/politician/${id}/rate`, { rating });
   }
 
   // Location APIs
