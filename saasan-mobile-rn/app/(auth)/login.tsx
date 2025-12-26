@@ -29,7 +29,7 @@ export default function LoginScreen() {
           Welcome Back
         </Text>
 
-        <View className="space-y-4">
+        <View className="my-4">
           <View>
             <Text className="text-sm font-medium text-foreground mb-1">
               Email

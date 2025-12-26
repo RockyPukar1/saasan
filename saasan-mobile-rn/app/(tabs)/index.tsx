@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { format, differenceInDays, parseISO } from "date-fns";
@@ -389,7 +390,7 @@ const DashboardScreen = () => {
             </Card>
           ) : (
             majorCases.map((caseItem) => (
-              <Button
+              <Pressable
                 key={caseItem.id}
                 onPress={() => router.push(`/report/${caseItem.id}`)}
               >
@@ -470,7 +471,7 @@ const DashboardScreen = () => {
                     </View>
                   </CardContent>
                 </Card>
-              </Button>
+              </Pressable>
             ))
           )}
         </View>
