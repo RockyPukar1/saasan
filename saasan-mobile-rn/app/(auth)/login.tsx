@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { useAuthContext } from "~/contexts/AuthContext";
 import { useRouter } from "expo-router";
+import { Button } from "~/components/ui/button";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
