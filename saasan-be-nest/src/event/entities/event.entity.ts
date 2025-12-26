@@ -18,7 +18,7 @@ export class EventEntity {
   category: string;
 
   @Prop({ type: Date, required: true })
-  year: Date;
+  date: Date;
 
   @Prop({ type: String })
   location?: string;

@@ -485,19 +485,19 @@ export const historicalEventsApi = {
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<HistoricalEvent>> => {
-    const response = await api.get("/historical-events", { params });
+    const response = await api.get("/event", { params });
     return response.data;
   },
 
   getById: async (id: string): Promise<ApiResponse<HistoricalEvent>> => {
-    const response = await api.get(`/historical-events/${id}`);
+    const response = await api.get(`/event/${id}`);
     return response.data;
   },
 
   create: async (
     eventData: Partial<HistoricalEvent>
   ): Promise<ApiResponse<HistoricalEvent>> => {
-    const response = await api.post("/historical-events", eventData);
+    const response = await api.post("/event", eventData);
     return response.data;
   },
 
@@ -505,27 +505,23 @@ export const historicalEventsApi = {
     id: string,
     eventData: Partial<HistoricalEvent>
   ): Promise<ApiResponse<HistoricalEvent>> => {
-    const response = await api.put(`/historical-events/${id}`, eventData);
+    const response = await api.put(`/event/${id}`, eventData);
     return response.data;
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/historical-events/${id}`);
+    const response = await api.delete(`/event/${id}`);
     return response.data;
   },
 
   bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post(
-      "/historical-events/bulk-upload",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    const response = await api.post("/event/bulk-upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 };

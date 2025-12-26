@@ -90,8 +90,15 @@ const DashboardScreen = () => {
     | "election"
   >("feed");
 
-  const { dashboardStats, error, loading, majorCases, refresh, serviceStatus } =
-    useDashboard();
+  const {
+    dashboardStats,
+    error,
+    loading,
+    majorCases,
+    historicalEvents,
+    refresh,
+    serviceStatus,
+  } = useDashboard();
 
   // Mock user stats for viral features
   const userStats = {
@@ -305,7 +312,6 @@ const DashboardScreen = () => {
             </View>
           </View>
         )}
-
         {/* Electricity Status Card */}
         {electricityStats.total > 0 && (
           <View className="px-4 mb-6">
@@ -367,29 +373,6 @@ const DashboardScreen = () => {
             </Card>
           </View>
         )}
-
-        {/* Historical Events - On This Day */}
-        {/* <View className="px-4 mb-6">
-        <Text className="text-xl font-bold text-gray-800 mb-4">
-          On This Day
-        </Text>
-        {historicalEvents.map((event) => (
-          <Card key={event.id} className="mb-4">
-            <CardContent className="p-4">
-              <Text className="text-red-600 font-bold text-sm mb-1">
-                {event.date}
-              </Text>
-              <Text className="text-lg font-bold text-gray-800 mb-2">
-                {event.title}
-              </Text>
-              <Text className="text-gray-600 text-sm">{event.description}</Text>
-              <Text className="text-gray-500 text-xs mt-2">
-                {currentDate.getFullYear() - event.year} years ago
-              </Text>
-            </CardContent>
-          </Card>
-        ))}
-      </View> */}
 
         {/* Major Cases Tracker */}
         <View className="px-4 mb-6">
@@ -493,48 +476,39 @@ const DashboardScreen = () => {
           )}
         </View>
 
-        {/* Category Breakdown */}
-        {dashboardStats?.categoryBreakdown && (
-          <View className="px-4 mb-6">
-            <Text className="text-xl font-bold text-gray-800 mb-4">
-              Cases by Category
-            </Text>
+        {/* Historical Events */}
+        <View className="px-4 mb-6">
+          <Text className="text-xl font-bold text-gray-800 mb-4">
+            Historical Events - On This Day
+          </Text>
+          {historicalEvents?.length === 0 ? (
             <Card>
               <CardContent className="p-4">
-                {dashboardStats.categoryBreakdown.map((category, index) => (
-                  <View key={category.categoryName} className="mb-3">
-                    <View className="flex-row justify-between items-center mb-2">
-                      <Text className="text-gray-700 font-medium">
-                        {category.categoryName || "Uncategorized"}
-                      </Text>
-                      <Text className="text-gray-600 font-bold">
-                        {category.count}
-                      </Text>
-                    </View>
-                    <View className="bg-gray-200 h-2 rounded-full">
-                      {dashboardStats.overview && (
-                        <View
-                          className="bg-red-500 h-2 rounded-full"
-                          style={{
-                            width: Number(
-                              (
-                                (category.count /
-                                  (dashboardStats.overview?.totalReports ||
-                                    1)) *
-                                100
-                              ).toFixed(1)
-                            ),
-                          }}
-                        />
-                      )}
-                    </View>
-                  </View>
-                ))}
+                <Text className="text-gray-500 text-center">
+                  No historical events to display
+                </Text>
               </CardContent>
             </Card>
-          </View>
-        )}
-
+          ) : (
+            <>
+              {historicalEvents.map((event) => (
+                <Card key={event.id} className="mb-4">
+                  <CardContent className="p-4">
+                    <Text className="text-red-600 font-bold text-sm mb-1">
+                      {event.date}
+                    </Text>
+                    <Text className="text-lg font-bold text-gray-800 mb-2">
+                      {event.title}
+                    </Text>
+                    <Text className="text-gray-600 text-sm">
+                      {event.description}
+                    </Text>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
+        </View>
         {/* Quick Actions */}
         <View className="px-4 mb-8">
           <Text className="text-xl font-bold text-gray-800 mb-4">
@@ -586,7 +560,6 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-
         {/* Viral Features Section */}
         <View className="px-4 mb-6">
           <Card className="bg-gradient-to-r from-purple-50 to-pink-50">
@@ -715,7 +688,6 @@ const DashboardScreen = () => {
             </CardContent>
           </Card>
         </View>
-
         {/* Daily Reminder Banner */}
         <View className="px-4 mb-6">
           <Card className="bg-red-500 border-red-500">
@@ -740,14 +712,12 @@ const DashboardScreen = () => {
             </CardContent>
           </Card>
         </View>
-
         {/* Last Updated Info */}
         <View className="px-4 pb-6">
           <Text className="text-center text-gray-500 text-xs">
             Last updated: {format(currentDate, "PPpp")}
           </Text>
         </View>
-
         {/* Bottom padding for tab bar */}
         <View className="h-24" />
       </ScrollView>

@@ -21,7 +21,8 @@
     "seed:location": "nest start --entryFile common/seeders/location/seed-location",
     "seed:report": "nest start --entryFile common/seeders/report/seed-report",
     "seed:politics": "nest start --entryFile common/seeders/politics/seed-politics",
-    "seed:poll": "nest start --entryFile common/seeders/poll/seed-poll"
+    "seed:poll": "nest start --entryFile common/seeders/poll/seed-poll",
+    "seed:event": "nest start --entryFile common/seeders/event/seed-event"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

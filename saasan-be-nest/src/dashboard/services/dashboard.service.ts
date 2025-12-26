@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { EventRepository } from 'src/event/repositories/event.repository';
 import { PoliticianRepository } from 'src/politics/repositories/politician.repository';
 import { ReportRepository } from 'src/report/repositories/report.repository';
 import { ServiceRepository } from 'src/service/repositories/service.repository';
@@ -8,17 +9,15 @@ import { ServiceRepository } from 'src/service/repositories/service.repository';
 export class DashboardService {
   constructor(
     private readonly reportRepo: ReportRepository,
+    private readonly eventRepo: EventRepository,
     private readonly politicianRepo: PoliticianRepository,
-    private readonly serviceRepo: ServiceRepository,
   ) {}
 
   async getStats() {
     const totalReports = await this.reportRepo.getTotalReports();
     const resolvedReports = await this.reportRepo.getResolvedReports();
     const recentReports = await this.reportRepo.getRecentReports();
-    const categoryStats = await this.reportRepo.getStatsByCategory();
-    const districtStats = await this.reportRepo.getStatsByDistrict();
-
+    const recentEvents = await this.eventRepo.getRecentEvents();
     const totalPoliticians = await this.politicianRepo.getTotalPoliticians();
     const activePoliticians =
       await this.politicianRepo.getTotalActivePoliticians();
@@ -33,20 +32,9 @@ export class DashboardService {
           ? ((resolvedReports / totalReports) * 100).toFixed(1)
           : 0,
       },
-      recentActivity: recentReports,
-      categoryBreakdown: categoryStats,
-      districtBreakdown: districtStats,
+      recentReports,
+      recentEvents,
     };
     return ResponseHelper.success(stats);
-  }
-
-  async getMajorCases() {
-    const majorCases = await this.reportRepo.getMajorCases();
-
-    return ResponseHelper.success(majorCases);
-  }
-
-  async getLiveServices() {
-    return await this.serviceRepo.getLiveServices();
   }
 }

@@ -1,0 +1,20 @@
+[
+  {
+    "title": "People's Movement 1990",
+    "description": "Mass movement that restored multi-party democracy in Nepal",
+    "category": "Political",
+    "date": "1990-04-06",
+    "location": "Kathmandu",
+    "significance": "Ended absolute monarchy and established constitutional monarchy",
+    "isVerified": true
+  },
+  {
+    "title": "Maoist Insurgency",
+    "description": "10-year armed conflict between Maoist rebels and government",
+    "category": "Conflict",
+    "date": "1996-02-13",
+    "location": "Rolpa",
+    "significance": "Led to the end of monarchy and establishment of republic",
+    "isVerified": true
+  }
+]

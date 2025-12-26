@@ -11,14 +11,4 @@ export class DashboardController {
   async getStats() {
     return this.dashboardService.getStats();
   }
-
-  @Get('major-cases')
-  async getMajorCases() {
-    return this.dashboardService.getMajorCases();
-  }
-
-  @Get('live-services')
-  async getLiveServices() {
-    return this.dashboardService.getLiveServices();
-  }
 }

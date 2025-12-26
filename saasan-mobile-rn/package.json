@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "expo start -c",
+    "start": "expo start",
     "dev:web": "expo start -c --web --port 8082",
     "dev:android": "expo start -c --android",
     "android": "expo start -c --android",
@@ -47,6 +48,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
+    "react-native-dotenv": "^3.4.11",
     "react-native-reanimated": "~3.17.5",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",

@@ -55,7 +55,7 @@ const transformPoll = (data: any): Poll => {
   };
 };
 
-const BASE_URL = process.env.SAASAN_API_URL || "http://localhost:7001";
+const BASE_URL = process.env.EXPO_SAASAN_API_URL!;
 
 interface ApiResponse<T> {
   success: boolean;
@@ -116,6 +116,17 @@ interface MajorCase {
   upvotesCount: number;
   referenceNumber: string;
   priority: string;
+}
+
+interface HistoricalEvent {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
+  location: string;
+  significance: string;
+  isVerified: boolean;
 }
 
 interface LiveService {
@@ -245,14 +256,6 @@ class ApiService {
   // Dashboard APIs
   async getDashboardStats(): Promise<ApiResponse<DashboardStats>> {
     return this.request<DashboardStats>("GET", "/dashboard/stats");
-  }
-
-  async getMajorCases(): Promise<ApiResponse<MajorCase[]>> {
-    return this.request<MajorCase[]>("GET", "/dashboard/major-cases");
-  }
-
-  async getLiveServices(): Promise<ApiResponse<LiveService[]>> {
-    return this.request<LiveService[]>("GET", "/dashboard/live-services");
   }
 
   // Politicians APIs

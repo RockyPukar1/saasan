@@ -22,6 +22,7 @@ import { ReportSeederModule } from './common/seeders/report/report-seeder.module
 import { PoliticsModule } from './politics/politics.module';
 import { PoliticsSeederModule } from './common/seeders/politics/politics-seeder.module';
 import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
+import { EventSeederModule } from './common/seeders/event/event-seeder.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
     ReportSeederModule,
     PoliticsSeederModule,
     PollSeederModule,
+    EventSeederModule,
     // Normal modules
     PollModule,
     LocationModule,

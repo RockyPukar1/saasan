@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiService } from "~/services/api";
-import { DashboardStats, MajorCase, ServiceStatus } from "~/shared-types";
+import {
+  DashboardStats,
+  HistoricalEvent,
+  MajorCase,
+  ServiceStatus,
+} from "~/shared-types";
 
 export const useDashboard = () => {
   const [dashboardStats, setDashboardStats] =
     useState<Partial<DashboardStats> | null>(null);
   const [majorCases, setMajorCases] = useState<MajorCase[]>([]);
-  const [serviceStatus, setServiceStatus] = useState<Partial<ServiceStatus>[]>(
+  const [historicalEvents, setHistoricalEvents] = useState<HistoricalEvent[]>(
     []
   );
+  const [serviceStatus] = useState<Partial<ServiceStatus>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,20 +23,15 @@ export const useDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const [statsResponse, casesResponse, servicesResponse] =
-        await Promise.all([
-          apiService.getDashboardStats(),
-          apiService.getMajorCases(),
-          apiService.getLiveServices(),
-        ]);
+      const statsResponse = await apiService.getDashboardStats();
 
       if (statsResponse.success) {
         setDashboardStats(statsResponse.data);
         // Extract major cases from the nested structure
-        if ((statsResponse.data as any)?.recentActivity) {
-          const cases = (statsResponse.data as any).recentActivity.map(
+        if ((statsResponse.data as any)?.recentReports) {
+          const cases = (statsResponse.data as any).recentReports.map(
             (item: any) => ({
-              id: item.id,
+              id: item._id,
               referenceNumber: item.reference_number,
               title: item.title,
               description: item.description,
@@ -47,32 +48,22 @@ export const useDashboard = () => {
           );
           setMajorCases(cases);
         }
-      }
-
-      if (casesResponse.success) {
-        // Fallback to direct cases response if available
-        if (casesResponse.data && Array.isArray(casesResponse.data)) {
-          const cases = casesResponse.data.map((item: any) => ({
-            id: item.id,
-            referenceNumber: item.reference_number,
-            title: item.title,
-            description: item.description,
-            status: (item.status === "verified"
-              ? "ongoing"
-              : item.status === "resolved"
-              ? "solved"
-              : "unsolved") as "unsolved" | "ongoing" | "solved",
-            priority: item.priority,
-            amountInvolved: parseFloat(item.amount_involved) || 0,
-            upvotesCount: item.upvotes_count || 0,
-            createdAt: item.created_at,
-          }));
-          setMajorCases(cases);
+        if ((statsResponse.data as any)?.recentEvents) {
+          const events = (statsResponse.data as any).recentEvents.map(
+            (item: any) => ({
+              id: item._id,
+              title: item.title,
+              description: item.description,
+              status: item.status,
+              priority: item.priority,
+              referenceNumber: item.referenceNumber,
+              amountInvolved: parseFloat(item.amount_involved) || 0,
+              upvotesCount: item.upvotes_count || 0,
+              createdAt: item.created_at,
+            })
+          );
+          setHistoricalEvents(events);
         }
-      }
-
-      if (servicesResponse.success) {
-        setServiceStatus(servicesResponse.data as any);
       }
     } catch (err: any) {
       setError(
@@ -96,6 +87,7 @@ export const useDashboard = () => {
   return {
     dashboardStats,
     majorCases,
+    historicalEvents,
     serviceStatus,
     loading,
     error,
