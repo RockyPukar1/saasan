@@ -76,12 +76,12 @@ const PoliticiansScreen = () => {
                 Showing {selectedLevel} level politicians
               </Text>
             </View>
-            <TouchableOpacity
+            <Button
               onPress={() => setSelectedLevel("")}
               className="bg-red-100 px-2 py-1 rounded-full"
             >
               <Text className="text-xs text-red-600 font-medium">Clear</Text>
-            </TouchableOpacity>
+            </Button>
           </View>
         )}
 
@@ -106,7 +106,7 @@ const PoliticiansScreen = () => {
           >
             <View className="flex-row py-2">
               {governmentLevels.map((level) => (
-                <TouchableOpacity
+                <Button
                   key={level.id}
                   onPress={() => setSelectedLevel(level.name)}
                   className={`mx-1 px-4 py-3 rounded-lg min-w-[80px] ${
@@ -133,7 +133,7 @@ const PoliticiansScreen = () => {
                   >
                     {level.count}
                   </Text>
-                </TouchableOpacity>
+                </Button>
               ))}
             </View>
           </ScrollView>
@@ -170,9 +170,9 @@ const PoliticiansScreen = () => {
       <View className="h-24" />
 
       {/* Floating Action Button */}
-      <TouchableOpacity className="absolute bottom-20 right-6 bg-red-600 w-14 h-14 rounded-full items-center justify-center shadow-lg">
+      <Button className="absolute bottom-20 right-6 bg-red-600 w-14 h-14 rounded-full items-center justify-center shadow-lg">
         <Text className="text-white text-2xl">+</Text>
-      </TouchableOpacity>
+      </Button>
     </View>
   );
 };
@@ -218,7 +218,7 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
   };
 
   return (
-    <TouchableOpacity
+    <Button
       onPress={() => router.push(`/politician/${politician.id}`)}
       className="mb-3"
     >
@@ -321,7 +321,7 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
 
           {/* Compact Action Buttons */}
           <View className="flex-row gap-2">
-            <TouchableOpacity
+            <Button
               className="flex-1 bg-blue-600 py-2 rounded"
               onPress={() => {
                 console.log("Rate politician:", politician.id);
@@ -330,18 +330,18 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
               <Text className="text-white font-medium text-center text-xs">
                 Rate
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Button>
+            <Button
               className="flex-1 bg-gray-200 py-2 rounded"
               onPress={() => router.push(`/politician/${politician.id}`)}
             >
               <Text className="text-gray-700 font-medium text-center text-xs">
                 View Details
               </Text>
-            </TouchableOpacity>
+            </Button>
           </View>
         </CardContent>
       </Card>
-    </TouchableOpacity>
+    </Button>
   );
 };

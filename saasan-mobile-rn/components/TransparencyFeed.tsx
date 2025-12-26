@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
 import { ShareableImage } from "./ShareableImage";
+import { Button } from "./ui/button";
 
 interface FeedItem {
   id: string;
@@ -346,7 +347,7 @@ export const TransparencyFeed: React.FC<TransparencyFeedProps> = ({
 
                   {/* Action Buttons */}
                   <View className="flex-row space-x-2">
-                    <TouchableOpacity
+                    <Button
                       onPress={() => handleShare(item)}
                       className="flex-1 bg-blue-500 py-2 rounded-lg"
                     >
@@ -356,25 +357,25 @@ export const TransparencyFeed: React.FC<TransparencyFeedProps> = ({
                           Share
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </Button>
 
-                    <TouchableOpacity className="flex-1 bg-red-500 py-2 rounded-lg">
+                    <Button className="flex-1 bg-red-500 py-2 rounded-lg">
                       <View className="flex-row items-center justify-center">
                         <Heart className="text-white mr-2" size={16} />
                         <Text className="text-white font-medium text-sm">
                           React
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </Button>
 
-                    <TouchableOpacity className="flex-1 bg-gray-500 py-2 rounded-lg">
+                    <Button className="flex-1 bg-gray-500 py-2 rounded-lg">
                       <View className="flex-row items-center justify-center">
                         <MessageCircle className="text-white mr-2" size={16} />
                         <Text className="text-white font-medium text-sm">
                           Comment
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </Button>
                   </View>
 
                   {/* Tags */}
@@ -403,12 +404,12 @@ export const TransparencyFeed: React.FC<TransparencyFeedProps> = ({
               <Text className="text-lg font-bold text-gray-800">
                 Share This Update
               </Text>
-              <TouchableOpacity
+              <Button
                 onPress={() => setSelectedItem(null)}
                 className="absolute right-4 top-4"
               >
                 <Text className="text-gray-500 text-xl">×</Text>
-              </TouchableOpacity>
+              </Button>
             </View>
             <ScrollView className="max-h-96">
               <ShareableImage

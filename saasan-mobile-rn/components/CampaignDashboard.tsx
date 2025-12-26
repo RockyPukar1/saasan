@@ -174,7 +174,7 @@ export default function CampaignDashboard() {
         </View>
 
         <View className="flex-row gap-3 mt-6">
-          <TouchableOpacity
+          <Button
             className="flex-1 bg-white/20 rounded-lg p-3"
             onPress={handleRegisterVoter}
           >
@@ -182,9 +182,9 @@ export default function CampaignDashboard() {
             <Text className="text-white text-sm font-medium mt-1">
               {getText("दर्ता गर्नुहोस्", "Register")}
             </Text>
-          </TouchableOpacity>
+          </Button>
 
-          <TouchableOpacity
+          <Button
             className="flex-1 bg-white/20 rounded-lg p-3"
             onPress={handleTakeSurvey}
           >
@@ -192,7 +192,7 @@ export default function CampaignDashboard() {
             <Text className="text-white text-sm font-medium mt-1">
               {getText("सर्वेक्षण", "Survey")}
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
 

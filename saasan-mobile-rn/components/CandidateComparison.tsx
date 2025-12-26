@@ -117,7 +117,7 @@ export default function CandidateComparison({
     onSelect: () => void;
     isSelected: boolean;
   }) => (
-    <TouchableOpacity onPress={onSelect}>
+    <Button onPress={onSelect}>
       <Card
         className={`p-4 mb-3 ${isSelected ? "border-blue-500 bg-blue-50" : ""}`}
       >
@@ -172,7 +172,7 @@ export default function CandidateComparison({
           </View>
         </View>
       </Card>
-    </TouchableOpacity>
+    </Button>
   );
 
   const ComparisonModal = () => (
@@ -187,9 +187,9 @@ export default function CandidateComparison({
           <Text className="text-xl font-bold text-gray-900">
             {getText("उम्मेदवार तुलना", "Candidate Comparison")}
           </Text>
-          <TouchableOpacity onPress={() => setShowComparison(false)}>
+          <Button onPress={() => setShowComparison(false)}>
             <XCircle size={24} color="#6b7280" />
-          </TouchableOpacity>
+          </Button>
         </View>
 
         <ScrollView className="flex-1 p-4">

@@ -286,7 +286,7 @@ export const InviteChallenge: React.FC<InviteChallengeProps> = ({
           </Text>
 
           <View className="space-y-2">
-            <TouchableOpacity
+            <Button
               onPress={() => shareInvite("whatsapp")}
               className="flex-row items-center justify-center bg-green-500 py-3 rounded-lg"
             >
@@ -294,9 +294,9 @@ export const InviteChallenge: React.FC<InviteChallengeProps> = ({
               <Text className="text-white font-medium">
                 Invite via WhatsApp
               </Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               onPress={() => shareInvite("facebook")}
               className="flex-row items-center justify-center bg-blue-600 py-3 rounded-lg"
             >
@@ -304,9 +304,9 @@ export const InviteChallenge: React.FC<InviteChallengeProps> = ({
               <Text className="text-white font-medium">
                 Invite via Facebook
               </Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               onPress={() => shareInvite("instagram")}
               className="flex-row items-center justify-center bg-pink-500 py-3 rounded-lg"
             >
@@ -314,31 +314,31 @@ export const InviteChallenge: React.FC<InviteChallengeProps> = ({
               <Text className="text-white font-medium">
                 Invite via Instagram
               </Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               onPress={() => shareInvite("sms")}
               className="flex-row items-center justify-center bg-gray-600 py-3 rounded-lg"
             >
               <MessageCircle className="text-white mr-2" size={20} />
               <Text className="text-white font-medium">Invite via SMS</Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               onPress={() => shareInvite("email")}
               className="flex-row items-center justify-center bg-orange-500 py-3 rounded-lg"
             >
               <Mail className="text-white mr-2" size={20} />
               <Text className="text-white font-medium">Invite via Email</Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               onPress={shareAll}
               className="flex-row items-center justify-center bg-purple-600 py-3 rounded-lg"
             >
               <ShareIcon className="text-white mr-2" size={20} />
               <Text className="text-white font-medium">Share to All Apps</Text>
-            </TouchableOpacity>
+            </Button>
           </View>
         </CardContent>
       </Card>

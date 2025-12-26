@@ -61,7 +61,7 @@ export default function LoginScreen() {
           </View>
         </View>
         <View className="space-y-4">
-          <TouchableOpacity
+          <Button
             className="bg-primary py-3 rounded-md"
             onPress={handleLogin}
             disabled={loading}
@@ -69,16 +69,13 @@ export default function LoginScreen() {
             <Text className="text-white text-center font-semibold">
               {loading ? "Logging in..." : "Login"}
             </Text>
-          </TouchableOpacity>
+          </Button>
 
-          <TouchableOpacity
-            onPress={() => router.push("/register")}
-            className="mt-4"
-          >
+          <Button onPress={() => router.push("/register")} className="mt-4">
             <Text className="text-primary text-center">
               Don't have an account? Register
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
     </View>

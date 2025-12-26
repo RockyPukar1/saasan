@@ -1,13 +1,14 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useLanguage } from "~/contexts/LanguageContext";
+import { Button } from "./ui/button";
 
 export function LanguageToggle() {
   const { language, setLanguage, t } = useLanguage();
 
   return (
     <View className="flex-row bg-gray-100 rounded-full p-1">
-      <TouchableOpacity
+      <Button
         onPress={() => setLanguage("en")}
         className={`px-3 py-1 rounded-full ${
           language === "en" ? "bg-white shadow-sm" : ""
@@ -20,8 +21,8 @@ export function LanguageToggle() {
         >
           En
         </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
+      </Button>
+      <Button
         onPress={() => setLanguage("ne")}
         className={`px-3 py-1 rounded-full ${
           language === "ne" ? "bg-white shadow-sm" : ""
@@ -34,7 +35,7 @@ export function LanguageToggle() {
         >
           Nep
         </Text>
-      </TouchableOpacity>
+      </Button>
     </View>
   );
 }

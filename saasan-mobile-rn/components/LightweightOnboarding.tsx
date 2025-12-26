@@ -11,6 +11,7 @@ import {
   Check,
 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
+import { Button } from "./ui/button";
 
 interface OnboardingStep {
   id: string;
@@ -244,7 +245,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
 
             <View className="space-y-3">
               {step.options?.map((option) => (
-                <TouchableOpacity
+                <Button
                   key={option.id}
                   onPress={() => handleOptionSelect(step.id, option.id)}
                   className={`p-4 rounded-lg border ${
@@ -267,7 +268,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                       <Check className="text-blue-500" size={20} />
                     )}
                   </View>
-                </TouchableOpacity>
+                </Button>
               ))}
             </View>
           </View>
@@ -286,7 +287,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
 
             <View className="space-y-3">
               {step.options?.map((option) => (
-                <TouchableOpacity
+                <Button
                   key={option.id}
                   onPress={() => handleOptionSelect(step.id, option.id)}
                   className={`p-3 rounded-lg border ${
@@ -309,7 +310,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                       <Check className="text-blue-500" size={16} />
                     )}
                   </View>
-                </TouchableOpacity>
+                </Button>
               ))}
             </View>
 
@@ -342,7 +343,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                         Get updates on corruption reports and polls
                       </Text>
                     </View>
-                    <TouchableOpacity
+                    <Button
                       onPress={() =>
                         handlePrivacyChange(
                           "notifications",
@@ -360,7 +361,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                           onboardingData.notifications ? "ml-6" : "ml-0.5"
                         }`}
                       />
-                    </TouchableOpacity>
+                    </Button>
                   </View>
                 </CardContent>
               </Card>
@@ -388,7 +389,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                         description: "Visible to community, more features",
                       },
                     ].map((option) => (
-                      <TouchableOpacity
+                      <Button
                         key={option.id}
                         onPress={() =>
                           handlePrivacyChange("privacyLevel", option.id)
@@ -412,7 +413,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                             <Check className="text-blue-500" size={16} />
                           )}
                         </View>
-                      </TouchableOpacity>
+                      </Button>
                     ))}
                   </View>
                 </CardContent>
@@ -444,9 +445,9 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
       <View className="bg-white p-4 border-b border-gray-200">
         <View className="flex-row items-center justify-between">
           <Text className="text-lg font-bold text-gray-800">Setup Saasan</Text>
-          <TouchableOpacity onPress={onSkip}>
+          <Button onPress={onSkip}>
             <ChevronRight className="text-gray-500" size={20} />
-          </TouchableOpacity>
+          </Button>
         </View>
 
         {/* Progress Bar */}
@@ -472,17 +473,17 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
       <View className="bg-white p-4 border-t border-gray-200">
         <View className="flex-row space-x-3">
           {!onboardingSteps[currentStep].isRequired && (
-            <TouchableOpacity
+            <Button
               onPress={handleSkip}
               className="flex-1 py-3 rounded-lg border border-gray-300"
             >
               <Text className="text-gray-700 font-medium text-center">
                 Skip
               </Text>
-            </TouchableOpacity>
+            </Button>
           )}
 
-          <TouchableOpacity
+          <Button
             onPress={handleNext}
             disabled={!canProceed()}
             className={`flex-1 py-3 rounded-lg ${
@@ -506,7 +507,7 @@ export const LightweightOnboarding: React.FC<LightweightOnboardingProps> = ({
                 size={16}
               />
             </View>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
     </View>

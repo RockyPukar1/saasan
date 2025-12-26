@@ -165,7 +165,7 @@ const ReportsScreen = () => {
         {reportCategories.map((category) => {
           const Icon = category.icon;
           return (
-            <TouchableOpacity
+            <Button
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
               className={`w-[48%] mb-3 mr-[2%] p-4 rounded-lg border-2 ${
@@ -197,7 +197,7 @@ const ReportsScreen = () => {
               >
                 {category.description}
               </Text>
-            </TouchableOpacity>
+            </Button>
           );
         })}
       </View>
@@ -210,7 +210,7 @@ const ReportsScreen = () => {
 
       {/* Anonymous Toggle */}
       <View className="mb-6">
-        <TouchableOpacity
+        <Button
           onPress={() => setIsAnonymous(!isAnonymous)}
           className="flex-row items-center p-4 bg-gray-100 rounded-lg"
         >
@@ -232,7 +232,7 @@ const ReportsScreen = () => {
           ) : (
             <Eye className="text-gray-600" size={24} />
           )}
-        </TouchableOpacity>
+        </Button>
       </View>
 
       {/* Report Title */}
@@ -372,7 +372,7 @@ const ReportsScreen = () => {
   const MyReportsTab = () => (
     <ScrollView className="flex-1 px-4 py-4">
       {mockReports.map((report) => (
-        <TouchableOpacity
+        <Button
           key={report.id}
           onPress={() => router.push(`/report/${report.id}`)}
         >
@@ -426,7 +426,7 @@ const ReportsScreen = () => {
 
               {/* Share Button */}
               <View className="mt-3 pt-3 border-t border-gray-100">
-                <TouchableOpacity
+                <Button
                   onPress={() => {
                     // Show share modal
                     setSelectedReport(report);
@@ -436,11 +436,11 @@ const ReportsScreen = () => {
                   <Text className="text-white font-medium text-sm">
                     🚀 Share This Report
                   </Text>
-                </TouchableOpacity>
+                </Button>
               </View>
             </CardContent>
           </Card>
-        </TouchableOpacity>
+        </Button>
       ))}
 
       {/* Bottom padding for tab bar */}
@@ -490,7 +490,7 @@ const ReportsScreen = () => {
         </View>
 
         <View className="flex-row px-4 py-2">
-          <TouchableOpacity
+          <Button
             onPress={() => setActiveTab("new")}
             className={`flex-1 py-3 items-center border-b-2 ${
               activeTab === "new" ? "border-red-600" : "border-transparent"
@@ -503,8 +503,8 @@ const ReportsScreen = () => {
             >
               New Report
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Button>
+          <Button
             onPress={() => setActiveTab("my_reports")}
             className={`flex-1 py-3 items-center border-b-2 ${
               activeTab === "my_reports"
@@ -519,7 +519,7 @@ const ReportsScreen = () => {
             >
               My Reports
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
 
@@ -534,12 +534,12 @@ const ReportsScreen = () => {
               <Text className="text-lg font-bold text-gray-800">
                 Share This Report
               </Text>
-              <TouchableOpacity
+              <Button
                 onPress={() => setSelectedReport(null)}
                 className="absolute right-4 top-4"
               >
                 <Text className="text-gray-500 text-xl">×</Text>
-              </TouchableOpacity>
+              </Button>
             </View>
             <ScrollView className="max-h-96">
               <ShareableImage

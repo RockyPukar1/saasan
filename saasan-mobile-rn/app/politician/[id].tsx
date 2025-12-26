@@ -212,21 +212,18 @@ const PoliticianDetailScreen = () => {
       {/* Header */}
       <View className="bg-white pt-12 pb-4 px-5 border-b border-gray-200">
         <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="mr-4 p-2 -ml-2"
-          >
+          <Button onPress={() => router.back()} className="mr-4 p-2 -ml-2">
             <ArrowLeft className="text-gray-600" size={24} />
-          </TouchableOpacity>
+          </Button>
           <View className="flex-1">
             <Text className="text-xl font-bold text-gray-800">
               {politician.name}
             </Text>
             <Text className="text-gray-600 text-sm">{politician.position}</Text>
           </View>
-          <TouchableOpacity className="p-2">
+          <Button className="p-2">
             <Share className="text-gray-600" size={20} />
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
 
@@ -313,7 +310,7 @@ const PoliticianDetailScreen = () => {
               { id: "achievements", name: "Achievements" },
               { id: "contact", name: "Contact" },
             ].map((tab) => (
-              <TouchableOpacity
+              <Button
                 key={tab.id}
                 onPress={() => setActiveTab(tab.id as any)}
                 className={`flex-1 mx-1 px-2 py-3 rounded-lg items-center ${
@@ -329,7 +326,7 @@ const PoliticianDetailScreen = () => {
                 >
                   {tab.name}
                 </Text>
-              </TouchableOpacity>
+              </Button>
             ))}
           </View>
         </View>
@@ -506,30 +503,30 @@ const PoliticianDetailScreen = () => {
                 <CardContent>
                   <View className="space-y-4">
                     {politician.contact.phone && (
-                      <TouchableOpacity className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+                      <Button className="flex-row items-center p-3 bg-gray-50 rounded-lg">
                         <Phone className="text-blue-600 mr-3" size={20} />
                         <Text className="text-gray-800">
                           {politician.contact.phone}
                         </Text>
-                      </TouchableOpacity>
+                      </Button>
                     )}
 
                     {politician.contact.email && (
-                      <TouchableOpacity className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+                      <Button className="flex-row items-center p-3 bg-gray-50 rounded-lg">
                         <Mail className="text-green-600 mr-3" size={20} />
                         <Text className="text-gray-800">
                           {politician.contact.email}
                         </Text>
-                      </TouchableOpacity>
+                      </Button>
                     )}
 
                     {politician.contact.website && (
-                      <TouchableOpacity className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+                      <Button className="flex-row items-center p-3 bg-gray-50 rounded-lg">
                         <Globe className="text-purple-600 mr-3" size={20} />
                         <Text className="text-gray-800">
                           {politician.contact.website}
                         </Text>
-                      </TouchableOpacity>
+                      </Button>
                     )}
                   </View>
                 </CardContent>

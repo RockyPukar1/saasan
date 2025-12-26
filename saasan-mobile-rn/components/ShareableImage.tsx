@@ -13,6 +13,7 @@ import {
   MessageCircle,
 } from "lucide-react-native";
 import { viralApi } from "~/services/viralApi";
+import { Button } from "./ui/button";
 
 interface ShareableImageProps {
   type: "corruption_report" | "poll_result" | "politician_rating";
@@ -194,43 +195,43 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
 
       {/* Social Media Buttons */}
       <View className="space-y-2">
-        <TouchableOpacity
+        <Button
           onPress={() => shareToSocial("whatsapp")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-green-500 py-3 rounded-lg"
         >
           <MessageCircle className="text-white mr-2" size={20} />
           <Text className="text-white font-medium">Share to WhatsApp</Text>
-        </TouchableOpacity>
+        </Button>
 
-        <TouchableOpacity
+        <Button
           onPress={() => shareToSocial("facebook")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-blue-600 py-3 rounded-lg"
         >
           <ShareIcon className="text-white mr-2" size={20} />
           <Text className="text-white font-medium">Share to Facebook</Text>
-        </TouchableOpacity>
+        </Button>
 
-        <TouchableOpacity
+        <Button
           onPress={() => shareToSocial("instagram")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-pink-500 py-3 rounded-lg"
         >
           <ShareIcon className="text-white mr-2" size={20} />
           <Text className="text-white font-medium">Share to Instagram</Text>
-        </TouchableOpacity>
+        </Button>
 
-        <TouchableOpacity
+        <Button
           onPress={() => shareToSocial("tiktok")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-black py-3 rounded-lg"
         >
           <ShareIcon className="text-white mr-2" size={20} />
           <Text className="text-white font-medium">Share to TikTok</Text>
-        </TouchableOpacity>
+        </Button>
 
-        <TouchableOpacity
+        <Button
           onPress={shareAll}
           disabled={sharing}
           className="flex-row items-center justify-center bg-gray-600 py-3 rounded-lg"
@@ -239,7 +240,7 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
           <Text className="text-white font-medium">
             {sharing ? "Sharing..." : "Share to All Apps"}
           </Text>
-        </TouchableOpacity>
+        </Button>
       </View>
 
       <Text className="text-xs text-gray-500 text-center mt-3">

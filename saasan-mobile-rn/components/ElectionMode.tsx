@@ -15,6 +15,7 @@ import {
   Star,
 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
+import { Button } from "./ui/button";
 
 interface ElectionData {
   electionDate: string;
@@ -363,7 +364,7 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
 
             {/* Action Buttons */}
             <View className="flex-row space-x-2">
-              <TouchableOpacity
+              <Button
                 onPress={() => handleCandidateSelect(candidate.id)}
                 className={`flex-1 py-2 rounded-lg ${
                   selectedCandidates.includes(candidate.id)
@@ -382,16 +383,16 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
                     ? "Selected"
                     : "Select"}
                 </Text>
-              </TouchableOpacity>
+              </Button>
 
-              <TouchableOpacity
+              <Button
                 onPress={() => onShare?.(candidate)}
                 className="flex-1 bg-green-500 py-2 rounded-lg"
               >
                 <Text className="text-white text-center font-medium">
                   Share
                 </Text>
-              </TouchableOpacity>
+              </Button>
             </View>
           </CardContent>
         </Card>
@@ -399,7 +400,7 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
 
       {/* Compare Button */}
       {selectedCandidates.length === 2 && (
-        <TouchableOpacity
+        <Button
           onPress={handleCompare}
           className="bg-purple-500 py-3 rounded-lg"
         >
@@ -409,7 +410,7 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
               Compare Selected Candidates
             </Text>
           </View>
-        </TouchableOpacity>
+        </Button>
       )}
     </View>
   );
@@ -441,7 +442,7 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
           { id: "compare", label: "📊 Compare", icon: "📊" },
           { id: "polls", label: "📈 Polls", icon: "📈" },
         ].map((tab) => (
-          <TouchableOpacity
+          <Button
             key={tab.id}
             onPress={() => setActiveTab(tab.id as any)}
             className={`flex-1 py-2 px-2 rounded-md ${
@@ -455,7 +456,7 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
             >
               {tab.label}
             </Text>
-          </TouchableOpacity>
+          </Button>
         ))}
       </View>
 

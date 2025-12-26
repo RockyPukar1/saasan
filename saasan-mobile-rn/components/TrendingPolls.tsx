@@ -300,7 +300,7 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
                 <View className="p-4">
                   <View className="space-y-2">
                     {poll.options.map((option) => (
-                      <TouchableOpacity
+                      <Button
                         key={option.id}
                         onPress={() => handleVote(poll.id, option.id)}
                         className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
@@ -326,13 +326,13 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
                             style={{ width: `${option.percentage}%` }}
                           />
                         </View>
-                      </TouchableOpacity>
+                      </Button>
                     ))}
                   </View>
 
                   {/* Action Buttons */}
                   <View className="flex-row space-x-2 mt-4">
-                    <TouchableOpacity
+                    <Button
                       onPress={() => handleShare(poll)}
                       className="flex-1 bg-blue-500 py-3 rounded-lg"
                     >
@@ -342,14 +342,14 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
                           Share Poll
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </Button>
 
-                    <TouchableOpacity className="flex-1 bg-gray-500 py-3 rounded-lg">
+                    <Button className="flex-1 bg-gray-500 py-3 rounded-lg">
                       <View className="flex-row items-center justify-center">
                         <MessageCircle className="text-white mr-2" size={16} />
                         <Text className="text-white font-medium">Comment</Text>
                       </View>
-                    </TouchableOpacity>
+                    </Button>
                   </View>
 
                   {/* Hashtags */}
@@ -378,12 +378,9 @@ export const TrendingPolls: React.FC<TrendingPollsProps> = ({
               <Text className="text-lg font-bold text-gray-800">
                 Share This Poll
               </Text>
-              <TouchableOpacity
-                onPress={() => setSelectedPoll(null)}
-                className="p-1"
-              >
+              <Button onPress={() => setSelectedPoll(null)} className="p-1">
                 <Text className="text-gray-500 text-xl font-bold">×</Text>
-              </TouchableOpacity>
+              </Button>
             </View>
             <ScrollView className="max-h-96">
               <ShareableImage

@@ -19,6 +19,7 @@ import {
   Share,
 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
+import { Button } from "./ui/button";
 
 interface Comment {
   id: string;
@@ -325,7 +326,7 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
 
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center space-x-4">
-              <TouchableOpacity
+              <Button
                 onPress={() => handleLike(comment.id)}
                 className="flex-row items-center"
               >
@@ -342,9 +343,9 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
                 >
                   {comment.likes}
                 </Text>
-              </TouchableOpacity>
+              </Button>
 
-              <TouchableOpacity
+              <Button
                 onPress={() => handleDislike(comment.id)}
                 className="flex-row items-center"
               >
@@ -361,30 +362,30 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
                 >
                   {comment.dislikes}
                 </Text>
-              </TouchableOpacity>
+              </Button>
 
               {!isReply && (
-                <TouchableOpacity
+                <Button
                   onPress={() => setReplyingTo(comment.id)}
                   className="flex-row items-center"
                 >
                   <Reply className="text-gray-400" size={16} />
                   <Text className="text-sm text-gray-500 ml-1">Reply</Text>
-                </TouchableOpacity>
+                </Button>
               )}
             </View>
 
             {!comment.isAuthor && (
-              <TouchableOpacity onPress={() => handleReport(comment.id)}>
+              <Button onPress={() => handleReport(comment.id)}>
                 <Flag className="text-gray-400" size={16} />
-              </TouchableOpacity>
+              </Button>
             )}
           </View>
 
           {/* Replies */}
           {!isReply && comment.replies.length > 0 && (
             <View className="mt-3">
-              <TouchableOpacity
+              <Button
                 onPress={() => toggleReplies(comment.id)}
                 className="flex-row items-center mb-2"
               >
@@ -392,7 +393,7 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
                   {showReplies[comment.id] ? "Hide" : "Show"}{" "}
                   {comment.replies.length} replies
                 </Text>
-              </TouchableOpacity>
+              </Button>
 
               {showReplies[comment.id] && (
                 <View>
@@ -414,15 +415,15 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
                 numberOfLines={2}
               />
               <View className="flex-row gap-2">
-                <TouchableOpacity
+                <Button
                   onPress={() => handleReply(comment.id)}
                   className="flex-1 bg-blue-500 py-3 rounded-lg"
                 >
                   <Text className="text-white font-medium text-center text-sm">
                     Reply
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Button>
+                <Button
                   onPress={() => {
                     setReplyingTo(null);
                     setReplyText("");
@@ -432,7 +433,7 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
                   <Text className="text-white font-medium text-center text-sm">
                     Cancel
                   </Text>
-                </TouchableOpacity>
+                </Button>
               </View>
             </View>
           )}
@@ -459,14 +460,14 @@ export const CommentSystem: React.FC<CommentSystemProps> = ({
             numberOfLines={3}
           />
 
-          <TouchableOpacity
+          <Button
             onPress={handleSubmitComment}
             className="bg-blue-500 py-3 px-4 rounded-lg"
           >
             <Text className="text-white font-medium text-center text-sm">
               Post Comment
             </Text>
-          </TouchableOpacity>
+          </Button>
         </CardContent>
       </Card>
 

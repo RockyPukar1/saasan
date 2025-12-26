@@ -11,6 +11,7 @@ import { useAuthContext } from "~/contexts/AuthContext";
 import { useLocation } from "~/hooks/useLocation";
 import { useRouter } from "expo-router";
 import { CustomPicker } from "~/components/ui/picker";
+import { Button } from "~/components/ui/button";
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -171,7 +172,7 @@ export default function RegisterScreen() {
             />
           )}
 
-          <TouchableOpacity
+          <Button
             className="bg-primary py-3 rounded-md"
             onPress={handleRegister}
             disabled={loading}
@@ -179,16 +180,13 @@ export default function RegisterScreen() {
             <Text className="text-white text-center font-semibold">
               {loading ? "Creating account..." : "Register"}
             </Text>
-          </TouchableOpacity>
+          </Button>
 
-          <TouchableOpacity
-            onPress={() => router.push("/login")}
-            className="mt-4"
-          >
+          <Button onPress={() => router.push("/login")} className="mt-4">
             <Text className="text-primary text-center">
               Already have an account? Login
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
     </ScrollView>

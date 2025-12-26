@@ -389,10 +389,9 @@ const DashboardScreen = () => {
             </Card>
           ) : (
             majorCases.map((caseItem) => (
-              <TouchableOpacity
+              <Button
                 key={caseItem.id}
                 onPress={() => router.push(`/report/${caseItem.id}`)}
-                activeOpacity={0.7}
               >
                 <Card className="mb-3">
                   <CardContent className="p-3">
@@ -471,7 +470,7 @@ const DashboardScreen = () => {
                     </View>
                   </CardContent>
                 </Card>
-              </TouchableOpacity>
+              </Button>
             ))
           )}
         </View>
@@ -515,7 +514,7 @@ const DashboardScreen = () => {
             Take Action
           </Text>
           <View className="flex-row justify-around">
-            <TouchableOpacity
+            <Button
               className="items-center p-4"
               onPress={() => router.push("/(tabs)/reports")}
             >
@@ -525,9 +524,9 @@ const DashboardScreen = () => {
               <Text className="text-gray-700 text-sm font-medium">
                 Report Issue
               </Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               className="items-center p-4"
               onPress={() => router.push("/(tabs)/politicians")}
             >
@@ -535,9 +534,9 @@ const DashboardScreen = () => {
                 <Users className="text-blue-600" size={24} />
               </View>
               <Text className="text-gray-700 text-sm font-medium">Rate MP</Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               className="items-center p-4"
               onPress={() => {
                 if (typeof navigator !== "undefined" && navigator.share) {
@@ -557,7 +556,7 @@ const DashboardScreen = () => {
               <Text className="text-gray-700 text-sm font-medium">
                 Share App
               </Text>
-            </TouchableOpacity>
+            </Button>
           </View>
         </View>
         {/* Viral Features Section */}
@@ -593,7 +592,7 @@ const DashboardScreen = () => {
                     { id: "verification", label: "✅ Verify", icon: "✅" },
                     { id: "election", label: "🗳️ Election", icon: "🗳️" },
                   ].map((tab) => (
-                    <TouchableOpacity
+                    <Button
                       key={tab.id}
                       onPress={() => setActiveViralTab(tab.id as any)}
                       className={`py-2 px-3 rounded-md mx-1 ${
@@ -611,7 +610,7 @@ const DashboardScreen = () => {
                       >
                         {tab.label}
                       </Text>
-                    </TouchableOpacity>
+                    </Button>
                   ))}
                 </View>
               </ScrollView>
@@ -700,14 +699,14 @@ const DashboardScreen = () => {
                   Call your local MP today and ask: "What have you done for our
                   constituency this week?"
                 </Text>
-                <TouchableOpacity
+                <Button
                   className="bg-white px-6 py-3 rounded-lg"
                   onPress={() => router.push("/(tabs)/politicians")}
                 >
                   <Text className="text-red-600 font-bold text-center">
                     Find My MP
                   </Text>
-                </TouchableOpacity>
+                </Button>
               </View>
             </CardContent>
           </Card>

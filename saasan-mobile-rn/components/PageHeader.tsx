@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react-native";
 import { LanguageToggle } from "./LanguageToggle";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { useAuthContext } from "~/contexts/AuthContext";
+import { Button } from "./ui/button";
 
 interface PageHeaderProps {
   title: string;
@@ -62,17 +63,12 @@ export function PageHeader({
         <View className="flex-row items-center space-x-2">
           {showLanguageToggle && <LanguageToggle />}
           {showLogout && (
-            <TouchableOpacity
+            <Button
               onPress={() => {
                 console.log("Logout button pressed!");
                 handleLogout();
               }}
               className="px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 active:bg-red-200 border border-red-200 flex-row items-center"
-              style={{
-                cursor: Platform.OS === "web" ? "pointer" : "default",
-                minWidth: Platform.OS === "web" ? 44 : "auto",
-                minHeight: Platform.OS === "web" ? 44 : "auto",
-              }}
               accessible={true}
               accessibilityLabel="Logout"
               accessibilityRole="button"
@@ -83,7 +79,7 @@ export function PageHeader({
                   Logout
                 </Text>
               )}
-            </TouchableOpacity>
+            </Button>
           )}
         </View>
       </View>

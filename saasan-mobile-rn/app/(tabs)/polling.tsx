@@ -171,7 +171,7 @@ const PollScreen = () => {
                 votingLoading;
 
               return (
-                <TouchableOpacity
+                <Button
                   key={option._id}
                   onPress={() => {
                     if (canVote) {
@@ -212,7 +212,7 @@ const PollScreen = () => {
                       style={{ width: `${percentage}%` }}
                     />
                   </View>
-                </TouchableOpacity>
+                </Button>
               );
             })}
           </View>
@@ -278,16 +278,16 @@ const PollScreen = () => {
             onChangeText={setSearchQuery}
             className="flex-1 bg-gray-100 px-4 py-2 rounded-lg text-gray-800"
           />
-          <TouchableOpacity className="bg-gray-100 p-2 rounded-lg">
+          <Button className="bg-gray-100 p-2 rounded-lg">
             <Filter className="text-gray-600" size={24} />
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
 
       {/* Tab Selector */}
       <View className="bg-white border-b border-gray-200">
         <View className="flex-row px-4 py-2">
-          <TouchableOpacity
+          <Button
             onPress={() => setActiveTab("all")}
             className={`flex-1 py-3 items-center border-b-2 ${
               activeTab === "all" ? "border-red-600" : "border-transparent"
@@ -300,8 +300,8 @@ const PollScreen = () => {
             >
               {t("polling.activePolls")}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Button>
+          <Button
             onPress={() => setActiveTab("my_votes")}
             className={`flex-1 py-3 items-center border-b-2 ${
               activeTab === "my_votes" ? "border-red-600" : "border-transparent"
@@ -314,7 +314,7 @@ const PollScreen = () => {
             >
               {t("polling.myPolls")}
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       </View>
 

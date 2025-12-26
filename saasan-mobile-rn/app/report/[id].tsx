@@ -196,21 +196,15 @@ const ReportDetailScreen = () => {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="bg-white pt-14 pb-4 px-5 border-b border-gray-200">
-        <TouchableOpacity
+        <Button
           onPress={() => router.back()}
           className="flex-row items-center mb-4"
         >
           <ChevronLeft className="text-gray-800" size={24} />
           <Text className="text-gray-800 ml-1">Back</Text>
-        </TouchableOpacity>
+        </Button>
         <Text className="text-2xl font-bold text-gray-800">{report.title}</Text>
         <View className="flex-row items-center justify-between mt-2">
-          <View className="flex-row items-center">
-            <MapPin className="text-gray-500" size={14} />
-            <Text className="text-gray-500 text-sm ml-1">
-              {report.location}
-            </Text>
-          </View>
           <View
             className={`px-3 py-1 rounded-full ${getStatusColor(
               report.status
@@ -231,9 +225,9 @@ const ReportDetailScreen = () => {
             <View className="flex-row items-center mt-4 pt-4 border-t border-gray-200">
               <Clock className="text-gray-500" size={14} />
               <Text className="text-gray-500 text-sm ml-1">
-                {new Date(report.created_at).toLocaleDateString()}
+                {new Date(report.createdAt).toLocaleDateString()}
               </Text>
-              {report.is_anonymous && (
+              {report.isAnonymous && (
                 <View className="flex-row items-center ml-4">
                   <EyeOff className="text-gray-500" size={14} />
                   <Text className="text-gray-500 text-sm ml-1">Anonymous</Text>
@@ -273,7 +267,7 @@ const ReportDetailScreen = () => {
           {report.evidence && report.evidence.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {report.evidence.map((item: any, index: number) => (
-                <TouchableOpacity
+                <Button
                   key={index}
                   className="mr-3 bg-white rounded-lg overflow-hidden border border-gray-200"
                 >
@@ -282,7 +276,7 @@ const ReportDetailScreen = () => {
                     className="w-24 h-24"
                     resizeMode="cover"
                   />
-                </TouchableOpacity>
+                </Button>
               ))}
             </ScrollView>
           ) : (
@@ -294,7 +288,7 @@ const ReportDetailScreen = () => {
 
         {/* Actions */}
         <View className="flex-row justify-between items-center bg-white p-4 rounded-lg mb-4">
-          <TouchableOpacity
+          <Button
             onPress={() => handleVote(true)}
             className="flex-row items-center"
           >
@@ -304,9 +298,9 @@ const ReportDetailScreen = () => {
               }
               size={20}
             />
-            <Text className="ml-2 text-gray-800">{report.upvotes_count}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+            <Text className="ml-2 text-gray-800">{report.upvotesCount}</Text>
+          </Button>
+          <Button
             onPress={() => handleVote(false)}
             className="flex-row items-center"
           >
@@ -316,15 +310,12 @@ const ReportDetailScreen = () => {
               }
               size={20}
             />
-            <Text className="ml-2 text-gray-800">{report.downvotes_count}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleShare}
-            className="flex-row items-center"
-          >
+            <Text className="ml-2 text-gray-800">{report.downvotesCount}</Text>
+          </Button>
+          <Button onPress={handleShare} className="flex-row items-center">
             <Share2 className="text-gray-500" size={20} />
-            <Text className="ml-2 text-gray-800">{report.shares_count}</Text>
-          </TouchableOpacity>
+            <Text className="ml-2 text-gray-800">{report.sharesCount}</Text>
+          </Button>
         </View>
 
         {/* Status Updates */}

@@ -11,6 +11,7 @@ import {
   BarChart3,
 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
+import { Button } from "./ui/button";
 
 interface LeaderboardEntry {
   rank: number;
@@ -257,7 +258,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ type, period }) => {
       {/* Period Selector */}
       <View className="flex-row space-x-2">
         {["week", "month", "all_time"].map((period) => (
-          <TouchableOpacity
+          <Button
             key={period}
             onPress={() => setSelectedPeriod(period as any)}
             className={`flex-1 py-2 px-4 rounded-lg border ${
@@ -277,7 +278,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ type, period }) => {
                 ? "This Month"
                 : "All Time"}
             </Text>
-          </TouchableOpacity>
+          </Button>
         ))}
       </View>
 
@@ -351,12 +352,12 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ type, period }) => {
       </Card>
 
       {/* Share Button */}
-      <TouchableOpacity className="bg-red-500 py-3 rounded-lg">
+      <Button className="bg-red-500 py-3 rounded-lg">
         <View className="flex-row items-center justify-center">
           <BarChart3 className="text-white mr-2" size={20} />
           <Text className="text-white font-bold">Share Leaderboard</Text>
         </View>
-      </TouchableOpacity>
+      </Button>
     </View>
   );
 };

@@ -14,6 +14,7 @@ import {
   ThumbsDown,
 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
+import { Button } from "./ui/button";
 
 interface VerificationStatus {
   status:
@@ -165,14 +166,14 @@ export const VerificationSystem: React.FC<VerificationSystemProps> = ({
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
+            <Button
               onPress={() => setShowDetails(!showDetails)}
               className="bg-white bg-opacity-50 px-3 py-1 rounded-full"
             >
               <Text className="text-sm font-medium">
                 {showDetails ? "Hide" : "Show"} Details
               </Text>
-            </TouchableOpacity>
+            </Button>
           </View>
 
           {/* Quick Stats */}
@@ -259,7 +260,7 @@ export const VerificationSystem: React.FC<VerificationSystemProps> = ({
 
           {/* Vote Buttons */}
           <View className="flex-row space-x-2">
-            <TouchableOpacity
+            <Button
               onPress={() => handleVote("up")}
               className={`flex-1 py-3 rounded-lg ${
                 userVote === "up" ? "bg-green-500" : "bg-green-100"
@@ -280,9 +281,9 @@ export const VerificationSystem: React.FC<VerificationSystemProps> = ({
                   Trust This
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity
+            <Button
               onPress={() => handleVote("down")}
               className={`flex-1 py-3 rounded-lg ${
                 userVote === "down" ? "bg-red-500" : "bg-red-100"
@@ -303,7 +304,7 @@ export const VerificationSystem: React.FC<VerificationSystemProps> = ({
                   Question This
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Button>
           </View>
         </CardContent>
       </Card>
@@ -398,15 +399,12 @@ export const VerificationSystem: React.FC<VerificationSystemProps> = ({
       </Card>
 
       {/* Report Button */}
-      <TouchableOpacity
-        onPress={handleReport}
-        className="bg-red-500 py-3 rounded-lg"
-      >
+      <Button onPress={handleReport} className="bg-red-500 py-3 rounded-lg">
         <View className="flex-row items-center justify-center">
           <Flag className="text-white mr-2" size={20} />
           <Text className="text-white font-medium">Report This Content</Text>
         </View>
-      </TouchableOpacity>
+      </Button>
     </View>
   );
 };
