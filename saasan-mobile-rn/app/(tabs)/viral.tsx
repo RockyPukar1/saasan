@@ -93,7 +93,11 @@ const ViralScreen = () => {
             </View>
 
             {/* Viral Tab Navigation */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="flex-grow-0"
+            >
               <View className="flex-row bg-white rounded-lg p-1 mb-4">
                 {[
                   { id: "feed", label: "📰 Feed", icon: "📰" },
@@ -130,7 +134,7 @@ const ViralScreen = () => {
             </ScrollView>
 
             {/* Viral Content */}
-            <View className="min-h-80 max-h-96">
+            <View className="min-h-[80%] max-h-[80%]">
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 className="flex-1"
