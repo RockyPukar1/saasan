@@ -137,10 +137,11 @@ const PoliticiansScreen = () => {
         <Error error={error} refresh={refresh} />
       ) : (
         <ScrollView
-          className="flex-1 px-4 py-4"
+          className="flex-1"
           refreshControl={
             <RefreshControl refreshing={loading} onRefresh={refresh} />
           }
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
         >
           {filteredPoliticians.length > 0 ? (
             filteredPoliticians.map((politician) => (

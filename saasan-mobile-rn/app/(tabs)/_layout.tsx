@@ -1,5 +1,5 @@
 import { Tabs, Redirect } from "expo-router";
-import { Home, Users, FileText, Vote } from "lucide-react-native";
+import { Home, Users, FileText, Vote, TrendingUp } from "lucide-react-native";
 import { useAuthContext } from "~/contexts/AuthContext";
 
 export default function TabLayout() {
@@ -46,6 +46,16 @@ export default function TabLayout() {
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="viral"
+        options={{
+          title: "Viral",
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <TrendingUp color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
