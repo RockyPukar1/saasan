@@ -4,7 +4,7 @@
     "abbreviation": "CPN-UML",
     "ideology": "Communism",
     "foundedIn": 2021,
-    "logo_url": "https://example.com/cpn-uml-logo.png",
+    "logoUrl": "https://example.com/cpn-uml-logo.png",
     "color": "#FF0000"
   },
   {
@@ -12,7 +12,7 @@
     "abbreviation": "NC",
     "ideology": "Social Democracy",
     "foundedIn": 1950,
-    "logo_url": "https://example.com/nc-logo.png",
+    "logoUrl": "https://example.com/nc-logo.png",
     "color": "#0066CC"
   },
   {
@@ -20,7 +20,7 @@
     "abbreviation": "MC",
     "ideology": "Maoism",
     "foundedIn": 1994,
-    "logo_url": "https://example.com/mc-logo.png",
+    "logoUrl": "https://example.com/mc-logo.png",
     "color": "#FF6600"
   },
   {
@@ -28,7 +28,7 @@
     "abbreviation": "RPP",
     "ideology": "Monarchism",
     "foundedIn": 1990,
-    "logo_url": "https://example.com/rpp-logo.png",
+    "logoUrl": "https://example.com/rpp-logo.png",
     "color": "#FFD700"
   },
   {
@@ -36,7 +36,7 @@
     "abbreviation": "JSP",
     "ideology": "Socialism",
     "foundedIn": 2020,
-    "logo_url": "https://example.com/jsp-logo.png",
+    "logoUrl": "https://example.com/jsp-logo.png",
     "color": "#00AA00"
   }
 ]

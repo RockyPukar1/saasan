@@ -224,15 +224,30 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
               >
                 {politician.name}
               </Text>
-              <Text className="text-gray-600 text-xs mb-1" numberOfLines={1}>
-                {politician.position}
-              </Text>
-              <View className="flex-row items-center">
-                <MapPin className="text-gray-500" size={10} />
-                <Text className="text-gray-500 text-xs ml-1" numberOfLines={1}>
-                  {politician.constituency}
-                </Text>
-              </View>
+              {politician.posts.length && (
+                <>
+                  {politician.posts.map((p) => (
+                    <Text
+                      className="text-gray-600 text-xs mb-1"
+                      numberOfLines={1}
+                    >
+                      {p.position} ({p.level})
+                    </Text>
+                  ))}
+                </>
+              )}
+
+              {politician.constituency && (
+                <View className="flex-row items-center">
+                  <MapPin className="text-gray-500" size={10} />
+                  <Text
+                    className="text-gray-500 text-xs ml-1"
+                    numberOfLines={1}
+                  >
+                    {politician.constituency}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Party Badge - Compact */}

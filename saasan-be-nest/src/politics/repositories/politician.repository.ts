@@ -11,14 +11,6 @@ import { LevelNameDto } from '../dtos/level-name.dto';
 
 @Injectable()
 export class PoliticianRepository {
-  private levelMapping: Record<string, string> = {
-    federal: 'Federal',
-    provincial: 'Provincial',
-    district: 'District',
-    municipal: 'Municipal',
-    ward: 'Ward',
-  };
-
   constructor(
     @InjectModel(PoliticianEntity.name)
     private readonly model: Model<PoliticianEntityDocument>,
@@ -65,18 +57,18 @@ export class PoliticianRepository {
       {
         $lookup: {
           from: 'positions',
-          localField: 'positionId',
+          localField: 'positionIds',
           foreignField: '_id',
-          as: 'position',
+          as: 'positions',
         },
       },
       {
-        $unwind: '$position',
+        $unwind: '$positions',
       },
       {
         $lookup: {
           from: 'levels',
-          localField: 'position.level',
+          localField: 'positions.levelId',
           foreignField: '_id',
           as: 'level',
         },
@@ -118,13 +110,25 @@ export class PoliticianRepository {
         },
       },
       {
+        $group: {
+          _id: '$_id',
+          fullName: { $first: '$fullName' },
+          partyName: { $first: '$party.abbreviation' },
+          constituencyNumber: { $first: '$constituency.constituencyNumber' },
+          posts: {
+            $push: {
+              level: '$level.name',
+              position: '$positions.title',
+            },
+          },
+        },
+      },
+      {
         $project: {
           fullName: 1,
-
-          positionTitle: '$position.title',
-          partyName: '$party.name',
-          constituencyName: '$constituency.constituencyNumber',
-          levelName: '$level.name',
+          posts: 1,
+          partyName: 1,
+          constituencyNumber: 1,
         },
       },
     ]);

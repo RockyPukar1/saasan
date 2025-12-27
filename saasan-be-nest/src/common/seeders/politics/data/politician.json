@@ -1,8 +1,12 @@
 [
   {
-    "fullName": "Dr. Rajesh Sharma"
+    "fullName": "Dr. Rajesh Sharma",
+    "party": "Nepal Communist Party (Unified Marxist-Leninist)",
+    "positions": ["Member of Parliament"]
   },
   {
-    "fullName": "Sita Maharjan"
+    "fullName": "Sita Maharjan",
+    "party": "Nepali Congress",
+    "positions": ["Member of Parliament"]
   }
 ]

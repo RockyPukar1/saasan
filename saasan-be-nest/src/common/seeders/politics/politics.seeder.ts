@@ -5,7 +5,7 @@ import politicianData from './data/politician.json';
 import postData from './data/post.json';
 
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   PoliticianEntity,
   PoliticianEntityDocument,
@@ -37,6 +37,9 @@ export class PoliticsSeeder {
   ) {}
 
   async seed() {
+    const positionMap = new Map<string, Types.ObjectId>();
+    const partyMap = new Map<string, Types.ObjectId>();
+
     console.log('Seeding levels and positions');
     for (const level of postData) {
       const levelDoc = await this.levelModel.findOneAndUpdate(
@@ -56,7 +59,7 @@ export class PoliticsSeeder {
       const positions = level.positions;
 
       for (const position of positions) {
-        await this.positionModel.findOneAndUpdate(
+        const positionDoc = await this.positionModel.findOneAndUpdate(
           { title: position.title },
           {
             $set: {
@@ -67,16 +70,57 @@ export class PoliticsSeeder {
           },
           { upsert: true, new: true },
         );
+
+        positionMap.set(position.title, positionDoc._id);
       }
     }
     console.log('Position seeded successfully');
 
     console.log('Seeding party...');
-    await this.partyModel.insertMany(partyData);
+    for (const party of partyData) {
+      const partyDoc = await this.partyModel.findOneAndUpdate(
+        { name: party.name },
+        {
+          $set: {
+            name: party.name,
+            abbreviation: party.abbreviation,
+            ideology: party.ideology,
+            foundedIn: party.foundedIn,
+            logoUrl: party.logoUrl,
+            color: party.color,
+          },
+        },
+        { upsert: true, new: true },
+      );
+      partyMap.set(party.name, partyDoc._id);
+    }
     console.log('Party seeded successfully');
 
     console.log('Seeding politician...');
-    await this.politicianModel.insertMany(politicianData);
+    for (const politician of politicianData) {
+      const partyId = politician.party ? partyMap.get(politician.party) : false;
+      const isIndependent = !partyId;
+
+      const positionIds =
+        politician.positions
+          ?.map((pos) => positionMap.get(pos))
+          .filter(Boolean) || [];
+      await this.politicianModel.findOneAndUpdate(
+        { fullName: politician.fullName },
+        {
+          $setOnInsert: {
+            fullName: politician.fullName,
+          },
+          ...(isIndependent
+            ? { $set: { isIndependent: true } }
+            : { $set: { partyId } }),
+          ...(positionIds.length && {
+            $addToSet: { positionIds: { $each: positionIds } },
+          }),
+        },
+        { upsert: true, new: true },
+      );
+    }
     console.log('Politician seeded successfully');
   }
 }

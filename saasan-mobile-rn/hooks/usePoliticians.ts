@@ -1,11 +1,15 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiService } from "~/services/api";
 
+interface Post {
+  level: string;
+  position: string;
+}
+
 export interface Politician {
   id: string;
   name: string;
-  position: string;
-  level: "ward" | "municipality" | "district" | "province" | "federal";
+  posts: Post[];
   party: string;
   constituency: string;
   rating: number;
@@ -43,16 +47,11 @@ export const usePoliticians = (initialLevel: string = "federal") => {
       if (response.success && response.data) {
         // Transform backend data to frontend format
         const transformedPoliticians = response.data.map((politician: any) => ({
-          id: politician.id,
-          name: politician.full_name || politician.name || "Unknown",
-          position:
-            politician.positionTitle ||
-            politician.position ||
-            "Unknown Position",
-          level: politician.levelName?.toLowerCase() || selectedLevel,
-          party: politician.partyName || politician.party || "Independent",
-          constituency:
-            politician.constituencyName || politician.constituency || "Unknown",
+          id: politician._id,
+          name: politician.fullName,
+          posts: politician.posts,
+          party: politician.partyName ?? "Independent",
+          constituency: politician.constituencyNumber,
           rating: politician.rating || 0,
           totalVotes:
             politician.total_votes_received || politician.totalVotes || 0,

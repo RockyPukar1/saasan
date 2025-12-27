@@ -35,8 +35,11 @@ export class PoliticianEntity {
   @Prop({ type: Types.ObjectId, ref: PartyEntity.name })
   partyId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: PositionEntity.name })
-  positionId?: Types.ObjectId;
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: PositionEntity.name }],
+    default: [],
+  })
+  positionIds?: string[];
 
   @Prop({ type: Number, default: 0 })
   experienceYears?: number;

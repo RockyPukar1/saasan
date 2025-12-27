@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsMongoId,
   IsNumber,
@@ -39,8 +40,9 @@ export class CreatePoliticianDto {
   partyId?: string;
 
   @IsOptional()
-  @IsMongoId()
-  positionId?: string;
+  @IsArray()
+  @IsMongoId({ each: true })
+  positionIds?: string[];
 
   @IsOptional()
   @IsNumber()
