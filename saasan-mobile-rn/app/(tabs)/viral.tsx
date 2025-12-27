@@ -134,74 +134,67 @@ const ViralScreen = () => {
             </ScrollView>
 
             {/* Viral Content */}
-            <View className="min-h-[80%] max-h-[80%]">
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                className="flex-1"
-              >
-                {activeViralTab === "feed" && <TransparencyFeed />}
-                {activeViralTab === "polls" && <TrendingPolls />}
-                {activeViralTab === "leaderboard" && (
-                  <Leaderboard type="reports" period="week" />
-                )}
-                {activeViralTab === "badges" && (
-                  <BadgeSystem userStats={userStats} />
-                )}
-                {activeViralTab === "invite" && (
-                  <InviteChallenge userStats={userStats} />
-                )}
-                {activeViralTab === "streaks" && (
-                  <StreaksSystem userStats={userStats} />
-                )}
-                {activeViralTab === "comments" && (
-                  <CommentSystem
-                    itemId="dashboard"
-                    itemType="report"
-                    onComment={(comment) =>
-                      console.log("New comment:", comment)
-                    }
-                  />
-                )}
-                {activeViralTab === "verification" && (
-                  <VerificationSystem
-                    itemId="dashboard"
-                    itemType="report"
-                    currentStatus={{
-                      status: "verified",
-                      level: "high",
-                      verifiedBy: "Community Verification Team",
-                      verifiedAt: "2024-01-15T10:00:00Z",
-                      evidenceCount: 5,
-                      communityVotes: {
-                        upvotes: 1250,
-                        downvotes: 45,
-                        totalVoters: 1295,
-                      },
-                      credibilityScore: 87,
-                      verificationNotes:
-                        "Verified through multiple sources and official documents.",
-                    }}
-                    onVerify={(status, notes) =>
-                      console.log("Verification:", status, notes)
-                    }
-                    onVote={(vote) => console.log("Vote:", vote)}
-                  />
-                )}
-                {activeViralTab === "election" && (
-                  <ElectionMode
-                    onVote={(candidateId) =>
-                      console.log("Vote for:", candidateId)
-                    }
-                    onShare={(candidate) =>
-                      console.log("Share candidate:", candidate)
-                    }
-                    onCompare={(candidates) =>
-                      console.log("Compare:", candidates)
-                    }
-                  />
-                )}
-              </ScrollView>
-            </View>
+            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+              {activeViralTab === "feed" && <TransparencyFeed />}
+              {activeViralTab === "polls" && <TrendingPolls />}
+              {activeViralTab === "leaderboard" && (
+                <Leaderboard type="reports" period="week" />
+              )}
+              {activeViralTab === "badges" && (
+                <BadgeSystem userStats={userStats} />
+              )}
+              {activeViralTab === "invite" && (
+                <InviteChallenge userStats={userStats} />
+              )}
+              {activeViralTab === "streaks" && (
+                <StreaksSystem userStats={userStats} />
+              )}
+              {activeViralTab === "comments" && (
+                <CommentSystem
+                  itemId="dashboard"
+                  itemType="report"
+                  onComment={(comment) => console.log("New comment:", comment)}
+                />
+              )}
+              {activeViralTab === "verification" && (
+                <VerificationSystem
+                  itemId="dashboard"
+                  itemType="report"
+                  currentStatus={{
+                    status: "verified",
+                    level: "high",
+                    verifiedBy: "Community Verification Team",
+                    verifiedAt: "2024-01-15T10:00:00Z",
+                    evidenceCount: 5,
+                    communityVotes: {
+                      upvotes: 1250,
+                      downvotes: 45,
+                      totalVoters: 1295,
+                    },
+                    credibilityScore: 87,
+                    verificationNotes:
+                      "Verified through multiple sources and official documents.",
+                  }}
+                  onVerify={(status, notes) =>
+                    console.log("Verification:", status, notes)
+                  }
+                  onVote={(vote) => console.log("Vote:", vote)}
+                />
+              )}
+              {activeViralTab === "election" && (
+                <ElectionMode
+                  onVote={(candidateId) =>
+                    console.log("Vote for:", candidateId)
+                  }
+                  onShare={(candidate) =>
+                    console.log("Share candidate:", candidate)
+                  }
+                  onCompare={(candidates) =>
+                    console.log("Compare:", candidates)
+                  }
+                />
+              )}
+            </ScrollView>
           </CardContent>
         </Card>
         {/* Bottom padding for tab bar */}
