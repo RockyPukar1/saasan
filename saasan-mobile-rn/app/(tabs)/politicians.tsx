@@ -48,14 +48,6 @@ const PoliticiansScreen = () => {
     [politicians, searchQuery]
   );
 
-  if (loading && !politicians.length) {
-    return <Loading />;
-  }
-
-  if (error) {
-    return <Error error={error} refresh={refresh} />;
-  }
-
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header with Language Toggle */}
@@ -139,40 +131,39 @@ const PoliticiansScreen = () => {
           </ScrollView>
         </View>
       )}
-
-      {/* Politicians List */}
-      <ScrollView
-        className="flex-1 px-4 py-4"
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} />
-        }
-      >
-        {filteredPoliticians.length > 0 ? (
-          filteredPoliticians.map((politician) => (
-            <PoliticianCard key={politician.id} politician={politician} />
-          ))
-        ) : (
-          <View className="flex-1 justify-center items-center py-20">
-            <Users className="text-gray-400" size={64} />
-            <Text className="text-gray-600 text-lg font-medium mt-4">
-              {loading ? "Loading politicians..." : "No politicians found"}
-            </Text>
-            <Text className="text-gray-500 text-sm text-center mt-2">
-              {loading
-                ? "Please wait while we fetch the data..."
-                : "Try adjusting your search or government level filter"}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <Error error={error} refresh={refresh} />
+      ) : (
+        <ScrollView
+          className="flex-1 px-4 py-4"
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refresh} />
+          }
+        >
+          {filteredPoliticians.length > 0 ? (
+            filteredPoliticians.map((politician) => (
+              <PoliticianCard key={politician.id} politician={politician} />
+            ))
+          ) : (
+            <View className="flex-1 justify-center items-center py-20">
+              <Users className="text-gray-400" size={64} />
+              <Text className="text-gray-600 text-lg font-medium mt-4">
+                {loading ? "Loading politicians..." : "No politicians found"}
+              </Text>
+              <Text className="text-gray-500 text-sm text-center mt-2">
+                {loading
+                  ? "Please wait while we fetch the data..."
+                  : "Try adjusting your search or government level filter"}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
 
       {/* Bottom padding for tab bar */}
       <View className="h-24" />
-
-      {/* Floating Action Button */}
-      <Button className="absolute bottom-20 right-6 bg-red-600 w-14 h-14 rounded-full items-center justify-center shadow-lg">
-        <Text className="text-white text-2xl">+</Text>
-      </Button>
     </View>
   );
 };
