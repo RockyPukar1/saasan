@@ -72,7 +72,7 @@ const ViralScreen = () => {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} />
         }
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
+        // contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
       >
         {/* Viral Features Section */}
         <Card className="overflow-hidden bg-gradient-to-r from-purple-50 to-pink-50">
