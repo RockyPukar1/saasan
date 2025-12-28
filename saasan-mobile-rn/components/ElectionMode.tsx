@@ -50,6 +50,35 @@ interface ElectionModeProps {
   onCompare?: (candidates: Candidate[]) => void;
 }
 
+interface PollData {
+  id: string;
+  candidateId: string;
+  candidateName: string;
+  party: string;
+  percentage: number;
+  votes: number;
+  trend: "up" | "down" | "stable";
+  change: number;
+}
+
+interface PollIssue {
+  id: string;
+  topic: string;
+  importance: number;
+  sentiment: "positive" | "negative" | "neutral";
+  mentions: number;
+}
+
+interface PublicOpinion {
+  id: string;
+  author: string;
+  comment: string;
+  candidateId: string;
+  timestamp: string;
+  likes: number;
+  sentiment: "positive" | "negative" | "neutral";
+}
+
 export const ElectionMode: React.FC<ElectionModeProps> = ({
   onVote,
   onShare,
@@ -129,6 +158,100 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
       isIncumbent: false,
     },
   ];
+
+  const [pollData, setPollData] = useState<PollData[]>([
+    {
+      id: "1",
+      candidateId: "2",
+      candidateName: "Priya Gurung",
+      party: "Nepali Congress",
+      percentage: 42.5,
+      votes: 7650,
+      trend: "up",
+      change: 2.3,
+    },
+    {
+      id: "2",
+      candidateId: "1",
+      candidateName: "Rajesh Sharma",
+      party: "Nepal Communist Party",
+      percentage: 38.2,
+      votes: 6876,
+      trend: "down",
+      change: -1.5,
+    },
+    {
+      id: "3",
+      candidateId: "3",
+      candidateName: "Amit Thapa",
+      party: "Rastriya Prajatantra Party",
+      percentage: 19.3,
+      votes: 3474,
+      trend: "stable",
+      change: 0.2,
+    },
+  ]);
+
+  const [pollIssues, setPollIssues] = useState<PollIssue[]>([
+    {
+      id: "1",
+      topic: "Healthcare Reform",
+      importance: 95,
+      sentiment: "positive",
+      mentions: 3420,
+    },
+    {
+      id: "2",
+      topic: "Economic Development",
+      importance: 88,
+      sentiment: "positive",
+      mentions: 2890,
+    },
+    {
+      id: "3",
+      topic: "Education Budget",
+      importance: 82,
+      sentiment: "neutral",
+      mentions: 2150,
+    },
+    {
+      id: "4",
+      topic: "Infrastructure",
+      importance: 75,
+      sentiment: "positive",
+      mentions: 1980,
+    },
+  ]);
+
+  const [publicOpinions, setPublicOpinions] = useState<PublicOpinion[]>([
+    {
+      id: "1",
+      author: "Sita Tamang",
+      comment: "Priya Gurung's healthcare plan is exactly what we need!",
+      candidateId: "2",
+      timestamp: "2 hours ago",
+      likes: 124,
+      sentiment: "positive",
+    },
+    {
+      id: "2",
+      author: "Ram Bahadur",
+      comment: "Rajesh Sharma has done good work in infrastructure.",
+      candidateId: "1",
+      timestamp: "5 hours ago",
+      likes: 89,
+      sentiment: "positive",
+    },
+    {
+      id: "3",
+      author: "Gita Shrestha",
+      comment: "We need fresh ideas, not the same old promises.",
+      candidateId: "3",
+      timestamp: "1 day ago",
+      likes: 67,
+      sentiment: "neutral",
+    },
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -415,6 +538,601 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
     </View>
   );
 
+  const renderComparison = () => {
+    const candidatesToCompare = candidates.filter((c) =>
+      selectedCandidates.includes(c.id)
+    );
+
+    if (selectedCandidates.length !== 2) {
+      return (
+        <View className="space-y-4">
+          <Card>
+            <CardContent className="p-6 items-center">
+              <BarChart3 className="text-gray-400 mb-3" size={48} />
+              <Text className="text-lg font-bold text-gray-800 mb-2">
+                📊 Candidate Comparison
+              </Text>
+              <Text className="text-gray-600 text-center mb-4">
+                Select 2 candidates from the Candidates tab to compare their
+                manifestos, achievements, and ratings.
+              </Text>
+              <Button
+                onPress={() => setActiveTab("candidates")}
+                className="bg-blue-500 py-2 px-4 rounded-lg"
+              >
+                <Text className="text-white font-medium">Go to Candidates</Text>
+              </Button>
+            </CardContent>
+          </Card>
+        </View>
+      );
+    }
+
+    const [candidate1, candidate2] = candidatesToCompare;
+
+    return (
+      <View className="space-y-3">
+        {/* Header with both candidates side by side */}
+        <View className="flex-row space-x-2">
+          {/* Candidate 1 Header */}
+          <View className="flex-1">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
+              <CardContent className="p-3">
+                <View className="items-center">
+                  <Text className="text-white font-bold text-sm mb-1">
+                    {candidate1.name}
+                  </Text>
+                  <Text className="text-white text-xs text-center mb-2">
+                    {candidate1.party}
+                  </Text>
+                  {candidate1.isIncumbent && (
+                    <View className="bg-white/20 px-2 py-0.5 rounded-full">
+                      <Text className="text-white text-xs font-medium">
+                        Current MP
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </CardContent>
+            </Card>
+          </View>
+
+          {/* VS Divider */}
+          <View className="justify-center items-center px-1">
+            <View className="bg-gray-200 rounded-full px-2 py-1">
+              <Text className="text-gray-700 font-bold text-xs">VS</Text>
+            </View>
+          </View>
+
+          {/* Candidate 2 Header */}
+          <View className="flex-1">
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600">
+              <CardContent className="p-3">
+                <View className="items-center">
+                  <Text className="text-white font-bold text-sm mb-1">
+                    {candidate2.name}
+                  </Text>
+                  <Text className="text-white text-xs text-center mb-2">
+                    {candidate2.party}
+                  </Text>
+                  {candidate2.isIncumbent && (
+                    <View className="bg-white/20 px-2 py-0.5 rounded-full">
+                      <Text className="text-white text-xs font-medium">
+                        Current MP
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </CardContent>
+            </Card>
+          </View>
+        </View>
+
+        {/* Quick Stats Comparison - Side by Side */}
+        <Card>
+          <CardContent className="p-4">
+            <Text className="text-sm font-bold text-gray-800 mb-3">
+              ⚡ Quick Stats
+            </Text>
+
+            {/* Rating Comparison */}
+            <View className="mb-4">
+              <Text className="text-xs text-gray-600 mb-2">Rating</Text>
+              <View className="flex-row items-center space-x-2">
+                <View className="flex-1 items-center">
+                  <View className="flex-row items-center">
+                    <Star className="text-yellow-500 mr-1" size={14} />
+                    <Text className="font-bold text-gray-800">
+                      {candidate1.rating}/5
+                    </Text>
+                  </View>
+                </View>
+                <View className="w-8 h-0.5 bg-gray-200" />
+                <View className="flex-1 items-center">
+                  <View className="flex-row items-center">
+                    <Star className="text-yellow-500 mr-1" size={14} />
+                    <Text className="font-bold text-gray-800">
+                      {candidate2.rating}/5
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              {/* Visual bar comparison */}
+              <View className="flex-row items-center space-x-2 mt-1">
+                <View className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <View
+                    className="h-full bg-blue-500"
+                    style={{ width: `${(candidate1.rating / 5) * 100}%` }}
+                  />
+                </View>
+                <View className="w-8" />
+                <View className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <View
+                    className="h-full bg-purple-500"
+                    style={{ width: `${(candidate2.rating / 5) * 100}%` }}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Promises, Achievements, Controversies - Grid Layout */}
+            <View className="space-y-3">
+              {/* Promises */}
+              <View>
+                <Text className="text-xs text-gray-600 mb-2">Promises</Text>
+                <View className="flex-row items-center space-x-2">
+                  <View className="flex-1 items-center bg-green-50 py-2 rounded">
+                    <Text className="text-lg font-bold text-green-600">
+                      {candidate1.promises}
+                    </Text>
+                  </View>
+                  <View className="w-8" />
+                  <View className="flex-1 items-center bg-green-50 py-2 rounded">
+                    <Text className="text-lg font-bold text-green-600">
+                      {candidate2.promises}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Achievements */}
+              <View>
+                <Text className="text-xs text-gray-600 mb-2">Achievements</Text>
+                <View className="flex-row items-center space-x-2">
+                  <View className="flex-1 items-center bg-blue-50 py-2 rounded">
+                    <Text className="text-lg font-bold text-blue-600">
+                      {candidate1.achievements}
+                    </Text>
+                  </View>
+                  <View className="w-8" />
+                  <View className="flex-1 items-center bg-blue-50 py-2 rounded">
+                    <Text className="text-lg font-bold text-blue-600">
+                      {candidate2.achievements}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Controversies */}
+              <View>
+                <Text className="text-xs text-gray-600 mb-2">
+                  Controversies
+                </Text>
+                <View className="flex-row items-center space-x-2">
+                  <View className="flex-1 items-center bg-red-50 py-2 rounded">
+                    <Text className="text-lg font-bold text-red-600">
+                      {candidate1.controversies}
+                    </Text>
+                  </View>
+                  <View className="w-8" />
+                  <View className="flex-1 items-center bg-red-50 py-2 rounded">
+                    <Text className="text-lg font-bold text-red-600">
+                      {candidate2.controversies}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* Manifesto Comparison - Stacked with alternating colors */}
+        <Card>
+          <CardContent className="p-4">
+            <Text className="text-sm font-bold text-gray-800 mb-3">
+              📋 Manifesto Comparison
+            </Text>
+
+            <View className="space-y-2">
+              {Array.from({
+                length: Math.max(
+                  candidate1.manifesto.length,
+                  candidate2.manifesto.length
+                ),
+              }).map((_, index) => (
+                <View key={index} className="space-y-2">
+                  {/* Candidate 1 Manifesto Item */}
+                  {candidate1.manifesto[index] && (
+                    <View className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+                      <View className="flex-row items-start">
+                        <View className="bg-blue-500 rounded-full w-5 h-5 items-center justify-center mr-2 mt-0.5">
+                          <Text className="text-white text-xs font-bold">
+                            1
+                          </Text>
+                        </View>
+                        <Text className="flex-1 text-sm text-gray-800">
+                          {candidate1.manifesto[index]}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Candidate 2 Manifesto Item */}
+                  {candidate2.manifesto[index] && (
+                    <View className="bg-purple-50 p-3 rounded-lg border-l-4 border-purple-500">
+                      <View className="flex-row items-start">
+                        <View className="bg-purple-500 rounded-full w-5 h-5 items-center justify-center mr-2 mt-0.5">
+                          <Text className="text-white text-xs font-bold">
+                            2
+                          </Text>
+                        </View>
+                        <Text className="flex-1 text-sm text-gray-800">
+                          {candidate2.manifesto[index]}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Divider between items */}
+                  {index <
+                    Math.max(
+                      candidate1.manifesto.length,
+                      candidate2.manifesto.length
+                    ) -
+                      1 && <View className="h-px bg-gray-200 my-1" />}
+                </View>
+              ))}
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <View className="space-y-2">
+          <Button
+            onPress={() => onVote?.(candidate1.id)}
+            className="bg-blue-500 py-3 rounded-lg"
+          >
+            <Text className="text-white font-bold text-center">
+              Vote for {candidate1.name.split(" ")[0]}
+            </Text>
+          </Button>
+          <Button
+            onPress={() => onVote?.(candidate2.id)}
+            className="bg-purple-500 py-3 rounded-lg"
+          >
+            <Text className="text-white font-bold text-center">
+              Vote for {candidate2.name.split(" ")[0]}
+            </Text>
+          </Button>
+          <Button
+            onPress={() => {
+              setSelectedCandidates([]);
+              setActiveTab("candidates");
+            }}
+            className="bg-gray-200 py-2 rounded-lg"
+          >
+            <Text className="text-gray-700 font-medium text-center">
+              Select Different Candidates
+            </Text>
+          </Button>
+        </View>
+      </View>
+    );
+  };
+
+  const renderPolls = () => {
+    const sortedPolls = [...pollData].sort(
+      (a, b) => b.percentage - a.percentage
+    );
+    const totalVotes = pollData.reduce((sum, poll) => sum + poll.votes, 0);
+
+    return (
+      <View className="space-y-4">
+        {/* Poll Results Header */}
+        <Card className="bg-gradient-to-r from-indigo-500 to-purple-600">
+          <CardContent className="p-4">
+            <View className="flex-row items-center justify-between mb-2">
+              <View>
+                <Text className="text-white font-bold text-lg">
+                  📊 Latest Poll Results
+                </Text>
+                <Text className="text-white text-xs mt-1">
+                  {totalVotes.toLocaleString()} responses
+                </Text>
+              </View>
+              <TrendingUp className="text-white" size={24} />
+            </View>
+            <Text className="text-white text-xs">
+              Updated 2 hours ago • Kathmandu-1
+            </Text>
+          </CardContent>
+        </Card>
+
+        {/* Poll Results - Visual Bars */}
+        <Card>
+          <CardContent className="p-4">
+            <Text className="text-sm font-bold text-gray-800 mb-4">
+              🗳️ Candidate Polling
+            </Text>
+
+            {sortedPolls.map((poll, index) => {
+              const candidate = candidates.find(
+                (c) => c.id === poll.candidateId
+              );
+              const isLeading = index === 0;
+
+              return (
+                <View key={poll.id} className="mb-4 last:mb-0">
+                  {/* Candidate Info Row */}
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-1">
+                      <View className="flex-row items-center">
+                        {isLeading && (
+                          <Award className="text-yellow-500 mr-1" size={14} />
+                        )}
+                        <Text
+                          className={`text-sm font-bold ${
+                            isLeading ? "text-gray-800" : "text-gray-700"
+                          }`}
+                        >
+                          {poll.candidateName}
+                        </Text>
+                      </View>
+                      <Text className="text-xs text-gray-500">
+                        {poll.party}
+                      </Text>
+                    </View>
+
+                    <View className="items-end">
+                      <Text className="text-lg font-bold text-gray-800">
+                        {poll.percentage.toFixed(1)}%
+                      </Text>
+                      <View className="flex-row items-center">
+                        {poll.trend === "up" && (
+                          <TrendingUp
+                            className="text-green-500 mr-1"
+                            size={12}
+                          />
+                        )}
+                        {poll.trend === "down" && (
+                          <TrendingUp
+                            className="text-red-500 mr-1"
+                            size={12}
+                            style={{ transform: [{ rotate: "180deg" }] }}
+                          />
+                        )}
+                        {poll.trend === "stable" && (
+                          <View className="w-2 h-2 bg-gray-400 rounded-full mr-1" />
+                        )}
+                        <Text
+                          className={`text-xs ${
+                            poll.trend === "up"
+                              ? "text-green-600"
+                              : poll.trend === "down"
+                              ? "text-red-600"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {poll.change > 0 ? "+" : ""}
+                          {poll.change.toFixed(1)}%
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Progress Bar */}
+                  <View className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <View
+                      className={`h-full ${
+                        index === 0
+                          ? "bg-indigo-500"
+                          : index === 1
+                          ? "bg-blue-500"
+                          : "bg-purple-500"
+                      }`}
+                      style={{ width: `${poll.percentage}%` }}
+                    />
+                  </View>
+
+                  {/* Votes Count */}
+                  <Text className="text-xs text-gray-500 mt-1">
+                    {poll.votes.toLocaleString()} votes
+                  </Text>
+                </View>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Trending Issues */}
+        <Card>
+          <CardContent className="p-4">
+            <Text className="text-sm font-bold text-gray-800 mb-3">
+              🔥 Trending Election Issues
+            </Text>
+
+            <View className="space-y-3">
+              {pollIssues.map((issue) => (
+                <View
+                  key={issue.id}
+                  className="bg-gray-50 p-3 rounded-lg border-l-4 border-blue-500"
+                >
+                  <View className="flex-row items-start justify-between mb-2">
+                    <View className="flex-1">
+                      <Text className="text-sm font-bold text-gray-800">
+                        {issue.topic}
+                      </Text>
+                      <Text className="text-xs text-gray-500 mt-1">
+                        {issue.mentions.toLocaleString()} mentions
+                      </Text>
+                    </View>
+                    <View
+                      className={`px-2 py-1 rounded-full ${
+                        issue.sentiment === "positive"
+                          ? "bg-green-100"
+                          : issue.sentiment === "negative"
+                          ? "bg-red-100"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-medium ${
+                          issue.sentiment === "positive"
+                            ? "text-green-700"
+                            : issue.sentiment === "negative"
+                            ? "text-red-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {issue.sentiment}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Importance Bar */}
+                  <View className="mt-2">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="text-xs text-gray-600">Importance</Text>
+                      <Text className="text-xs font-bold text-gray-800">
+                        {issue.importance}%
+                      </Text>
+                    </View>
+                    <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <View
+                        className="h-full bg-blue-500"
+                        style={{ width: `${issue.importance}%` }}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* Public Opinions */}
+        <Card>
+          <CardContent className="p-4">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-sm font-bold text-gray-800">
+                💬 Public Opinions
+              </Text>
+              <Text className="text-xs text-gray-500">
+                {publicOpinions.length} comments
+              </Text>
+            </View>
+
+            <View className="space-y-3">
+              {publicOpinions.map((opinion) => {
+                const candidate = candidates.find(
+                  (c) => c.id === opinion.candidateId
+                );
+
+                return (
+                  <View
+                    key={opinion.id}
+                    className={`p-3 rounded-lg border ${
+                      opinion.sentiment === "positive"
+                        ? "bg-green-50 border-green-200"
+                        : opinion.sentiment === "negative"
+                        ? "bg-red-50 border-red-200"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <View className="flex-row items-start justify-between mb-2">
+                      <View className="flex-1">
+                        <Text className="text-sm font-bold text-gray-800">
+                          {opinion.author}
+                        </Text>
+                        {candidate && (
+                          <Text className="text-xs text-gray-500">
+                            About {candidate.name}
+                          </Text>
+                        )}
+                      </View>
+                      <Text className="text-xs text-gray-400">
+                        {opinion.timestamp}
+                      </Text>
+                    </View>
+
+                    <Text className="text-sm text-gray-700 mb-2">
+                      {opinion.comment}
+                    </Text>
+
+                    <View className="flex-row items-center">
+                      <View className="flex-row items-center bg-white px-2 py-1 rounded-full">
+                        <Text className="text-xs text-gray-600 mr-1">👍</Text>
+                        <Text className="text-xs text-gray-600">
+                          {opinion.likes}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Load More Button */}
+            <Button
+              onPress={() => {
+                // Handle load more opinions
+              }}
+              className="bg-gray-100 py-2 rounded-lg mt-3"
+            >
+              <Text className="text-gray-700 font-medium text-center">
+                Load More Comments
+              </Text>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Poll Statistics Summary */}
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardContent className="p-4">
+            <Text className="text-sm font-bold text-gray-800 mb-3">
+              📈 Poll Statistics
+            </Text>
+
+            <View className="space-y-3">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-gray-600">Total Responses</Text>
+                <Text className="text-sm font-bold text-gray-800">
+                  {totalVotes.toLocaleString()}
+                </Text>
+              </View>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-gray-600">Margin of Error</Text>
+                <Text className="text-sm font-bold text-gray-800">±3.2%</Text>
+              </View>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-gray-600">Poll Date</Text>
+                <Text className="text-sm font-bold text-gray-800">
+                  {new Date().toLocaleDateString()}
+                </Text>
+              </View>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-gray-600">Sample Size</Text>
+                <Text className="text-sm font-bold text-gray-800">
+                  {totalVotes.toLocaleString()} voters
+                </Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+      </View>
+    );
+  };
+
   return (
     <View className="space-y-4">
       {/* Election Mode Header */}
@@ -464,32 +1182,8 @@ export const ElectionMode: React.FC<ElectionModeProps> = ({
       <ScrollView showsVerticalScrollIndicator={false}>
         {activeTab === "countdown" && renderCountdown()}
         {activeTab === "candidates" && renderCandidates()}
-        {activeTab === "compare" && (
-          <Card>
-            <CardContent className="p-4">
-              <Text className="text-lg font-bold text-gray-800 mb-3">
-                📊 Candidate Comparison
-              </Text>
-              <Text className="text-gray-600 text-center">
-                Select 2 candidates to compare their manifestos, achievements,
-                and ratings.
-              </Text>
-            </CardContent>
-          </Card>
-        )}
-        {activeTab === "polls" && (
-          <Card>
-            <CardContent className="p-4">
-              <Text className="text-lg font-bold text-gray-800 mb-3">
-                📈 Election Polls
-              </Text>
-              <Text className="text-gray-600 text-center">
-                See what citizens are saying about the candidates and election
-                issues.
-              </Text>
-            </CardContent>
-          </Card>
-        )}
+        {activeTab === "compare" && renderComparison()}
+        {activeTab === "polls" && renderPolls()}
       </ScrollView>
 
       {/* Call to Action */}
