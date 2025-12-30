@@ -23,6 +23,7 @@ import { PoliticsModule } from './politics/politics.module';
 import { PoliticsSeederModule } from './common/seeders/politics/politics-seeder.module';
 import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
 import { EventSeederModule } from './common/seeders/event/event-seeder.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -58,6 +59,6 @@ import { EventSeederModule } from './common/seeders/event/event-seeder.module';
     VotingCenterModule,
     UserVoteModule,
   ],
-  providers: [],
+  controllers: [AppController],
 })
 export class AppModule {}

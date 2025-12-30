@@ -104,7 +104,7 @@ const transformReport = (data: Partial<CorruptionReport>) => ({
   updatedAt: data.updatedAt,
 });
 
-const API_BASE_URL = import.meta.env.SAASAN_API_URL || "http://localhost:7001";
+const API_BASE_URL = import.meta.env.SAASAN_API_URL!;
 
 // Create axios instance
 const api = axios.create({

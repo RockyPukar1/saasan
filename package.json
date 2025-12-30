@@ -4,9 +4,8 @@
   "description": "Saasan - Anti-corruption platform for Nepal with viral features",
   "main": "index.js",
   "scripts": {
-    "install:all": "npm install && cd saasan-node-be && npm install && cd ../saasan-dashboard-react && npm install && cd ../saasan-mobile-rn && npm install",
+    "install:all": "npm install && cd saasan-be-nest && npm install && cd ../saasan-dashboard-react && npm install && cd ../saasan-mobile-rn && npm install",
     "setup": "npm run install:all && npm run setup:env && npm run seed:smart",
-    "setup:env": "node scripts/setup-env.js",
     "seed:smart": "node scripts/setup-database.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\" \"npm run dev:mobile\"",
     "dev:backend": "cd saasan-be-nest && pnpm run start:dev",
