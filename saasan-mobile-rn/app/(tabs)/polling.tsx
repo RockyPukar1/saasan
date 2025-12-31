@@ -42,7 +42,7 @@ const PollScreen = () => {
     loadPollResults,
   } = usePolling();
 
-  const [activeTab, setActiveTab] = useState<"all" | "my_votes">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "my-votes">("all");
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -266,14 +266,14 @@ const PollScreen = () => {
             </Text>
           </Button>
           <Button
-            onPress={() => setActiveTab("my_votes")}
+            onPress={() => setActiveTab("my-votes")}
             className={`flex-1 py-3 items-center border-b-2 ${
-              activeTab === "my_votes" ? "border-red-600" : "border-transparent"
+              activeTab === "my-votes" ? "border-red-600" : "border-transparent"
             }`}
           >
             <Text
               className={`font-bold ${
-                activeTab === "my_votes" ? "text-red-600" : "text-gray-600"
+                activeTab === "my-votes" ? "text-red-600" : "text-gray-600"
               }`}
             >
               {t("polling.myPolls")}
@@ -299,6 +299,11 @@ const PollScreen = () => {
           </View>
         ) : (
           polls
+            .filter((poll) =>
+              activeTab === "my-votes"
+                ? poll.options.some((o) => o.isVoted)
+                : true
+            )
             .filter((poll) =>
               searchQuery
                 ? poll.title
