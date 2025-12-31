@@ -14,12 +14,6 @@ export class PollOptionEntity {
 
   @Prop({ type: String, required: true })
   text: string;
-
-  @Prop({ type: Number, default: 0 })
-  voteCount: number;
-
-  @Prop({ type: Number, default: 0 })
-  percentage: number;
 }
 
 export const PollOptionEntitySchema =

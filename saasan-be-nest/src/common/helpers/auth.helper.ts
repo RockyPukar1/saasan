@@ -5,7 +5,7 @@ export class AuthHelper {
   static generateToken(user): string {
     return jwt.sign(
       {
-        userId: user.id,
+        id: user._id,
         email: user.email,
         role: user.role,
       },

@@ -12,7 +12,9 @@ import { AuthHelper } from 'src/common/helpers/auth.helper';
 export class AuthService {
   constructor(private readonly userRepo: UserRepository) {}
   async register(userData: RegisterUserDto) {
-    const doesUserExists = await this.doesUserExists(userData.email).lean();
+    const doesUserExists = await this.doesUserExists({
+      email: userData.email,
+    }).lean();
     if (doesUserExists) {
       throw new GlobalHttpException(
         'userAlreadyExistsWithEmail',

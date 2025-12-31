@@ -27,7 +27,7 @@ const transformPoll = (data: any): Poll => {
   const formattedData = formatApiResponse(data, "en");
 
   return {
-    _id: formattedData._id,
+    id: formattedData.id,
     title: formattedData.title,
     description: formattedData.description,
     type: formattedData.type,
@@ -36,22 +36,16 @@ const transformPoll = (data: any): Poll => {
     options:
       formattedData.options?.map((option: any) => ({
         id: option.id,
-        text: option.text || option.option, // Backend uses 'option', frontend expects 'text'
-        votes_count: option.votes_count || option.votes || 0, // Handle both field names
-        percentage: parseFloat(option.percentage) || 0, // Convert string percentage to number
+        text: option.text,
+        voteCount: option.voteCount,
+        isVote: option.isVoted,
       })) || [],
-    totalVotes: formattedData.totalVotes || 0,
+    totalVotes: formattedData.totalVotes,
     startDate: formattedData.startDate,
-    endDate:
-      formattedData.endDate ||
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 7 days from now if null
-    user_vote: formattedData.user_vote,
+    endDate: formattedData.endDate,
     createdAt: formattedData.createdAt,
     updatedAt: formattedData.updated_at,
-    requiresVerification: formattedData.requires_verification || false,
-    district: formattedData.district,
-    municipality: formattedData.municipality,
-    ward: formattedData.ward,
+    requiresVerification: formattedData.requiresVerification,
   };
 };
 
@@ -190,7 +184,7 @@ class ApiService {
       });
 
       const res = await fetch(url.toString(), config);
-      const data = await res.json();
+      const data = res.status === 204 ? null : await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || `API Error: ${res.status}`);

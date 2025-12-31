@@ -104,14 +104,13 @@ const PollScreen = () => {
   };
 
   const renderPollCard = (poll: Poll) => {
-    const hasVoted = poll.user_vote !== undefined;
     const totalVotes = poll.options.reduce(
       (sum, opt) => sum + opt.voteCount,
       0
     );
 
     return (
-      <Card key={poll._id} className="mb-4">
+      <Card key={poll.id} className="mb-4">
         <CardContent className="p-4">
           <View className="flex-row justify-between items-start mb-3">
             <View className="flex-1">
@@ -121,15 +120,6 @@ const PollScreen = () => {
               <Text className="text-gray-600 text-sm mt-1">
                 {poll.description}
               </Text>
-              {poll.district && (
-                <View className="flex-row items-center mt-2">
-                  <MapPin className="text-gray-500" size={12} />
-                  <Text className="text-gray-500 text-xs ml-1">
-                    {poll.district}
-                    {poll.municipality ? `, ${poll.municipality}` : ""}
-                  </Text>
-                </View>
-              )}
             </View>
             <View className="items-end">
               <View
@@ -158,57 +148,31 @@ const PollScreen = () => {
                 totalVotes > 0
                   ? Math.round((option.voteCount / totalVotes) * 100)
                   : 0;
-              const isSelected =
-                poll.user_vote === option._id ||
-                (Array.isArray(poll.user_vote) &&
-                  poll.user_vote.includes(option._id));
-
-              const isMultipleChoice = poll.type === "multiple_choice";
-              const canVote = poll.status === PollStatus.ACTIVE && user;
-              const isDisabled =
-                !canVote ||
-                (!isMultipleChoice && hasVoted && !isSelected) ||
-                votingLoading;
-
+              const isVoted = option.isVoted;
               return (
                 <Button
-                  key={option._id}
+                  key={option.id}
                   onPress={() => {
-                    if (canVote) {
-                      handleVote(poll._id, option._id);
-                    }
+                    handleVote(poll.id, option.id);
                   }}
-                  disabled={isDisabled}
                   className={`mb-2 p-3 rounded-lg border ${
-                    isSelected
+                    isVoted
                       ? "border-green-500 bg-green-50"
-                      : isDisabled
-                      ? "border-gray-200 bg-gray-50"
                       : "border-gray-200 bg-white"
                   }`}
                 >
                   <View className="flex-row justify-between items-center">
-                    <Text
-                      className={`font-medium ${
-                        isSelected ? "text-green-800" : "text-gray-800"
-                      }`}
-                    >
+                    <Text className="font-medium text-gray-800">
                       {option.text}
                       {votingLoading && " ⏳"}
                     </Text>
-                    <Text
-                      className={`text-sm ${
-                        isSelected ? "text-green-800" : "text-gray-600"
-                      }`}
-                    >
+                    <Text className="text-sm text-gray-600">
                       {option.voteCount} {t("polling.votes")} ({percentage}%)
                     </Text>
                   </View>
                   <View className="mt-2 bg-gray-200 rounded-full overflow-hidden">
                     <View
-                      className={`h-2 ${
-                        isSelected ? "bg-green-500" : "bg-blue-500"
-                      }`}
+                      className="h-2 bg-blue-500"
                       style={{ width: `${percentage}%` }}
                     />
                   </View>
@@ -335,9 +299,6 @@ const PollScreen = () => {
           </View>
         ) : (
           polls
-            .filter((poll) =>
-              activeTab === "my_votes" ? poll.user_vote !== undefined : true
-            )
             .filter((poll) =>
               searchQuery
                 ? poll.title

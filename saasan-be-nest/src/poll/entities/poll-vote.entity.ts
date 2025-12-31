@@ -8,16 +8,23 @@ export class PollVoteEntity {
   createdAt: Date;
   updatedAt: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'PollEntity' })
+  @Prop({ type: Types.ObjectId, ref: 'PollEntity', required: true })
   pollId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'PollOptionEntity' })
+  @Prop({ type: Types.ObjectId, ref: 'PollOptionEntity', required: true })
   optionId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'UserEntity' })
+  @Prop({ type: Types.ObjectId, ref: 'UserEntity', required: true })
   userId: Types.ObjectId;
 }
 
 export const PollVoteEntitySchema =
   SchemaFactory.createForClass(PollVoteEntity);
+
+PollVoteEntitySchema.index(
+  { userId: 1, pollId: 1 },
+  {
+    unique: true,
+  },
+);
 export type PollVoteEntityDocument = Document & PollVoteEntity;

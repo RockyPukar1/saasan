@@ -93,8 +93,8 @@ export function usePolling() {
       setError(null);
       try {
         await apiService.deletePoll(id);
-        setPolls((prev) => prev.filter((poll) => poll._id !== id));
-        if (currentPoll?._id === id) {
+        setPolls((prev) => prev.filter((poll) => poll.id !== id));
+        if (currentPoll?.id === id) {
           setCurrentPoll(null);
         }
       } catch (err) {
@@ -104,7 +104,7 @@ export function usePolling() {
         setLoading(false);
       }
     },
-    [currentPoll?._id]
+    [currentPoll?.id]
   );
 
   const voteOnPoll = useCallback(
@@ -123,11 +123,11 @@ export function usePolling() {
 
         // Update the polls array with the fresh data
         setPolls((prevPolls) =>
-          prevPolls.map((poll) => (poll._id === pollId ? updatedPoll : poll))
+          prevPolls.map((poll) => (poll.id === pollId ? updatedPoll : poll))
         );
 
         // Update current poll if it's the same
-        if (currentPoll?._id === pollId) {
+        if (currentPoll?.id === pollId) {
           setCurrentPoll(updatedPoll);
         }
 

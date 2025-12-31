@@ -1,4 +1,4 @@
-import { Global, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { VoteDto } from '../dtos/vote.dto';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { PollRepository } from '../repositories/poll.repository';
@@ -6,35 +6,36 @@ import { PollVoteRepository } from '../repositories/poll-vote.repository';
 import { PollOptionRepository } from '../repositories/poll-option.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { CreatePollDto } from '../dtos/create-poll.dto';
-import { PollIdDto } from '../dtos/poll-id.dto';
-import { Connection, Types } from 'mongoose';
-import { InjectConnection } from '@nestjs/mongoose';
-import { TransactionRunner } from 'src/common/transaction/runners/transaction.runner';
+import { PollSerializer } from '../serializers/poll.serializer';
+import { PollIdDto } from 'src/viral/dtos/poll-id.dto';
 
 @Injectable()
 export class PollService {
   constructor(
-    @InjectConnection() private readonly connection: Connection,
     private readonly pollRepo: PollRepository,
     private readonly pollVoteRepo: PollVoteRepository,
     private readonly pollOptionRepo: PollOptionRepository,
-    private readonly tx: TransactionRunner,
   ) {}
 
-  async getAll() {
-    const data = await this.pollRepo.getAll();
-    return ResponseHelper.success(data, 'Polls fetched successfully');
+  async getAll(userId: string) {
+    const data = await this.pollRepo.getAll(userId);
+    return ResponseHelper.response(
+      PollSerializer,
+      data,
+      'Polls fetched successfully',
+    );
   }
 
-  async getPollById({ pollId }: PollIdDto) {
-    const poll = await this.doesPollExists({
-      _id: pollId,
-    })
-      .populate('options', '_id voteCount text')
-      .lean();
+  async getPollById(userId: string, pollId: string) {
+    const poll = await this.pollRepo.getDetailsById(pollId, userId);
+
     if (!poll) throw new GlobalHttpException('poll404', HttpStatus.NOT_FOUND);
 
-    return ResponseHelper.success(poll, 'Poll data fetched successfully');
+    return ResponseHelper.response(
+      PollSerializer,
+      poll,
+      'Poll fetched successfully',
+    );
   }
 
   async create({ options, ...pollData }: CreatePollDto) {
@@ -64,30 +65,18 @@ export class PollService {
       throw new GlobalHttpException('poll404', HttpStatus.NOT_FOUND);
     }
 
-    const optionExists = existingPoll.options.find(
-      (opt) => opt.toString() === optionId,
-    );
+    const optionExists = await this.pollOptionRepo.findById(optionId);
     if (!optionExists) {
       throw new GlobalHttpException('pollOption404', HttpStatus.NOT_FOUND);
     }
 
-    const registerVote = await this.registerVote(userId, {
+    const voteExists = await this.pollVoteRepo.findOne(userId, {
       pollId,
       optionId,
     });
-
-    if (registerVote) {
-      const updatedPoll = await this.pollRepo
-        .findOne({ pollId, userId })
-        .populate('options', '_id voteCount text percentage')
-        .lean();
-
-      return ResponseHelper.success(updatedPoll, 'Vote recorded successfully');
-    } else {
-      throw new GlobalHttpException(
-        'vote505',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    await this.pollVoteRepo.delete(userId, { pollId });
+    if (!voteExists) {
+      await this.pollVoteRepo.create(userId, { pollId, optionId });
     }
   }
 
@@ -106,18 +95,5 @@ export class PollService {
   async getTypes() {
     const types = await this.pollRepo.getStatuses();
     return ResponseHelper.success(types);
-  }
-
-  private async registerVote(userId: string, { pollId, optionId }: VoteDto) {
-    return await this.tx.run(async (session) => {
-      await this.pollRepo.incrTotalVotes(pollId, session);
-      await this.pollVoteRepo.create({ pollId, optionId });
-      await this.pollOptionRepo.incrVoteCount({ pollId, optionId }, session);
-      return true;
-    });
-  }
-
-  private doesPollExists(filter: any) {
-    return this.pollRepo.findOne(filter);
   }
 }

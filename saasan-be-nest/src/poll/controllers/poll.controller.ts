@@ -13,7 +13,6 @@ import { VoteDto } from '../dtos/vote.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { type Request } from 'express';
 import { CreatePollDto } from '../dtos/create-poll.dto';
-import { PollIdDto } from '../dtos/poll-id.dto';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('poll')
@@ -21,8 +20,8 @@ export class PollController {
   constructor(private readonly pollService: PollService) {}
 
   @Get()
-  async getAll() {
-    return this.pollService.getAll();
+  async getAll(@Req() req: Request) {
+    return this.pollService.getAll(req.user.id);
   }
 
   @HttpCode(201)
@@ -31,9 +30,10 @@ export class PollController {
     this.pollService.create(data);
   }
 
+  @HttpCode(204)
   @Post(':pollId/vote/:optionId')
   async vote(@Req() req: Request, @Param() data: VoteDto) {
-    return this.pollService.vote(req.user.id, data);
+    await this.pollService.vote(req.user.id, data);
   }
 
   @Get('analytics')
@@ -57,7 +57,7 @@ export class PollController {
   }
 
   @Get(':pollId')
-  async getPollById(@Param() param: PollIdDto) {
-    return this.pollService.getPollById(param);
+  async getPollById(@Req() req: Request, @Param('pollId') pollId: string) {
+    return this.pollService.getPollById(req.user.id, pollId);
   }
 }

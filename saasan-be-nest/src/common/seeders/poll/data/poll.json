@@ -8,5 +8,15 @@
     ],
     "startDate": "2025-12-20T12:18:00Z",
     "endDate": "2025-12-25T12:18:00Z"
+  },
+  {
+    "title": "Poll 2",
+    "description": "Poll 1 Description",
+    "options": [
+      "Option 3",
+      "Option 4"
+    ],
+    "startDate": "2025-12-20T12:18:00Z",
+    "endDate": "2025-12-25T12:18:00Z"
   }
 ]

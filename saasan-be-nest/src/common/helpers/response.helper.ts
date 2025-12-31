@@ -1,3 +1,5 @@
+import { ClassConstructor, plainToInstance } from 'class-transformer';
+
 export class ResponseHelper {
   static success(data: any, message = 'Success', meta?: any) {
     return {
@@ -20,5 +22,20 @@ export class ResponseHelper {
         hasPrev: page > 1,
       },
     });
+  }
+
+  static response<T>(
+    cls: ClassConstructor<T>,
+    plain: unknown,
+    message?: string,
+  ) {
+    return this.success(
+      plainToInstance(cls, plain, {
+        strategy: 'excludeAll',
+        exposeUnsetFields: false,
+        excludeExtraneousValues: true,
+      }),
+      message,
+    );
   }
 }

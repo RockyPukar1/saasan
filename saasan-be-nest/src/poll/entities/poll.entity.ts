@@ -11,13 +11,6 @@ export class PollEntity {
   @Prop({ type: String, required: true })
   title: string;
 
-  @Prop({
-    type: [Types.ObjectId],
-    ref: 'PollOptionEntity',
-    default: [],
-  })
-  options: Types.ObjectId[];
-
   @Prop({ type: String, required: true })
   description: string;
 
@@ -38,9 +31,6 @@ export class PollEntity {
 
   @Prop({ type: Types.ObjectId, ref: 'UserEntity' })
   createdBy?: Types.ObjectId;
-
-  @Prop({ type: Number, default: 0 })
-  totalVotes: number;
 
   @Prop({ type: Boolean, default: false })
   requiresVerification: boolean;

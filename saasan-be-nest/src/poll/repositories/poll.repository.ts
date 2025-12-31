@@ -1,4 +1,4 @@
-import { ClientSession, Model } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PollEntity, PollEntityDocument } from '../entities/poll.entity';
@@ -11,10 +11,77 @@ export class PollRepository {
     private readonly model: Model<PollEntityDocument>,
   ) {}
 
-  async getAll() {
-    return await this.model
-      .find()
-      .populate('options', 'text voteCount _id percentage');
+  async getAll(userId: string) {
+    return await this.model.aggregate([
+      {
+        $match: { status: 'active' },
+      },
+      {
+        $lookup: {
+          from: 'poll-options',
+          localField: '_id',
+          foreignField: 'pollId',
+          as: 'options',
+        },
+      },
+      {
+        $lookup: {
+          from: 'poll-votes',
+          foreignField: 'pollId',
+          localField: '_id',
+          as: 'allVotes',
+        },
+      },
+      {
+        $addFields: {
+          totalVotes: { $size: '$allVotes' },
+          options: {
+            $map: {
+              input: '$options',
+              as: 'opt',
+              in: {
+                $mergeObjects: [
+                  '$$opt',
+                  {
+                    voteCount: {
+                      $size: {
+                        $filter: {
+                          input: '$allVotes',
+                          as: 'v',
+                          cond: { $eq: ['$$v.optionId', '$$opt._id'] },
+                        },
+                      },
+                    },
+                    isVoted: {
+                      $anyElementTrue: {
+                        $map: {
+                          input: '$allVotes',
+                          as: 'v',
+                          in: {
+                            $and: [
+                              {
+                                $eq: ['$$v.userId', new Types.ObjectId(userId)],
+                              },
+                              { $eq: ['$$v.optionId', '$$opt._id'] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: { allVotes: 0 },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ]);
   }
 
   async create(pollData: Omit<CreatePollDto, 'options'>) {
@@ -23,6 +90,79 @@ export class PollRepository {
 
   async findById(pollId: string) {
     return await this.model.findById(pollId);
+  }
+
+  async getDetailsById(pollId: string, userId: string) {
+    const data = await this.model.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(pollId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'poll-options',
+          localField: '_id',
+          foreignField: 'pollId',
+          as: 'options',
+        },
+      },
+      {
+        $lookup: {
+          from: 'poll-votes',
+          foreignField: 'pollId',
+          localField: '_id',
+          as: 'allVotes',
+        },
+      },
+      {
+        $addFields: {
+          totalVotes: { $size: '$allVotes' },
+          options: {
+            $map: {
+              input: '$options',
+              as: 'opt',
+              in: {
+                $mergeObjects: [
+                  '$$opt',
+                  {
+                    voteCount: {
+                      $size: {
+                        $filter: {
+                          input: '$allVotes',
+                          as: 'v',
+                          cond: { $eq: ['$$v.optionId', '$$opt._id'] },
+                        },
+                      },
+                    },
+                    isVoted: {
+                      $anyElementTrue: {
+                        $map: {
+                          input: '$allVotes',
+                          as: 'v',
+                          in: {
+                            $and: [
+                              {
+                                $eq: ['$$v.userId', new Types.ObjectId(userId)],
+                              },
+                              { $eq: ['$$v.optionId', '$$opt._id'] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: { allVotes: 0 },
+      },
+    ]);
+    return data[0] || null;
   }
 
   findOne(filter: any) {

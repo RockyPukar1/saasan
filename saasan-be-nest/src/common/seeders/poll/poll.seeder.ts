@@ -39,8 +39,8 @@ export class PollSeeder {
       const pollId = pollDoc._id;
       const options = poll.options;
 
-      const optionsPromises = options.map((text) =>
-        this.pollOptionModel.findOneAndUpdate(
+      for (const text of options) {
+        await this.pollOptionModel.findOneAndUpdate(
           { text },
           {
             $set: {
@@ -49,22 +49,8 @@ export class PollSeeder {
             },
           },
           { upsert: true, new: true },
-        ),
-      );
-
-      const createdOptionsIds = (await Promise.all(optionsPromises)).map(
-        (option) => option._id,
-      );
-
-      await this.pollModel.findByIdAndUpdate(
-        pollId,
-        {
-          $set: {
-            options: createdOptionsIds,
-          },
-        },
-        { upsert: true, new: true },
-      );
+        );
+      }
     }
 
     console.log('Poll seeded successfully');

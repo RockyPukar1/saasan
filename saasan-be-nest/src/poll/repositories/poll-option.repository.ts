@@ -19,6 +19,10 @@ export class PollOptionRepository {
     return await this.model.create(pollOptionData);
   }
 
+  async findById(optionId: string) {
+    return await this.model.findById(optionId);
+  }
+
   async incrVoteCount({ pollId, optionId }: VoteDto, session: ClientSession) {
     return await this.model.findByIdAndUpdate(
       optionId,
