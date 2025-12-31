@@ -38,7 +38,7 @@ const transformPoll = (data: any): Poll => {
         id: option.id,
         text: option.text,
         voteCount: option.voteCount,
-        isVote: option.isVoted,
+        isVoted: option.isVoted,
       })) || [],
     totalVotes: formattedData.totalVotes,
     startDate: formattedData.startDate,
