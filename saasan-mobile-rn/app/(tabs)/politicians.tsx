@@ -101,7 +101,7 @@ const PoliticiansScreen = () => {
                 <Button
                   key={level.id}
                   onPress={() => setSelectedLevel(level.name)}
-                  className={`mx-1 px-4 py-3 rounded-lg min-w-[80px] ${
+                  className={`mx-1 px-4 py-3 rounded-lg min-w-[80px] flex-row gap-1 ${
                     selectedLevel === level.name
                       ? "bg-red-100 border-b-2 border-red-600"
                       : "bg-transparent"
@@ -117,13 +117,13 @@ const PoliticiansScreen = () => {
                     {level.name.charAt(0).toUpperCase() + level.name.slice(1)}
                   </Text>
                   <Text
-                    className={`text-xs text-center mt-0.5 ${
+                    className={`text-ss text-center mt-0.5 ${
                       selectedLevel === level.name
                         ? "text-red-500"
                         : "text-gray-400"
                     }`}
                   >
-                    {level.count}
+                    ({level.count})
                   </Text>
                 </Button>
               ))}

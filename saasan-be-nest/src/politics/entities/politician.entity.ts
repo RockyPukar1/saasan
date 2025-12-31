@@ -36,7 +36,7 @@ export class PoliticianEntity {
   partyId?: Types.ObjectId;
 
   @Prop({
-    type: [{ type: Types.ObjectId, ref: PositionEntity.name }],
+    type: [{ type: [{ type: Types.ObjectId, ref: PositionEntity.name }] }],
     default: [],
   })
   positionIds?: string[];
