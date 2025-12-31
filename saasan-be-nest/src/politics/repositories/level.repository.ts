@@ -16,63 +16,29 @@ export class LevelRepository {
     return await this.model.aggregate([
       {
         $lookup: {
-          from: PositionEntity.name,
+          from: 'positions',
           localField: '_id',
           foreignField: 'levelId',
           as: 'positionsForLevel',
         },
       },
       {
-        $unwind: {
-          path: '$positionsForLevel',
-          preserveNullAndEmptyArrays: true, // preserve levels even if no positions are found
-        },
-      },
-      {
         $lookup: {
-          from: PoliticianEntity.name,
-          localField: 'positionsForLevel.title',
-          foreignField: 'position',
+          from: 'politicians',
+          localField: 'positionsForLevel._id',
+          foreignField: 'positionIds',
           as: 'politiciansForPosition',
         },
       },
       {
-        $unwind: {
-          path: '$politiciansForPosition',
-          preserveNullAndEmptyArrays: true, // preserve levels and positions event if no politicians are found
-        },
-      },
-      {
-        $match: {
-          $or: [
-            { 'politiciansForPosition.isActive': true },
-            { politiciansForPosition: { $exists: false } },
-          ],
-        },
-      },
-      {
-        $group: {
-          _id: '$_id',
-          name: { $first: '$name' }, // get the original name field
-          description: { $first: '$description' },
-          activePoliticianIds: {
-            $addToSet: {
-              $cond: {
-                if: '$politiciansForPosition.isActive',
-                then: '$politiciansForPosition._id',
-                else: '$$REMOVE', // remove if not active
-              },
-            },
-          },
+        $addFields: {
+          count: { $size: '$politiciansForPosition' },
         },
       },
       {
         $project: {
-          _id: 0, // exclude the default _id field from the final output
-          id: { $toString: '$_id' },
-          name: '$name',
-          description: '$description',
-          count: { $size: '$activePoliticianIds' }, // count the distinct Ids
+          politiciansForPosition: 0,
+          positionsForLevel: 0,
         },
       },
       {
