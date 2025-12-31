@@ -1,25 +1,7 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  RefreshControl,
-} from "react-native";
+import { View, Text, ScrollView, Alert, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  BarChart3,
-  Plus,
-  Filter,
-  ChevronRight,
-  Clock,
-  MapPin,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-} from "lucide-react-native";
+import { Clock, CheckCircle2 } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { usePolling } from "~/hooks/usePolling";
@@ -32,20 +14,11 @@ const PollScreen = () => {
   const router = useRouter();
   const { user } = useAuthContext();
   const { t } = useLanguage();
-  const {
-    loading,
-    votingLoading,
-    error,
-    polls,
-    loadPolls,
-    voteOnPoll,
-    loadPollResults,
-  } = usePolling();
+  const { loading, votingLoading, error, polls, loadPolls, voteOnPoll } =
+    usePolling();
 
   const [activeTab, setActiveTab] = useState<"all" | "my-votes">("all");
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadPolls();
@@ -71,7 +44,6 @@ const PollScreen = () => {
 
     try {
       await voteOnPoll(pollId, optionId);
-      // Success - UI will update automatically
     } catch (err) {
       Alert.alert(t("common.error"), t("polling.voteFailed"));
     }
@@ -221,33 +193,6 @@ const PollScreen = () => {
         showLogout={true}
       />
 
-      {/* Search and Filter */}
-      <View className="bg-white px-4 py-3 border-b border-gray-200">
-        {/* Voted Status */}
-        <View className="mb-3 flex-row items-center justify-end">
-          <View className="flex-row items-center">
-            <CheckCircle2 className="text-green-600 mr-1" size={14} />
-            <Text className="text-xs text-gray-600">
-              {polls.filter((p) => p.totalVotes).length} voted
-            </Text>
-          </View>
-        </View>
-
-        <View className="flex-row space-x-2">
-          <TextInput
-            placeholder={
-              t("common.search") + " " + t("polling.title").toLowerCase()
-            }
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            className="flex-1 bg-gray-100 px-4 py-2 rounded-lg text-gray-800"
-          />
-          <Button className="bg-gray-100 p-2 rounded-lg">
-            <Filter className="text-gray-600" size={24} />
-          </Button>
-        </View>
-      </View>
-
       {/* Tab Selector */}
       <View className="bg-white border-b border-gray-200">
         <View className="flex-row px-4 py-2">
@@ -302,16 +247,6 @@ const PollScreen = () => {
             .filter((poll) =>
               activeTab === "my-votes"
                 ? poll.options.some((o) => o.isVoted)
-                : true
-            )
-            .filter((poll) =>
-              searchQuery
-                ? poll.title
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                  poll.description
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
                 : true
             )
             .map(renderPollCard)
