@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, Alert, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
-import { Clock, CheckCircle2 } from "lucide-react-native";
+import { Clock } from "lucide-react-native";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { usePolling } from "~/hooks/usePolling";
-import { Poll, PollStatus, PollType } from "~/shared-types";
+import { Poll, PollStatus } from "~/shared-types";
 import { useAuthContext } from "~/contexts/AuthContext";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { PageHeader } from "~/components/PageHeader";
@@ -14,7 +14,7 @@ const PollScreen = () => {
   const router = useRouter();
   const { user } = useAuthContext();
   const { t } = useLanguage();
-  const { loading, votingLoading, error, polls, loadPolls, voteOnPoll } =
+  const { loading, currentVotingPollId, error, polls, loadPolls, voteOnPoll } =
     usePolling();
 
   const [activeTab, setActiveTab] = useState<"all" | "my-votes">("all");
@@ -121,12 +121,14 @@ const PollScreen = () => {
                   ? Math.round((option.voteCount / totalVotes) * 100)
                   : 0;
               const isVoted = option.isVoted;
+              const isDisabled = currentVotingPollId === poll.id;
               return (
                 <Button
                   key={option.id}
                   onPress={() => {
                     handleVote(poll.id, option.id);
                   }}
+                  disabled={isDisabled}
                   className={`mb-2 p-3 rounded-lg border ${
                     isVoted
                       ? "border-green-500 bg-green-50"
@@ -136,7 +138,7 @@ const PollScreen = () => {
                   <View className="flex-row justify-between items-center">
                     <Text className="font-medium text-gray-800">
                       {option.text}
-                      {votingLoading && " ⏳"}
+                      {isDisabled && " ⏳"}
                     </Text>
                     <Text className="text-sm text-gray-600">
                       {option.voteCount} {t("polling.votes")} ({percentage}%)
