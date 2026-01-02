@@ -5,14 +5,20 @@ import { Types } from 'mongoose';
 import { PoliticianRepository } from '../repositories/politician.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { LevelNameDto } from '../dtos/level-name.dto';
+import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
+import { PoliticianSerializer } from '../serializers/politician.serializer';
 
 @Injectable()
 export class PoliticianService {
   constructor(private readonly politicianRepo: PoliticianRepository) {}
 
-  async getAll() {
-    const politicians = await this.politicianRepo.getAll();
-    return ResponseHelper.success(politicians);
+  async getAll(politicianFilterDto: PoliticianFilterDto) {
+    const politicians = await this.politicianRepo.getAll(politicianFilterDto);
+    return ResponseHelper.response(
+      PoliticianSerializer,
+      politicians,
+      'Politicians fetched successfully',
+    );
   }
 
   async create(politicianData: CreatePoliticianDto) {

@@ -1,5 +1,10 @@
 import AsyncStore from "@react-native-async-storage/async-storage";
-import { GovernmentLevel, Politician } from "~/hooks/usePoliticians";
+import {
+  GovernmentLevel,
+  Party,
+  Politician,
+  Position,
+} from "~/hooks/usePoliticians";
 import {
   CorruptionReport,
   Evidence,
@@ -20,6 +25,7 @@ import {
   formatApiResponse,
   type Language,
 } from "~/lib/bilingual";
+import { PoliticianFilter } from "~/app/(tabs)/politicians";
 
 // Utility function to transform poll data from backend format to frontend format
 const transformPoll = (data: any): Poll => {
@@ -253,19 +259,11 @@ class ApiService {
   }
 
   // Politicians APIs
-  async getPoliticians(level: string): Promise<ApiResponse<Politician[]>> {
+  async getPoliticiansByFilter(
+    filter: PoliticianFilter
+  ): Promise<ApiResponse<Politician[]>> {
     try {
-      // Use the level-based endpoint if level is specified
-      if (level && level !== "all") {
-        // Convert to lowercase for the endpoint
-        const lowercaseLevel = level.toLowerCase();
-        return this.request<Politician[]>(
-          "GET",
-          `/politician/level/${lowercaseLevel}`
-        );
-      } else {
-        return this.request<Politician[]>("GET", "/politician");
-      }
+      return this.request<Politician[]>("POST", "/politician", filter);
     } catch (error) {
       console.error("Error fetching politicians:", error);
       throw error;
@@ -278,6 +276,14 @@ class ApiService {
 
   async getGovernmentLevels(): Promise<ApiResponse<GovernmentLevel[]>> {
     return this.request<GovernmentLevel[]>("GET", "/level");
+  }
+
+  async getPositions(): Promise<ApiResponse<Position[]>> {
+    return this.request<Position[]>("Get", "/position");
+  }
+
+  async getParties(): Promise<ApiResponse<Party[]>> {
+    return this.request<Party[]>("GET", "/party");
   }
 
   async ratePolitician(id: string, rating: number): Promise<ApiResponse<void>> {

@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
 import { LevelNameDto } from '../dtos/level-name.dto';
+import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
 
 @Injectable()
 export class PoliticianRepository {
@@ -20,7 +21,7 @@ export class PoliticianRepository {
     this.model.create(politicianData);
   }
 
-  async getAll() {
+  async getAll(politicianFilterDto: PoliticianFilterDto) {
     return await this.model.find();
   }
 

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { PoliticianFilter } from "~/app/(tabs)/politicians";
 import { apiService } from "~/services/api";
 
 interface Post {
@@ -8,16 +9,16 @@ interface Post {
 
 export interface Politician {
   id: string;
-  name: string;
-  posts: Post[];
+  fullName: string;
   party: string;
-  constituency: string;
+  experienceYears: number;
+  createdAt: Date;
+  updatedAt: Date;
+  isIndependent: boolean;
   rating: number;
-  totalVotes: number;
-  promisesFulfilled: number;
-  totalPromises: number;
-  avatar?: string;
-  trends: "up" | "down" | "stable";
+  totalReports: number;
+  verifiedReports: number;
+  constituencyNumber?: string;
 }
 
 export interface GovernmentLevel {
@@ -27,39 +28,58 @@ export interface GovernmentLevel {
   count: number;
 }
 
-export const usePoliticians = (initialLevel: string = "federal") => {
+export interface Party {
+  id: string;
+  name: string;
+  abbreviation: string;
+  ideology?: string;
+  foundedIn: Date;
+  logoUrl?: string;
+  color: string;
+  count: number;
+}
+export interface Position {
+  id: string;
+  title: string;
+  description: string;
+  abbreviation: string;
+  count: number;
+}
+
+export const usePoliticians = () => {
   const [politicians, setPoliticians] = useState<Politician[]>([]);
   const [governmentLevels, setGovernmentLevels] = useState<GovernmentLevel[]>(
     []
   );
-  const [selectedLevel, setSelectedLevel] = useState(initialLevel);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPoliticians = useCallback(async () => {
+  const fetchPoliticians = async (filter: PoliticianFilter) => {
     try {
       setLoading(true);
       setError(null);
-
       // Use lowercase level names for consistency
-      const response = await apiService.getPoliticians(selectedLevel);
+      const response = await apiService.getPoliticiansByFilter(filter);
 
       if (response.success && response.data) {
         // Transform backend data to frontend format
-        const transformedPoliticians = response.data.map((politician: any) => ({
-          id: politician._id,
-          name: politician.fullName,
-          posts: politician.posts,
-          party: politician.partyName ?? "Independent",
-          constituency: politician.constituencyNumber,
-          rating: politician.rating || 0,
-          totalVotes:
-            politician.total_votes_received || politician.totalVotes || 0,
-          promisesFulfilled: politician.promisesFulfilled || 0,
-          totalPromises: politician.totalPromises || 0,
-          avatar: politician.profile_image_url || politician.avatar,
-          trends: politician.trends || "stable",
-        }));
+        const transformedPoliticians = response.data.map(
+          (politician: Politician) => ({
+            id: politician.id,
+            fullName: politician.fullName,
+            experienceYears: politician.experienceYears,
+            party: politician.isIndependent ? "Independent" : politician.party,
+            constituency: politician.constituencyNumber,
+            rating: politician.rating || 0,
+            createdAt: politician.createdAt,
+            updatedAt: politician.updatedAt,
+            isIndependent: politician.isIndependent,
+            totalReports: politician.totalReports,
+            verifiedReports: politician.verifiedReports,
+          })
+        );
 
         setPoliticians(transformedPoliticians);
       } else {
@@ -74,19 +94,21 @@ export const usePoliticians = (initialLevel: string = "federal") => {
     } finally {
       setLoading(false);
     }
-  }, [selectedLevel]);
+  };
 
   const fetchGovernmentLevels = useCallback(async () => {
     try {
       const response = await apiService.getGovernmentLevels();
       if (response.success && response.data) {
         // Transform backend data to frontend format
-        const transformedLevels = response.data.map((level: any) => ({
-          id: level.id,
-          name: level.name.toLowerCase(),
-          description: level.description,
-          count: level.count || 0,
-        }));
+        const transformedLevels = response.data.map(
+          (level: GovernmentLevel) => ({
+            id: level.id,
+            name: level.name.toLowerCase(),
+            description: level.description,
+            count: level.count || 0,
+          })
+        );
         setGovernmentLevels(transformedLevels);
       } else {
         setGovernmentLevels([]);
@@ -97,19 +119,66 @@ export const usePoliticians = (initialLevel: string = "federal") => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchPoliticians();
-  }, [fetchPoliticians]);
+  const fetchParties = useCallback(async () => {
+    try {
+      const response = await apiService.getParties();
+      if (response.success && response.data) {
+        // Transform backend data to frontend format
+        const transformedParties = response.data.map((party: Party) => ({
+          id: party.id,
+          name: party.name,
+          abbreviation: party.abbreviation,
+          ideology: party.ideology || "",
+          foundedIn: party.foundedIn,
+          logoUrl: party.logoUrl,
+          color: party.color || "",
+          count: party.count || 0,
+        }));
+        setParties(transformedParties);
+      } else {
+        setParties([]);
+      }
+    } catch (err) {
+      console.error("Error fetching parties:", err);
+      setParties([]);
+    }
+  }, []);
+
+  const fetchPositions = useCallback(async () => {
+    try {
+      const response = await apiService.getPositions();
+      if (response.success && response.data) {
+        // Transform backend data to frontend format
+        const transformedPositions = response.data.map(
+          (position: Position) => ({
+            id: position.id,
+            title: position.title,
+            description: position.description,
+            count: position.count,
+            abbreviation: position.abbreviation,
+          })
+        );
+        setPositions(transformedPositions);
+      } else {
+        setPositions([]);
+      }
+    } catch (err) {
+      console.error("Error fetching positions:", err);
+      setParties([]);
+    }
+  }, []);
 
   useEffect(() => {
+    fetchPositions();
+    fetchParties();
     fetchGovernmentLevels();
-  }, [fetchGovernmentLevels]);
+  }, [fetchPositions, fetchParties, fetchGovernmentLevels]);
 
   return {
     politicians,
     governmentLevels,
-    selectedLevel,
-    setSelectedLevel,
+    parties,
+    positions,
     loading,
     error,
     refresh: fetchPoliticians,

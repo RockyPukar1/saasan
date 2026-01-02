@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { LevelEntity, LevelEntityDocument } from '../entities/level.entity';
 import { Model } from 'mongoose';
-import { PositionEntity } from 'src/politics/entities/position.entity';
-import { PoliticianEntity } from 'src/politics/entities/politician.entity';
 
 @Injectable()
 export class LevelRepository {
@@ -40,9 +38,6 @@ export class LevelRepository {
           politiciansForPosition: 0,
           positionsForLevel: 0,
         },
-      },
-      {
-        $sort: { id: 1 },
       },
     ]);
   }

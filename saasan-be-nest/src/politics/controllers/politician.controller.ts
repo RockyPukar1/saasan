@@ -14,14 +14,15 @@ import { PoliticianIdDto } from '../dtos/politician-id.dto';
 import { PoliticianService } from '../services/politician.service';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { LevelNameDto } from '../dtos/level-name.dto';
+import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
 
 @Controller('politician')
 export class PoliticianController {
   constructor(private readonly politicianService: PoliticianService) {}
 
-  @Get()
-  async getAll() {
-    return await this.politicianService.getAll();
+  @Post()
+  async getAll(@Body() politicianFilterDto: PoliticianFilterDto) {
+    return await this.politicianService.getAll(politicianFilterDto);
   }
 
   @HttpCode(201)

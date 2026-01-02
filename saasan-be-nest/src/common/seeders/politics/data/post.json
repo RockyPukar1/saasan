@@ -5,15 +5,18 @@
     "positions": [
       {
         "title": "Prime Minister",
-        "description": "Head of Government"
+        "description": "Head of Government",
+        "abbreviation": "PM"
       },
       {
         "title": "Minister",
-        "description": "Cabinet Minister"
+        "description": "Cabinet Minister",
+        "abbreviation": "Min.(Federal)"
       },
       {
         "title": "Member of Parliament",
-        "description": "Federal Parliament Member"
+        "description": "Federal Parliament Member",
+        "abbreviation": "MP"
       }
     ]
   },
@@ -23,7 +26,8 @@
     "positions": [
       {
         "title": "Chief Minister",
-        "description": "Provincial Head"
+        "description": "Provincial Head",
+        "abbreviation": "CM"
       }
     ]
   },
@@ -33,7 +37,8 @@
     "positions": [
       {
         "title": "Ward Chairperson",
-        "description": "Ward Level Head"
+        "description": "Ward Level Head",
+        "abbreviation": "Chair P.(Ward)"
       }
     ]
 

@@ -13,6 +13,9 @@ export class PositionEntity {
   title: string;
 
   @Prop({ type: String, required: true })
+  abbreviation: string;
+
+  @Prop({ type: String, required: true })
   description: string;
 
   @Prop({ type: Types.ObjectId, ref: LevelEntity.name })
