@@ -4,7 +4,7 @@ import {
   PoliticianEntity,
   PoliticianEntityDocument,
 } from '../entities/politician.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
 import { LevelNameDto } from '../dtos/level-name.dto';
@@ -22,7 +22,92 @@ export class PoliticianRepository {
   }
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {
-    return await this.model.find();
+    const partyIds = (politicianFilterDto.party || []).map(
+      (id) => new Types.ObjectId(id),
+    );
+    const positionIds = (politicianFilterDto.position || []).map(
+      (id) => new Types.ObjectId(id),
+    );
+    const levelIds = (politicianFilterDto.level || []).map(
+      (id) => new Types.ObjectId(id),
+    );
+
+    const hasFilters =
+      partyIds.length > 0 || positionIds.length > 0 || levelIds.length > 0;
+
+    return await this.model.aggregate([
+      ...(hasFilters
+        ? [
+            {
+              $match: {
+                $or: [
+                  { partyId: { $in: partyIds } },
+                  { positionIds: { $in: positionIds } },
+                ],
+              },
+            },
+          ]
+        : []),
+      {
+        $lookup: {
+          from: 'positions',
+          localField: 'positionIds',
+          foreignField: '_id',
+          as: 'positionData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'levels',
+          localField: 'positionData.levelId',
+          foreignField: '_id',
+          as: 'levelData',
+        },
+      },
+      ...(hasFilters
+        ? [
+            {
+              $match: { 'positionData.levelId': { $in: levelIds } },
+            },
+          ]
+        : []),
+      {
+        $lookup: {
+          from: 'parties',
+          localField: 'partyId',
+          foreignField: '_id',
+          as: 'partyData',
+        },
+      },
+      {
+        $addFields: {
+          sourceCategories: {
+            party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
+            positions: {
+              $map: {
+                input: '$positionData',
+                as: 'pos',
+                in: '$$pos.abbreviation',
+              },
+            },
+            levels: {
+              $map: {
+                input: '$levelData',
+                as: 'lvl',
+                in: '$$lvl.name',
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          partyData: 0,
+          positionData: 0,
+          levelData: 0,
+        },
+      },
+    ]);
   }
 
   findOne(filter: any) {
@@ -119,7 +204,7 @@ export class PoliticianRepository {
           posts: {
             $push: {
               level: '$level.name',
-              position: '$positions.title',
+              position: '$positions.name',
             },
           },
         },

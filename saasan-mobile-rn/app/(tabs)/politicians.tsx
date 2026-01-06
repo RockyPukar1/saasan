@@ -16,6 +16,7 @@ import {
   ChevronDown,
   CheckCircle,
   X,
+  Filter,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { usePoliticians, Politician } from "~/hooks/usePoliticians";
@@ -23,6 +24,7 @@ import Loading from "~/components/Loading";
 import Error from "~/components/Error";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { PageHeader } from "~/components/PageHeader";
+import BottomGap from "~/components/BottomGap";
 
 export interface PoliticianFilter {
   level: string[];
@@ -30,7 +32,7 @@ export interface PoliticianFilter {
   party: string[];
 }
 
-const initialFilter = {
+const initialFilter: PoliticianFilter = {
   level: [],
   position: [],
   party: [],
@@ -39,11 +41,8 @@ const initialFilter = {
 const PoliticiansScreen = () => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState<PoliticianFilter>({
-    level: [],
-    position: [],
-    party: [],
-  });
+  const [filter, setFilter] = useState<PoliticianFilter>(initialFilter);
+  const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
 
   const {
     politicians,
@@ -55,28 +54,30 @@ const PoliticiansScreen = () => {
     refresh,
   } = usePoliticians();
 
+  const filterNames = [
+    {
+      name: "level",
+      text: "Level",
+      data: governmentLevels,
+    },
+    {
+      name: "position",
+      text: "Position",
+      data: positions,
+    },
+    {
+      name: "party",
+      text: "Party",
+      data: parties,
+    },
+  ] as Array<{ name: keyof typeof initialFilter; text: string; data: any[] }>;
+
   useEffect(() => {
-    refresh(filter);
-  }, [filter]);
-
-  const filteredPoliticians = useMemo(() => {
-    let filtered = politicians;
-
-    return filtered;
-  }, [politicians, searchQuery, filter]);
+    refresh(toApplyFilter);
+  }, [toApplyFilter]);
 
   // Extract unique parties and positions
   const [currentFilterDropdown, setCurrentFilterDropdown] = useState("");
-
-  const getTotalSelectedCount = () => {
-    return filter.level.length + filter.party.length + filter.position.length;
-  };
-
-  const canSelectMore = () => {
-    return getTotalSelectedCount() < 2;
-  };
-
-  console.log(filter);
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -89,7 +90,7 @@ const PoliticiansScreen = () => {
 
       {/* Search Bar */}
       <View className="px-4 py-3 bg-white border-b border-gray-200">
-        <View className="flex-row items-center justify-between gap-2 rounded-lg">
+        <View className="flex-row items-center gap-2">
           <View className="flex-1 flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
             <Search className="text-gray-500" size={20} />
             <TextInput
@@ -100,336 +101,103 @@ const PoliticiansScreen = () => {
             />
           </View>
           <Button
-            onPress={() => setFilter(initialFilter)}
-            className="bg-white px-3 py-1.5 rounded-full shadow-sm"
+            onPress={() =>
+              setCurrentFilterDropdown(currentFilterDropdown ? "" : "OPEN")
+            }
+            className="h-11 w-11 rounded-lg bg-gray-100 items-center justify-center"
           >
-            <Text className="text-xs text-red-600 font-semibold">Clear</Text>
+            <Filter className="text-gray-700" size={20} />
           </Button>
         </View>
       </View>
 
-      {/* Unified Filter Section */}
-      <View className="bg-white border-b border-gray-200">
-        {/* Selected Chips Row */}
-        {/* <View className="px-4 pt-3 pb-2">
-          <View className="flex-row flex-wrap items-center gap-2">
-            {selectedFilters.map((item) => (
-              <View
-                key={`${item.type}-${item.id}`}
-                className="flex-row items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-md"
-              >
-                <Text className="text-xs font-medium text-gray-700">
-                  {item.name}
-                </Text>
-                <Button
-                  onPress={() => removeFilter(item.type, item.id)}
-                >
-                  <X className="text-gray-500" size={14} />
-                </Button>
-              </View>
-            ))}
+      {currentFilterDropdown === "OPEN" && (
+        <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl border-t border-gray-200 shadow-xl z-50">
+          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
+            <Button
+              onPress={() => setCurrentFilterDropdown("")}
+              className="p-2"
+            >
+              <X size={18} className="text-gray-600" />
+            </Button>
+
+            <Text className="text-base font-semibold text-gray-800">
+              Filters
+            </Text>
+
+            <Button
+              onPress={() => {
+                setFilter(initialFilter);
+                setToApplyFilter(initialFilter);
+              }}
+              disabled={Object.values(filter).flat(1).length === 0}
+              className="px-3 py-1.5 rounded-full bg-red-50"
+            >
+              <Text className="text-xs font-semibold text-red-600">Clear</Text>
+            </Button>
           </View>
-        </View> */}
-        {/* Filter Dropdowns Row */}
-        <View className="px-3 py-2">
-          <View className="flex-row items-center gap-3">
-            <View className="relative flex-1">
-              {filter.level.length ? (
-                <>
-                  {filter.level.map((item) => (
-                    <View
-                      key={item}
-                      className="flex-row items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-md"
-                    >
-                      <Text className="text-xs font-medium text-gray-700">
-                        {governmentLevels.find((l) => l.id === item)?.name}
-                      </Text>
-                      <Button
-                        onPress={() => {
-                          setFilter((prev) => ({
-                            ...prev,
-                            level: prev.level.filter((l) => l !== item),
-                          }));
-                        }}
-                      >
-                        <X className="text-gray-500" size={14} />
-                      </Button>
-                    </View>
-                  ))}
-                </>
-              ) : null}
 
-              <Button
-                onPress={() => {
-                  setCurrentFilterDropdown("level");
-                }}
-                className={`flex-row items-center justify-between px-2 py-2 rounded-xl transition-all ${
-                  currentFilterDropdown === "level"
-                    ? "bg-red-50 border-2 border-red-500"
-                    : "bg-gray-50 border-2 border-gray-200"
-                }`}
-              >
-                <Text
-                  className={`text-xs font-semibold ${
-                    currentFilterDropdown === "level"
-                      ? "text-red-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  Level {filter.level.length > 0 && `(${filter.level.length})`}
+          {/* Filter content */}
+          <ScrollView className="px-4 py-3" style={{ maxHeight: "65%" }}>
+            {filterNames.map(({ name, text, data }) => (
+              <View key={name} className="mb-4">
+                <Text className="text-sm font-semibold text-gray-700 mb-2">
+                  {text}
                 </Text>
-                <ChevronDown
-                  className={
-                    currentFilterDropdown === "level"
-                      ? "text-red-600"
-                      : "text-gray-500"
-                  }
-                  size={18}
-                />
-              </Button>
 
-              {currentFilterDropdown === "level" && (
-                <View className="absolute top-14 left-0 right-0 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
-                  {governmentLevels.map((level, index) => {
-                    const isSelected = filter.level.includes(level.id);
-                    const isDisabled = !canSelectMore();
+                <View className="flex-row flex-wrap gap-2">
+                  {data.map((d) => {
+                    const isSelected = filter[name].includes(d.id);
 
                     return (
                       <Button
-                        key={level.id}
+                        key={d.id}
                         onPress={() => {
-                          if (!isDisabled) {
-                            setFilter((prev) => ({
-                              ...prev,
-                              level: prev.level.includes(level.id)
-                                ? prev.level.filter((l) => l !== level.id)
-                                : [...prev.level, level.id],
-                            }));
-                          }
+                          setFilter((prev) => ({
+                            ...prev,
+                            [name]: isSelected
+                              ? prev[name].filter((l) => l !== d.id)
+                              : [...prev[name], d.id],
+                          }));
                         }}
-                        disabled={isDisabled}
-                        className={`px-4 py-3.5 ${
-                          index !== governmentLevels.length - 1
-                            ? "border-b border-gray-100"
-                            : ""
-                        } ${
+                        className={`px-3 py-2 rounded-full border ${
                           isSelected
-                            ? "bg-red-50"
-                            : isDisabled
-                            ? "bg-gray-50"
-                            : "bg-white"
+                            ? "bg-red-50 border-red-500"
+                            : "bg-gray-100 border-gray-200"
                         }`}
                       >
-                        <View className="flex-row items-center justify-between">
-                          <Text
-                            className={`text-sm ${
-                              isSelected
-                                ? "text-red-600 font-bold"
-                                : isDisabled
-                                ? "text-gray-400"
-                                : "text-gray-800 font-medium"
-                            }`}
-                          >
-                            {level.name}
-                          </Text>
-                          {isSelected && (
-                            <View className="bg-red-600 rounded-full p-0.5">
-                              <CheckCircle className="text-white" size={14} />
-                            </View>
-                          )}
-                        </View>
+                        <Text
+                          className={`text-xs font-medium ${
+                            isSelected ? "text-red-600" : "text-gray-700"
+                          }`}
+                        >
+                          {d.name}
+                        </Text>
                       </Button>
                     );
                   })}
                 </View>
-              )}
-            </View>
-            <View className="relative flex-1">
-              <Button
-                onPress={() => {
-                  setCurrentFilterDropdown("position");
-                }}
-                className={`flex-row items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                  currentFilterDropdown === "position"
-                    ? "bg-red-50 border-2 border-red-500"
-                    : "bg-gray-50 border-2 border-gray-200"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    currentFilterDropdown === "position"
-                      ? "text-red-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  Position{" "}
-                  {filter.position.length > 0 && `(${filter.position.length})`}
-                </Text>
-                <ChevronDown
-                  className={
-                    currentFilterDropdown === "position"
-                      ? "text-red-600"
-                      : "text-gray-500"
-                  }
-                  size={18}
-                />
-              </Button>
-
-              {currentFilterDropdown === "position" && (
-                <View className="absolute top-full left-0 right-0 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
-                  <ScrollView style={{ maxHeight: 220 }}>
-                    {positions.map((position, index) => {
-                      const isSelected = filter.position.includes(position.id);
-                      const isDisabled = !isSelected && !canSelectMore();
-
-                      return (
-                        <Button
-                          key={position.id}
-                          onPress={() => {
-                            if (!isDisabled) {
-                              setFilter((prev) => ({
-                                ...prev,
-                                position: prev.position.includes(position.id)
-                                  ? prev.position.filter(
-                                      (l) => l !== position.id
-                                    )
-                                  : [...prev.position, position.id],
-                              }));
-                            }
-                          }}
-                          disabled={isDisabled}
-                          className={`px-4 py-3.5 ${
-                            index !== positions.length - 1
-                              ? "border-b border-gray-100"
-                              : ""
-                          } ${
-                            isSelected
-                              ? "bg-red-50"
-                              : isDisabled
-                              ? "bg-gray-50"
-                              : "bg-white"
-                          }`}
-                        >
-                          <View className="flex-row items-center justify-between">
-                            <Text
-                              className={`text-sm ${
-                                isSelected
-                                  ? "text-red-600 font-bold"
-                                  : isDisabled
-                                  ? "text-gray-400"
-                                  : "text-gray-800 font-medium"
-                              }`}
-                            >
-                              {position.title}
-                            </Text>
-                            {isSelected && (
-                              <View className="bg-red-600 rounded-full p-0.5">
-                                <CheckCircle className="text-white" size={14} />
-                              </View>
-                            )}
-                          </View>
-                        </Button>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* Party Dropdown */}
-            <View className="relative flex-1">
-              <Button
-                onPress={() => {
-                  setCurrentFilterDropdown("party");
-                }}
-                className={`flex-row items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                  currentFilterDropdown === "party"
-                    ? "bg-red-50 border-2 border-red-500"
-                    : "bg-gray-50 border-2 border-gray-200"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    currentFilterDropdown === "party"
-                      ? "text-red-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  Party {filter.party.length > 0 && `(${filter.party.length})`}
-                </Text>
-                <ChevronDown
-                  className={
-                    currentFilterDropdown === "party"
-                      ? "text-red-600"
-                      : "text-gray-500"
-                  }
-                  size={18}
-                />
-              </Button>
-
-              {currentFilterDropdown === "party" && (
-                <View className="absolute top-14 left-0 right-0 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
-                  <ScrollView style={{ maxHeight: 220 }}>
-                    {parties.map((party, index) => {
-                      const isSelected = filter.party.includes(party.id);
-                      const isDisabled = !isSelected && !canSelectMore();
-
-                      return (
-                        <Button
-                          key={party.id}
-                          onPress={() => {
-                            if (!isDisabled) {
-                              setFilter((prev) => ({
-                                ...prev,
-                                party: prev.party.includes(party.id)
-                                  ? prev.party.filter((l) => l !== party.id)
-                                  : [...prev.party, party.id],
-                              }));
-                            }
-                          }}
-                          disabled={isDisabled}
-                          className={`px-4 py-3.5 ${
-                            index !== parties.length - 1
-                              ? "border-b border-gray-100"
-                              : ""
-                          } ${
-                            isSelected
-                              ? "bg-red-50"
-                              : isDisabled
-                              ? "bg-gray-50"
-                              : "bg-white"
-                          }`}
-                        >
-                          <View className="flex-row items-center justify-between">
-                            <Text
-                              className={`text-sm ${
-                                isSelected
-                                  ? "text-red-600 font-bold"
-                                  : isDisabled
-                                  ? "text-gray-400"
-                                  : "text-gray-800 font-medium"
-                              }`}
-                            >
-                              {party.name}
-                            </Text>
-                            {isSelected && (
-                              <View className="bg-red-600 rounded-full p-0.5">
-                                <CheckCircle className="text-white" size={14} />
-                              </View>
-                            )}
-                          </View>
-                        </Button>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
+              </View>
+            ))}
+          </ScrollView>
+          <View className="px-4 py-3 border-t border-gray-200">
+            <Button
+              onPress={() => {
+                setToApplyFilter(filter);
+                setCurrentFilterDropdown("");
+              }}
+              className="bg-blue-600 rounded-lg py-3"
+            >
+              <Text className="text-white font-semibold text-center">
+                Apply Filters
+              </Text>
+            </Button>
           </View>
+          <BottomGap />
         </View>
-      </View>
+      )}
 
-      {/* {loading ? (
+      {loading ? (
         <Loading />
       ) : error ? (
         <Error error={error} refresh={() => refresh(filter)} />
@@ -444,8 +212,8 @@ const PoliticiansScreen = () => {
           }
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
         >
-          {filteredPoliticians.length > 0 ? (
-            filteredPoliticians.map((politician) => (
+          {politicians.length > 0 ? (
+            politicians.map((politician) => (
               <PoliticianCard key={politician.id} politician={politician} />
             ))
           ) : (
@@ -462,10 +230,10 @@ const PoliticiansScreen = () => {
             </View>
           )}
         </ScrollView>
-      )} */}
+      )}
 
       {/* Bottom padding for tab bar */}
-      <View className="h-24" />
+      <BottomGap />
     </View>
   );
 };
@@ -500,30 +268,59 @@ const PoliticianCard = ({ politician }: { politician: Politician }) => {
                   </Text>
                 </View>
               )}
+
+              {/* Compact Rating and Stats */}
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center">
+                  <Star className="text-yellow-500" size={14} fill="#EAB308" />
+                  <Text className="text-gray-800 font-bold ml-1 text-sm">
+                    {typeof politician.rating === "number"
+                      ? politician.rating.toFixed(1)
+                      : "0.0"}
+                  </Text>
+                </View>
+              </View>
             </View>
 
-            {/* Party Badge - Compact */}
-            {politician.party && (
-              <View className="px-2 py-1 rounded bg-gray-500">
-                <Text
-                  className="text-white text-xs font-bold"
-                  numberOfLines={1}
-                >
-                  {politician.party}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Compact Rating and Stats */}
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center">
-              <Star className="text-yellow-500" size={14} fill="#EAB308" />
-              <Text className="text-gray-800 font-bold ml-1 text-sm">
-                {typeof politician.rating === "number"
-                  ? politician.rating.toFixed(1)
-                  : "0.0"}
-              </Text>
+            <View className="flex gap-1 items-end">
+              {politician.sourceCategories?.levels?.length > 0 &&
+                politician.sourceCategories.levels.map((l, index) => (
+                  <View
+                    key={index}
+                    className="px-2 py-1 rounded bg-red-100 border border-red-300"
+                  >
+                    <Text
+                      className="text-red-700 text-xs font-bold"
+                      numberOfLines={1}
+                    >
+                      {l}
+                    </Text>
+                  </View>
+                ))}
+              {politician.sourceCategories?.positions?.length > 0 &&
+                politician.sourceCategories.positions.map((p, index) => (
+                  <View
+                    key={index}
+                    className="px-2 py-1 rounded bg-blue-100 border border-blue-300"
+                  >
+                    <Text
+                      className="text-blue-700 text-xs font-bold"
+                      numberOfLines={1}
+                    >
+                      {p}
+                    </Text>
+                  </View>
+                ))}
+              {politician.sourceCategories?.party && (
+                <View className="px-2 py-1 rounded bg-green-100 border border-green-300">
+                  <Text
+                    className="text-green-700 text-xs font-bold"
+                    numberOfLines={1}
+                  >
+                    {politician.sourceCategories.party}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 

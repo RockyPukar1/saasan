@@ -1,18 +1,15 @@
 import { IsArray, IsMongoId, IsOptional } from 'class-validator';
 
 export class PoliticianFilterDto {
-  @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
-  level?: string[];
+  level: string[];
 
-  @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
-  party?: string[];
+  party: string[];
 
-  @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
-  position?: string[];
+  position: string[];
 }
