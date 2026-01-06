@@ -65,6 +65,7 @@ export class PoliticsSeeder {
             $set: {
               title: position.title,
               description: position.description,
+              abbreviation: position.abbreviation,
               levelId,
             },
           },
