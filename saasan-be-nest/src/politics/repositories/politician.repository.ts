@@ -36,18 +36,14 @@ export class PoliticianRepository {
       partyIds.length > 0 || positionIds.length > 0 || levelIds.length > 0;
 
     return await this.model.aggregate([
-      ...(hasFilters
-        ? [
-            {
-              $match: {
-                $or: [
-                  { partyId: { $in: partyIds } },
-                  { positionIds: { $in: positionIds } },
-                ],
-              },
-            },
-          ]
-        : []),
+      {
+        $lookup: {
+          from: 'parties',
+          localField: 'partyId',
+          foreignField: '_id',
+          as: 'partyData',
+        },
+      },
       {
         $lookup: {
           from: 'positions',
@@ -67,18 +63,16 @@ export class PoliticianRepository {
       ...(hasFilters
         ? [
             {
-              $match: { 'positionData.levelId': { $in: levelIds } },
+              $match: {
+                $or: [
+                  { partyId: { $in: partyIds } },
+                  { positionIds: { $in: positionIds } },
+                  { 'positionData.levelId': { $in: levelIds } },
+                ],
+              },
             },
           ]
         : []),
-      {
-        $lookup: {
-          from: 'parties',
-          localField: 'partyId',
-          foreignField: '_id',
-          as: 'partyData',
-        },
-      },
       {
         $addFields: {
           sourceCategories: {
