@@ -44,6 +44,7 @@ import { StreaksSystem } from "~/components/StreaksSystem";
 import { CommentSystem } from "~/components/CommentSystem";
 import { VerificationSystem } from "~/components/VerificationSystem";
 import { ElectionMode } from "~/components/ElectionMode";
+import BottomGap from "~/components/BottomGap";
 
 interface CorruptionCase {
   id: string;
@@ -592,7 +593,7 @@ const DashboardScreen = () => {
           </Text>
         </View>
         {/* Bottom padding for tab bar */}
-        <View className="h-24" />
+        <BottomGap />
       </ScrollView>
     </View>
   );

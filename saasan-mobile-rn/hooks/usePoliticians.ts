@@ -19,6 +19,11 @@ export interface Politician {
   totalReports: number;
   verifiedReports: number;
   constituencyNumber?: string;
+  sourceCategories: {
+    party: string | null;
+    positions: string[] | [];
+    levels: string[] | [];
+  };
 }
 
 export interface GovernmentLevel {
@@ -40,7 +45,7 @@ export interface Party {
 }
 export interface Position {
   id: string;
-  title: string;
+  name: string;
   description: string;
   abbreviation: string;
   count: number;
@@ -78,6 +83,7 @@ export const usePoliticians = () => {
             isIndependent: politician.isIndependent,
             totalReports: politician.totalReports,
             verifiedReports: politician.verifiedReports,
+            sourceCategories: politician.sourceCategories,
           })
         );
 
@@ -152,7 +158,7 @@ export const usePoliticians = () => {
         const transformedPositions = response.data.map(
           (position: Position) => ({
             id: position.id,
-            title: position.title,
+            name: position.name,
             description: position.description,
             count: position.count,
             abbreviation: position.abbreviation,
