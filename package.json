@@ -10,7 +10,7 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\" \"npm run dev:mobile\"",
     "dev:backend": "cd saasan-be-nest && pnpm run start:dev",
     "dev:dashboard": "cd saasan-dashboard-react && pnpm run dev",
-    "dev:mobile": "cd saasan-mobile-rn && pnpm run dev:web"
+    "dev:mobile": "cd saasan-mobile-rn && pnpm run dev"
   },
   "keywords": [
     "nepal",
