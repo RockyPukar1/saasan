@@ -1,7 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
   Home,
-  TrendingUp,
   Users,
   FileText,
   Vote,

@@ -174,9 +174,6 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type PoliticianFormData = z.infer<typeof politicianSchema>;
 export type PoliticianUpdateFormData = z.infer<typeof politicianUpdateSchema>;
-export type DistrictFormData = z.infer<typeof districtSchema>;
-export type MunicipalityFormData = z.infer<typeof municipalitySchema>;
-export type WardFormData = z.infer<typeof wardSchema>;
 export type ReportStatusUpdateFormData = z.infer<
   typeof reportStatusUpdateSchema
 >;

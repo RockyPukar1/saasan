@@ -113,39 +113,42 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
           const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(
             shareContent.viralText + "\n\n" + shareContent.shareText
           )}`;
-          await Linking.openURL(whatsappUrl);
+          window.open(whatsappUrl, '_blank');
           break;
 
         case "facebook":
           const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
             "https://saasan.app"
           )}&quote=${encodeURIComponent(shareContent.viralText)}`;
-          await Linking.openURL(facebookUrl);
+          window.open(facebookUrl, '_blank');
           break;
 
         case "instagram":
           // Instagram doesn't support direct text sharing, so we'll copy to clipboard
-          await Share.share({
-            message: shareContent.viralText + "\n\n" + shareContent.shareText,
-          });
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(shareContent.viralText + "\n\n" + shareContent.shareText);
+            alert('Text copied to clipboard!');
+          }
           break;
 
         case "tiktok":
           // TikTok doesn't support direct text sharing, so we'll copy to clipboard
-          await Share.share({
-            message:
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(
               shareContent.viralText +
               "\n\n" +
               shareContent.shareText +
-              "\n\n#SaasanApp #FightCorruption #Nepal #Viral",
-          });
+              "\n\n#SaasanApp #FightCorruption #Nepal #Viral"
+            );
+            alert('Text copied to clipboard!');
+          }
           break;
       }
 
       onShare?.();
     } catch (error) {
       console.error("Error sharing:", error);
-      Alert.alert("Error", "Could not share to this platform");
+      alert("Could not share to this platform");
     } finally {
       setSharing(false);
     }
@@ -157,14 +160,15 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
       const viralText = generateViralText();
       const shareText = generateShareText();
 
-      await Share.share({
-        message: viralText + "\n\n" + shareText,
-        title: "Saasan App - Fight Corruption",
-      });
+      // Copy to clipboard for web sharing
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(viralText + "\n\n" + shareText);
+        alert('Text copied to clipboard!');
+      }
 
       onShare?.();
     } catch (error) {
-      Alert.alert("Error", "Could not share");
+      alert("Could not share");
     } finally {
       setSharing(false);
     }
@@ -187,7 +191,7 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
       {/* Social Media Buttons */}
       <div className="space-y-2">
         <Button
-          onPress={() => shareToSocial("whatsapp")}
+          onClick={() => shareToSocial("whatsapp")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-green-500 py-3 rounded-lg"
         >
@@ -196,7 +200,7 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
         </Button>
 
         <Button
-          onPress={() => shareToSocial("facebook")}
+          onClick={() => shareToSocial("facebook")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-blue-600 py-3 rounded-lg"
         >
@@ -205,7 +209,7 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
         </Button>
 
         <Button
-          onPress={() => shareToSocial("instagram")}
+          onClick={() => shareToSocial("instagram")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-pink-500 py-3 rounded-lg"
         >
@@ -214,7 +218,7 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
         </Button>
 
         <Button
-          onPress={() => shareToSocial("tiktok")}
+          onClick={() => shareToSocial("tiktok")}
           disabled={sharing}
           className="flex-row items-center justify-center bg-black py-3 rounded-lg"
         >
@@ -223,7 +227,7 @@ export const ShareableImage: React.FC<ShareableImageProps> = ({
         </Button>
 
         <Button
-          onPress={shareAll}
+          onClick={shareAll}
           disabled={sharing}
           className="flex-row items-center justify-center bg-gray-600 py-3 rounded-lg"
         >

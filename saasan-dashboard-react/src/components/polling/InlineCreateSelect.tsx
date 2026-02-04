@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Check, Plus, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 interface InlineCreateSelectProps {
   label: string;
@@ -38,7 +38,7 @@ export const InlineCreateSelect: React.FC<InlineCreateSelectProps> = ({
   error,
   defaultOption,
 }) => {
-  const [isCreating, setIsCreating] = useState(false);
+  const [_, setIsCreating] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemNameNepali, setNewItemNameNepali] = useState("");
   const [isLoading, setIsLoading] = useState(false);

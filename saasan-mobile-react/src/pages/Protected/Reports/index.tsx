@@ -12,7 +12,6 @@ import {
   Clock,
   CheckCircle2,
 } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ShareableImage } from "@/components/ShareableImage";
 import { useReports } from "@/hooks/useReports";
 import type { CorruptionReport, ReportCreateData } from "@/types";
@@ -333,7 +332,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({
   
   return (
     <div className="flex-1 px-4 py-4">
-      {reports.map((report) => (
+      {reports.map((report: CorruptionReport) => (
         <div
           key={report.id}
           // onPress={() => router.push(`/report/${report.id}`)}
@@ -413,7 +412,7 @@ type AllReportsTabProps = {
 }
 
 const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
-  const { allReports: reports, fetchAllReports } = useReports();
+  const { reports, fetchAllReports } = useReports();
   
   useEffect(() => {
     fetchAllReports();
@@ -421,7 +420,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
   
   return (
     <div className="flex-1 px-4 py-4">
-      {reports.map((report) => (
+      {reports.map((report: CorruptionReport) => (
         <div
           key={report.id}
           // onPress={() => router.push(`/report/${report.id}`)}

@@ -5,7 +5,6 @@ import { Link, useNavigate } from "react-router-dom"
 import {
   AlertTriangle,
   Users,
-  CheckCircle,
   FileText,
   Share,
   Gavel,
