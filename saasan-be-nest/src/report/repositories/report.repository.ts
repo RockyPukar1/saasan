@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ReportEntity, ReportEntityDocument } from '../entities/report.entity';
-import { Model } from 'mongoose';
+import { ReportEntity, ReportEntityDocument, ReportPublicVisibility } from '../entities/report.entity';
+import { Model, Types } from 'mongoose';
 import { CreateReportDto } from '../dtos/create-report.dto';
+import { EvidenceIdDto } from '../dtos/evidence-id.dto';
+import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
+import { UserEntity } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class ReportRepository {
@@ -11,19 +14,43 @@ export class ReportRepository {
     private readonly model: Model<ReportEntityDocument>,
   ) {}
 
-  async create(reportData: CreateReportDto) {
-    await this.model.create(reportData);
+  async create({ reporterId, ...data}: CreateReportDto) {
+    await this.model.create({
+      ...data,
+      reporterId: new Types.ObjectId(reporterId)
+    });
+  }
+
+  async findById({ evidenceId }: EvidenceIdDto) {
+    return await this.model.findById(evidenceId)
   }
 
   async getAll() {
-    return await this.model.find();
+    return await this.model.find({
+      publicVisibility: ReportPublicVisibility.PUBLIC
+    });
   }
 
-  async getTotalReports() {
+  async getMyReports(reporterId: string) {
+    return await this.model.find({ reporterId: new Types.ObjectId(reporterId) })
+  }
+
+  async updateStatus({ evidenceId }: EvidenceIdDto, data: UpdateReportStatusDto) {
+    await this.model.findByIdAndUpdate(
+      evidenceId,
+      {
+        $set: {
+          status: data.status
+        }
+      }
+    )
+  }
+
+  async getTotalReportsCount() {
     return await this.countDocuments();
   }
 
-  async getResolvedReports() {
+  async getResolvedReportsCount() {
     return await this.countDocuments({ status: 'resolved' });
   }
 

@@ -167,16 +167,17 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     const token = await this.getAuthToken();
 
+    const isFormData = body instanceof FormData
+
     const config: RequestInit = {
       method,
       headers: {
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...(token && { Authorization: `Bearer ${token}` }),
         ...getApiHeaders(language),
-        ...options.headers,
       },
       ...(body && {
-        body: typeof body === "string" ? body : JSON.stringify(body),
+        body: isFormData ? body : JSON.stringify(body),
       }),
       ...options,
     };
@@ -214,6 +215,7 @@ class ApiService {
       user: UserProfile;
     }>
   > {
+    console.log(this.baseURL)
     const response = await this.request<{
       accessToken: string;
       refreshToken: string;
@@ -332,11 +334,7 @@ class ApiService {
       }
     });
 
-    return this.request<CorruptionReport>("POST", "/reports", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    return this.request<CorruptionReport>("POST", "/report", formData);
   }
 
   async getAllReports(
@@ -353,22 +351,22 @@ class ApiService {
           .join("&")
       : "";
 
-    return this.request<CorruptionReport[]>("GET", `/reports${queryParams}`);
+    return this.request<CorruptionReport[]>("GET", `/report${queryParams}`);
   }
 
   async getReportById(id: string): Promise<ApiResponse<CorruptionReport>> {
-    return this.request<CorruptionReport>("GET", `/reports/${id}`);
+    return this.request<CorruptionReport>("GET", `/report/${id}`);
   }
 
   async getUserReports(): Promise<ApiResponse<CorruptionReport[]>> {
-    return this.request<CorruptionReport[]>("GET", "/reports/my-reports");
+    return this.request<CorruptionReport[]>("GET", "/report/my-reports");
   }
 
   async updateReportStatus(
     id: string,
     data: ReportUpdateData
   ): Promise<ApiResponse<CorruptionReport>> {
-    return this.request<CorruptionReport>("PUT", `/reports/${id}/status`, data);
+    return this.request<CorruptionReport>("PUT", `/report/${id}/status`, data);
   }
 
   async uploadEvidence(
@@ -382,18 +380,13 @@ class ApiService {
 
     return this.request<Evidence[]>(
       "PUT",
-      `/reports/${reportId}/evidence`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      `/report/${reportId}/evidence`,
+      formData
     );
   }
 
   async voteOnReport(id: string): Promise<ApiResponse<void>> {
-    return this.request<void>("POST", `/reports/${id}/vote`);
+    return this.request<void>("POST", `/report/${id}/vote`);
   }
 
   // Polling APIs

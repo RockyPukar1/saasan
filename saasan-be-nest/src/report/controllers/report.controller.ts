@@ -1,14 +1,30 @@
-import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ReportService } from '../services/report.service';
 import { CreateReportDto } from '../dtos/create-report.dto';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { type Request } from 'express';
+import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { EvidenceIdDto } from '../dtos/evidence-id.dto';
+import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
 
+@UseGuards(HttpAccessTokenGuard)
 @Controller('report')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}
+  
   @HttpCode(201)
   @Post()
-  async create(@Body() reportData: CreateReportDto) {
-    await this.reportService.create(reportData);
+  @UseInterceptors(AnyFilesInterceptor())
+  async create(
+    @Req() req: Request,
+    @Body() reportData: CreateReportDto,
+  ) {
+    await this.reportService.create({ ...reportData, reporterId: req.user.id });
+  }
+
+  @Get(":evidenceId")
+  async getEvidenceById(@Param() param: EvidenceIdDto) {
+    return await this.reportService.getEvidenceById(param)
   }
 
   @Get()
@@ -16,9 +32,16 @@ export class ReportController {
     return await this.reportService.getAll();
   }
 
+  @Get("my-reports")
+  async getMyReports(@Req() req: Request) {
+    return await this.reportService.getMyReports(req.user.id)
+  }
+
   @HttpCode(204)
   @Put(':reportId/status')
-  async updateStatus() {}
+  async updateStatus(@Body() body: UpdateReportStatusDto, @Param() evidenceIdDto: EvidenceIdDto) {
+    await this.reportService.updateStatus(evidenceIdDto, body)
+  }
 
   @HttpCode(204)
   @Put(':reportId/evidence')

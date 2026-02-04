@@ -1,12 +1,14 @@
 // src/screens/ReportsScreen.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Alert,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -29,19 +31,10 @@ import { Audio } from "expo-av";
 import { useLanguage } from "~/contexts/LanguageContext";
 import { PageHeader } from "~/components/PageHeader";
 import { ShareableImage } from "~/components/ShareableImage";
-
-interface Report {
-  id: string;
-  title: string;
-  description: string;
-  category: "corruption" | "abuse" | "bribery" | "nepotism" | "other";
-  location: string;
-  status: "submitted" | "under_review" | "verified" | "resolved";
-  dateSubmitted: string;
-  evidenceCount: number;
-  isAnonymous: boolean;
-}
-
+import BottomGap from "~/components/BottomGap";
+import { useReports } from "~/hooks/useReports";
+import { CorruptionReport, ReportCreateData } from "~/shared-types";
+import EvidencePicker from "~/components/EvidencePicker";
 interface ReportCategory {
   id: string;
   name: string;
@@ -50,126 +43,80 @@ interface ReportCategory {
   description: string;
 }
 
-const ReportsScreen = () => {
-  const router = useRouter();
-  const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<"new" | "my_reports">("new");
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [reportTitle, setReportTitle] = useState("");
-  const [reportDescription, setReportDescription] = useState("");
-  const [location, setLocation] = useState("");
+type CategorySelectorProps = {
+  reportCategories: ReportCategory[];
+  selectedCategory: string | null;
+  setSelectedCategory: (id: string) => void;
+};
 
-  const reportCategories: ReportCategory[] = [
-    {
-      id: "corruption",
-      name: "Financial Corruption",
-      icon: FileText,
-      color: "bg-red-500",
-      description: "Misuse of public funds, embezzlement",
-    },
-    {
-      id: "bribery",
-      name: "Bribery",
-      icon: AlertTriangle,
-      color: "bg-orange-500",
-      description: "Demanding/offering bribes for services",
-    },
-    {
-      id: "abuse",
-      name: "Abuse of Power",
-      icon: Shield,
-      color: "bg-purple-500",
-      description: "Misusing official position for personal gain",
-    },
-    {
-      id: "nepotism",
-      name: "Nepotism",
-      icon: Eye,
-      color: "bg-blue-500",
-      description: "Favoritism in appointments or contracts",
-    },
-  ];
+const reportCategories: ReportCategory[] = [
+  {
+    id: "corruption",
+    name: "Financial Corruption",
+    icon: FileText,
+    color: "bg-red-500",
+    description: "Misuse of public funds, embezzlement",
+  },
+  {
+    id: "bribery",
+    name: "Bribery",
+    icon: AlertTriangle,
+    color: "bg-orange-500",
+    description: "Demanding/offering bribes for services",
+  },
+  {
+    id: "abuse",
+    name: "Abuse of Power",
+    icon: Shield,
+    color: "bg-purple-500",
+    description: "Misusing official position for personal gain",
+  },
+  {
+    id: "nepotism",
+    name: "Nepotism",
+    icon: Eye,
+    color: "bg-blue-500",
+    description: "Favoritism in appointments or contracts",
+  },
+];
 
-  const mockReports: Report[] = [
-    {
-      id: "1",
-      title: "Bribes for Citizenship",
-      description: "Officials demanding money for citizenship certificates",
-      category: "bribery",
-      location: "Kathmandu, Ward 16",
-      status: "under_review",
-      dateSubmitted: "2024-01-15",
-      evidenceCount: 3,
-      isAnonymous: true,
-    },
-    {
-      id: "2",
-      title: "Contract Irregularities",
-      description: "Suspicious road construction contract award",
-      category: "corruption",
-      location: "Pokhara Municipality",
-      status: "verified",
-      dateSubmitted: "2024-01-10",
-      evidenceCount: 7,
-      isAnonymous: false,
-    },
-  ];
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "submitted":
+      return "bg-gray-500";
+    case "under_review":
+      return "bg-yellow-500";
+    case "verified":
+      return "bg-blue-500";
+    case "resolved":
+      return "bg-green-500";
+    default:
+      return "bg-gray-500";
+  }
+};
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return "bg-gray-500";
-      case "under_review":
-        return "bg-yellow-500";
-      case "verified":
-        return "bg-blue-500";
-      case "resolved":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const handleSubmitReport = () => {
-    if (!selectedCategory || !reportTitle || !reportDescription) {
-      Alert.alert("Error", "Please fill all required fields");
-      return;
-    }
-
-    Alert.alert(
-      "Report Submitted",
-      "Your report has been submitted successfully. You will receive updates on its status.",
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            setReportTitle("");
-            setReportDescription("");
-            setLocation("");
-            setSelectedCategory("");
-            setActiveTab("my_reports");
-          },
-        },
-      ]
-    );
-  };
-
-  const CategorySelector = () => (
+const CategorySelector: React.FC<CategorySelectorProps> = ({
+  reportCategories,
+  selectedCategory,
+  setSelectedCategory,
+}) => {
+  return (
     <View className="mb-6">
       <Text className="text-lg font-bold text-gray-800 mb-3">
         Report Category
       </Text>
+
       <View className="flex-row flex-wrap">
         {reportCategories.map((category) => {
           const Icon = category.icon;
+          const isSelected = selectedCategory === category.id;
+
           return (
-            <Button
+            <Pressable
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
               className={`w-[48%] mb-3 mr-[2%] p-4 rounded-lg border-2 ${
-                selectedCategory === category.id
+                isSelected
                   ? "border-red-500 bg-red-50"
                   : "border-gray-200 bg-white"
               }`}
@@ -177,204 +124,244 @@ const ReportsScreen = () => {
               <View
                 className={`w-10 h-10 rounded-full ${category.color} items-center justify-center mb-2`}
               >
-                <Icon className="text-white" size={20} />
+                <Icon size={20} color="white" />
               </View>
+
               <Text
                 className={`font-bold text-sm ${
-                  selectedCategory === category.id
-                    ? "text-red-800"
-                    : "text-gray-800"
+                  isSelected ? "text-red-800" : "text-gray-800"
                 }`}
               >
                 {category.name}
               </Text>
+
               <Text
                 className={`text-xs mt-1 ${
-                  selectedCategory === category.id
-                    ? "text-red-600"
-                    : "text-gray-600"
+                  isSelected ? "text-red-600" : "text-gray-600"
                 }`}
               >
                 {category.description}
               </Text>
-            </Button>
+            </Pressable>
           );
         })}
       </View>
     </View>
   );
+};
 
-  const NewReportForm = () => (
-    <ScrollView className="flex-1 px-4 py-4">
-      <CategorySelector />
+type NewReportFormProps = {
+  form: ReportCreateData;
+  setForm: React.Dispatch<React.SetStateAction<ReportCreateData>>;
+  reportCategories: ReportCategory[];
+  onSubmit: () => void;
+};
 
-      {/* Anonymous Toggle */}
-      <View className="mb-6">
-        <Button
-          onPress={() => setIsAnonymous(!isAnonymous)}
-          className="flex-row items-center p-4 bg-gray-100 rounded-lg"
-        >
-          <View
-            className={`w-6 h-6 rounded border-2 mr-3 items-center justify-center ${
-              isAnonymous ? "bg-red-600 border-red-600" : "border-gray-400"
-            }`}
-          >
-            {isAnonymous && <CheckCircle2 className="text-white" size={16} />}
-          </View>
-          <View className="flex-1">
-            <Text className="font-bold text-gray-800">Report Anonymously</Text>
-            <Text className="text-gray-600 text-sm">
-              Your identity will be protected
-            </Text>
-          </View>
-          {isAnonymous ? (
-            <EyeOff className="text-red-600" size={24} />
-          ) : (
-            <Eye className="text-gray-600" size={24} />
-          )}
-        </Button>
-      </View>
-
-      {/* Report Title */}
-      <View className="mb-4">
-        <Text className="font-bold text-gray-800 mb-2">Report Title *</Text>
-        <TextInput
-          placeholder="Brief title for your report"
-          value={reportTitle}
-          onChangeText={setReportTitle}
-          className="border border-gray-300 rounded-lg p-3 text-gray-800"
+const NewReportForm: React.FC<NewReportFormProps> = ({
+  form,
+  setForm,
+  reportCategories,
+  onSubmit,
+}) => {
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        className="flex-1 px-4 py-4"
+      >
+        <CategorySelector
+          reportCategories={reportCategories}
+          selectedCategory={form.category}
+          setSelectedCategory={(id) =>
+            setForm((prev) => ({ ...prev, category: id }))
+          }
         />
-      </View>
 
-      {/* Location */}
-      <View className="mb-4">
-        <Text className="font-bold text-gray-800 mb-2">Location</Text>
-        <View className="flex-row items-center border border-gray-300 rounded-lg p-3">
-          <MapPin className="text-gray-500" size={20} />
+        {/* Anonymous Toggle */}
+        <View className="mb-6">
+          <Button
+            onPress={() =>
+              setForm((prev) => ({ ...prev, isAnonymous: !prev.isAnonymous }))
+            }
+            className="flex-row items-center p-4 bg-gray-100 rounded-lg"
+          >
+            <View
+              className={`w-6 h-6 rounded border-2 mr-3 items-center justify-center ${
+                form.isAnonymous
+                  ? "bg-red-600 border-red-600"
+                  : "border-gray-400"
+              }`}
+            >
+              {form.isAnonymous && <CheckCircle2 size={16} color="white" />}
+            </View>
+
+            <View className="flex-1">
+              <Text className="font-bold text-gray-800">
+                Report Anonymously
+              </Text>
+              <Text className="text-gray-600 text-sm">
+                Your identity will be protected
+              </Text>
+            </View>
+          {form.isAnonymous ? (
+            <EyeOff className="text-red-600" size={24} />
+            ) : (
+              <Eye size={24} color="#4b5563" />
+            )}
+          </Button>
+        </View>
+
+        {/* Report Title */}
+        <View className="mb-4">
+          <Text className="font-bold text-gray-800 mb-2">Report Title *</Text>
           <TextInput
-            placeholder="Where did this happen?"
-            value={location}
-            onChangeText={setLocation}
-            className="flex-1 ml-2 text-gray-800"
+          placeholder="Brief title for your report"
+            value={form.title}
+            onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
+            className="outline-none border border-gray-300 rounded-lg p-3 text-gray-800"
           />
         </View>
-      </View>
 
-      {/* Description */}
-      <View className="mb-4">
-        <Text className="font-bold text-gray-800 mb-2">
-          Detailed Description *
-        </Text>
-        <TextInput
+        {/* Description */}
+        <View className="mb-6">
+          <Text className="font-bold text-gray-800 mb-2">
+            Detailed Description *
+          </Text>
+          <TextInput
           placeholder="Provide detailed information about the incident..."
-          value={reportDescription}
-          onChangeText={setReportDescription}
-          multiline
-          numberOfLines={4}
-          className="border border-gray-300 rounded-lg p-3 text-gray-800"
-          style={{ textAlignVertical: "top" }}
-        />
-      </View>
-
-      {/* Evidence Upload */}
-      <View className="mb-6">
-        <Text className="font-bold text-gray-800 mb-2">
-          Evidence (Optional)
-        </Text>
-        <View className="flex-row space-x-2">
-          <Button
-            className="flex-1 bg-blue-600 flex-row items-center justify-center"
-            onPress={async () => {
-              try {
-                const { status } =
-                  await ImagePicker.requestCameraPermissionsAsync();
-                if (status !== "granted") {
-                  Alert.alert(
-                    "Permission needed",
-                    "Camera permission is required to take photos"
-                  );
-                  return;
-                }
-                const result = await ImagePicker.launchCameraAsync({
-                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                  quality: 0.8,
-                });
-                if (!result.canceled) {
-                  // Handle photo
-                }
-              } catch (error) {
-                Alert.alert("Error", "Failed to take photo");
-              }
-            }}
-          >
-            <Camera className="text-white mr-2" size={16} />
-            <Text className="text-white">Photo</Text>
-          </Button>
-          <Button
-            className="flex-1 bg-green-600 flex-row items-center justify-center"
-            onPress={async () => {
-              try {
-                const result = await DocumentPicker.getDocumentAsync({
-                  type: ["application/pdf", "image/*"],
-                });
-                if ("assets" in result && result.assets && result.assets[0]) {
-                  // Handle document
-                  const file = result.assets[0];
-                }
-              } catch (error) {
-                Alert.alert("Error", "Failed to pick document");
-              }
-            }}
-          >
-            <FileText className="text-white mr-2" size={16} />
-            <Text className="text-white">Document</Text>
-          </Button>
-          <Button
-            className="flex-1 bg-purple-600 flex-row items-center justify-center"
-            onPress={async () => {
-              try {
-                const { status } = await Audio.requestPermissionsAsync();
-                if (status !== "granted") {
-                  Alert.alert(
-                    "Permission needed",
-                    "Audio recording permission is required"
-                  );
-                  return;
-                }
-                const recording = new Audio.Recording();
-                await recording.prepareToRecordAsync();
-                await recording.startAsync();
-                // Handle recording
-              } catch (error) {
-                Alert.alert("Error", "Failed to start recording");
-              }
-            }}
-          >
-            <Upload className="text-white mr-2" size={16} />
-            <Text className="text-white">Audio</Text>
-          </Button>
+            value={form.description}
+            onChangeText={(v) =>
+              setForm((p) => ({ ...p, description: v }))
+            }
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            className="outline-none border border-gray-300 rounded-lg p-3 text-gray-800"
+          />
         </View>
-        <Text className="text-gray-500 text-xs mt-2">
-          All evidence is encrypted and stored securely
-        </Text>
-      </View>
 
-      {/* Submit Button */}
-      <Button onPress={handleSubmitReport} className="bg-red-600 py-4 mb-8">
-        <Text className="text-white font-bold text-lg">Submit Report</Text>
-      </Button>
-
-      {/* Bottom padding for tab bar */}
-      <View className="h-24" />
-    </ScrollView>
+        {/* TODO: Province, District, Municipality, Ward */}
+        {/* <View className="mb-4">
+          <Text className="font-bold text-gray-800 mb-2">Location</Text>
+          <View className="flex-row items-center border border-gray-300 rounded-lg pl-3">
+            <MapPin className="text-gray-500" size={20} />
+            <TextInput
+              placeholder="Where did this happen?"
+              value={form.location}
+              onChangeText={(v) => setForm((p) => ({ ...p, location: v }))}
+              className="outline-none flex-1 rounded-lg px-3 p-3"
+            />
+          </View>
+        </View> */}
+        <View className="mb-6">
+          <Text className="font-bold text-gray-800 mb-2">
+            Evidence (Optional)
+          </Text>
+          <View className="flex-row space-x-2 gap-2">
+            <EvidencePicker
+              onPress={async () => {
+                try {
+                  const { status } =
+                    await ImagePicker.requestCameraPermissionsAsync();
+                  if (status !== "granted") {
+                    Alert.alert(
+                      "Permission needed",
+                      "Camera permission is required to take photos"
+                    );
+                    return;
+                  }
+                  const result = await ImagePicker.launchCameraAsync({
+                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    quality: 0.8,
+                  });
+                  if (!result.canceled) {
+                    // Handle photo
+                  }
+                } catch (error) {
+                  Alert.alert("Error", "Failed to take photo");
+                }
+              }}
+              background="blue"
+              Icon={Camera}
+              text="Photo"
+            />
+           <EvidencePicker
+              onPress={async () => {
+                try {
+                  const result = await DocumentPicker.getDocumentAsync({
+                    type: ["application/pdf", "image/*"],
+                  });
+                  if ("assets" in result && result.assets && result.assets[0]) {
+                    // Handle document
+                    const file = result.assets[0];
+                  }
+                } catch (error) {
+                  Alert.alert("Error", "Failed to pick document");
+                }
+              }}
+              background="green"
+              Icon={FileText}
+              text="Document"
+           />
+            <EvidencePicker
+              onPress={async () => {
+                try {
+                  const { status } = await Audio.requestPermissionsAsync();
+                  if (status !== "granted") {
+                    Alert.alert(
+                      "Permission needed",
+                      "Audio recording permission is required"
+                    );
+                    return;
+                  }
+                  const recording = new Audio.Recording();
+                  await recording.prepareToRecordAsync();
+                  await recording.startAsync();
+                  // Handle recording
+                } catch (error) {
+                  Alert.alert("Error", "Failed to start recording");
+                }
+              }}
+              background="purple"
+              Icon={Upload}
+              text="Audio"
+            />
+          </View>
+          <Text className="text-gray-500 text-xs mt-2">
+            All evidence is encrypted and stored securely
+          </Text>
+        </View>
+        <Button onPress={onSubmit} className="bg-red-600 py-3 rounded-md">
+          <Text className="text-white text-center font-medium">
+            Submit Report
+          </Text>
+        </Button>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
+};
 
-  const MyReportsTab = () => (
+type MyReportsTabProps = {
+  setSelectedReport: React.Dispatch<React.SetStateAction<CorruptionReport | null>>;
+};
+
+const MyReportsTab: React.FC<MyReportsTabProps> = ({
+  setSelectedReport }) => {
+  const { userReports: reports, fetchUserReports } = useReports();
+  
+  useEffect(() => {
+    fetchUserReports();
+  }, [])
+  
+  return (
     <ScrollView className="flex-1 px-4 py-4">
-      {mockReports.map((report) => (
-        <Button
+      {reports.map((report) => (
+        <View
           key={report.id}
-          onPress={() => router.push(`/report/${report.id}`)}
+          // onPress={() => router.push(`/report/${report.id}`)}
         >
           <Card className="mb-4">
             <CardContent className="p-4">
@@ -386,12 +373,12 @@ const ReportsScreen = () => {
                   <Text className="text-gray-600 text-sm mt-1">
                     {report.description}
                   </Text>
-                  <View className="flex-row items-center mt-2">
+                  {/* <View className="flex-row items-center mt-2">
                     <MapPin className="text-gray-500" size={12} />
                     <Text className="text-gray-500 text-xs ml-1">
                       {report.location}
                     </Text>
-                  </View>
+                  </View> */}
                 </View>
                 <View
                   className={`px-3 py-1 rounded-full ${getStatusColor(
@@ -408,12 +395,12 @@ const ReportsScreen = () => {
                 <View className="flex-row items-center">
                   <Clock className="text-gray-500" size={14} />
                   <Text className="text-gray-500 text-xs ml-1">
-                    {report.dateSubmitted}
+                    {report.createdAt}
                   </Text>
                 </View>
-                <Text className="text-gray-600 text-xs">
+                {/* <Text className="text-gray-600 text-xs">
                   {report.evidenceCount} evidence files
-                </Text>
+                </Text> */}
                 {report.isAnonymous && (
                   <View className="flex-row items-center">
                     <EyeOff className="text-gray-500" size={14} />
@@ -440,13 +427,152 @@ const ReportsScreen = () => {
               </View>
             </CardContent>
           </Card>
-        </Button>
+        </View>
       ))}
 
       {/* Bottom padding for tab bar */}
-      <View className="h-24" />
+      <BottomGap />
     </ScrollView>
   );
+};
+
+type AllReportsTabProps = {
+  setSelectedReport: React.Dispatch<React.SetStateAction<CorruptionReport | null>>;
+}
+
+const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
+  const { allReports: reports, fetchAllReports } = useReports();
+  
+  useEffect(() => {
+    fetchAllReports();
+  }, [])
+  
+  return (
+    <ScrollView className="flex-1 px-4 py-4">
+      {reports.map((report) => (
+        <View
+          key={report.id}
+          // onPress={() => router.push(`/report/${report.id}`)}
+        >
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <View className="flex-row justify-between items-start mb-3">
+                <View className="flex-1">
+                  <Text className="text-lg font-bold text-gray-800">
+                    {report.title}
+                  </Text>
+                  <Text className="text-gray-600 text-sm mt-1">
+                    {report.description}
+                  </Text>
+                  {/* <View className="flex-row items-center mt-2">
+                    <MapPin className="text-gray-500" size={12} />
+                    <Text className="text-gray-500 text-xs ml-1">
+                      {report.location}
+                    </Text>
+                  </View> */}
+                </View>
+                <View
+                  className={`px-3 py-1 rounded-full ${getStatusColor(
+                    report.status
+                  )}`}
+                >
+                  <Text className="text-white text-xs font-bold uppercase">
+                    {report.status.replace("_", " ")}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row justify-between items-center pt-3 border-t border-gray-200">
+                <View className="flex-row items-center">
+                  <Clock className="text-gray-500" size={14} />
+                  <Text className="text-gray-500 text-xs ml-1">
+                    {report.createdAt}
+                  </Text>
+                </View>
+                {/* <Text className="text-gray-600 text-xs">
+                  {report.evidenceCount} evidence files
+                </Text> */}
+                {report.isAnonymous && (
+                  <View className="flex-row items-center">
+                    <EyeOff className="text-gray-500" size={14} />
+                    <Text className="text-gray-500 text-xs ml-1">
+                      Anonymous
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Share Button */}
+              <View className="mt-3 pt-3 border-t border-gray-100">
+                <Button
+                  onPress={() => {
+                    // Show share modal
+                    setSelectedReport(report);
+                  }}
+                  className="flex-row items-center justify-center bg-blue-500 py-2 rounded-lg"
+                >
+                  <Text className="text-white font-medium text-sm">
+                    🚀 Share This Report
+                  </Text>
+                </Button>
+              </View>
+            </CardContent>
+          </Card>
+        </View>
+      ))}
+
+      {/* Bottom padding for tab bar */}
+      <BottomGap />
+    </ScrollView>
+  );
+};
+
+const initialReport: ReportCreateData = {
+  title: "",
+  description: "",
+  category: "",
+  amountInvolved: 0,
+  isAnonymous: false,
+  provinceId: "",
+  districtId: "",
+  constituencyId: "",
+  municipalityId: "",
+  wardId: "",
+  dateOccurred: new Date().toISOString(),
+  peopleAffectedCount: 0
+};
+const ReportsScreen = () => {
+  const { t } = useLanguage();
+  const { createReport } = useReports()
+  
+  const [activeTab, setActiveTab] = useState<"new" | "my_reports" | "all_reports">("new");
+  const [selectedReport, setSelectedReport] = useState<CorruptionReport | null>(null);
+  const [form, setForm] = useState<ReportCreateData>(initialReport);
+
+  const handleSubmitReport = () => {
+    if (
+      !form.title ||
+      !form.description ||
+      !form.dateOccurred
+    ) {
+      Alert.alert("Error", "Please fill all required fields");
+      return;
+    }
+    createReport(form)
+    Alert.alert(
+      "Report Submitted",
+      "Your report has been submitted successfully. You will receive updates on its status.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            setForm(initialReport);
+            setActiveTab("my_reports");
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -456,19 +582,21 @@ const ReportsScreen = () => {
         subtitle={t("reports.createReport")}
         showLogout={true}
       />
+      <ScrollView>
+
 
       {/* Tab Selector */}
       <View className="bg-white border-b border-gray-200">
         {/* Reports Summary */}
         <View className="px-4 py-3 border-b border-gray-100">
           <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center">
+            {/* <View className="flex-row items-center">
               <FileText className="text-red-600 mr-2" size={16} />
               <Text className="text-sm font-medium text-gray-700">
-                {mockReports?.length || 0} total reports
+                {reports?.length || 0} total reports
               </Text>
-            </View>
-            <View className="flex-row items-center space-x-3">
+            </View> */}
+            {/* <View className="flex-row items-center space-x-3">
               <View className="flex-row items-center">
                 <View className="w-2 h-2 bg-yellow-500 rounded-full mr-1" />
                 <Text className="text-xs text-gray-600">
@@ -485,7 +613,7 @@ const ReportsScreen = () => {
                   resolved
                 </Text>
               </View>
-            </View>
+            </View> */}
           </View>
         </View>
 
@@ -502,6 +630,22 @@ const ReportsScreen = () => {
               }`}
             >
               New Report
+            </Text>
+          </Button>
+          <Button
+            onPress={() => setActiveTab("all_reports")}
+            className={`flex-1 py-3 items-center border-b-2 ${
+              activeTab === "all_reports"
+                ? "border-red-600"
+                : "border-transparent"
+            }`}
+          >
+            <Text
+              className={`font-bold ${
+                activeTab === "all_reports" ? "text-red-600" : "text-gray-600"
+              }`}
+            >
+              All Reports
             </Text>
           </Button>
           <Button
@@ -524,7 +668,18 @@ const ReportsScreen = () => {
       </View>
 
       {/* Content */}
-      {activeTab === "new" ? <NewReportForm /> : <MyReportsTab />}
+      {activeTab === "new" ? (
+        <NewReportForm
+          form={form}
+          setForm={setForm}
+          reportCategories={reportCategories}
+          onSubmit={handleSubmitReport}
+        />
+      ) : activeTab === "my_reports" ? (
+        <MyReportsTab setSelectedReport={setSelectedReport} />
+      ) : (
+        <AllReportsTab setSelectedReport={setSelectedReport} />
+      )}
 
       {/* Share Modal */}
       {selectedReport && (
@@ -551,6 +706,9 @@ const ReportsScreen = () => {
           </View>
         </View>
       )}
+      <BottomGap />
+      </ScrollView>
+      
     </View>
   );
 };

@@ -17,4 +17,19 @@ export class EventRepository {
   async getRecentEvents() {
     return await this.model.find().sort({ createdAt: -1 }).limit(5);
   }
+
+  async getEventsOnThisDay() {
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
+    const currentDay = today.getDate();
+    
+    return await this.model.find({
+      $expr: {
+        $and: [
+          { $eq: [{ $month: '$date' }, currentMonth] },
+          { $eq: [{ $dayOfMonth: '$date' }, currentDay] }
+        ]
+      }
+    });
+  }
 }
