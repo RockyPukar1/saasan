@@ -22,26 +22,26 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // Check if user is admin
-  if (user?.role !== "admin") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">
-            Access Denied
-          </h1>
-          <p className="text-gray-600 mb-4">
-            This dashboard is only accessible to administrators.
-          </p>
-          <button
-            onClick={() => (window.location.href = "/")}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Go to Mobile App
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // if (user?.role !== "admin") {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-center">
+  //         <h1 className="text-2xl font-bold text-red-600 mb-4">
+  //           Access Denied
+  //         </h1>
+  //         <p className="text-gray-600 mb-4">
+  //           This dashboard is only accessible to administrators.
+  //         </p>
+  //         <button
+  //           onClick={() => (window.location.href = "/")}
+  //           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+  //         >
+  //           Go to Mobile App
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return <>{children}</>;
 };

@@ -5,9 +5,10 @@ import { ReportModule } from 'src/report/report.module';
 import { ServiceModule } from 'src/service/service.module';
 import { PoliticsModule } from 'src/politics/politics.module';
 import { EventModule } from 'src/event/event.module';
+import { CaseModule } from 'src/case/case.module';
 
 @Module({
-  imports: [ReportModule, EventModule, PoliticsModule, ServiceModule],
+  imports: [ReportModule, EventModule, PoliticsModule, ServiceModule, CaseModule],
   controllers: [DashboardController],
   providers: [DashboardService],
 })

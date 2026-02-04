@@ -7,7 +7,7 @@ import {
   IsNumberString,
   IsOptional,
 } from 'class-validator';
-import { CaseStatus, CaseUrgency } from '../entities/case.entity';
+import { CaseStatus } from '../entities/case.entity';
 
 export class CreateCaseDto {
   title: string;
@@ -15,9 +15,6 @@ export class CreateCaseDto {
   description: string;
 
   status: CaseStatus;
-
-  @IsEnum(CaseUrgency)
-  priority: CaseUrgency;
 
   @IsNumberString()
   amountInvolved: number;

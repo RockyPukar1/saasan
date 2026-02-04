@@ -1,7 +1,9 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { RegisterUserDto } from '../dtos/register.dto';
 import { AuthService } from '../services/auth.service';
 import { LoginUserDto } from '../dtos/login.dto';
+import type { Request } from 'express';
+import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -19,4 +21,10 @@ export class AuthController {
 
   @Post('refresh-token')
   async refreshToken() {}
+
+  @UseGuards(HttpAccessTokenGuard)
+  @Get("profile")
+  async profile(@Req() req: Request) {
+    return this.authService.getProfile(req.user.id);
+  }
 }

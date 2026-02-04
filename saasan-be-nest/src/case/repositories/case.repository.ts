@@ -9,4 +9,20 @@ export class CaseRepository {
     @InjectModel(CaseEntity.name)
     private readonly model: Model<CaseEntityDocument>,
   ) {}
+
+  async getTotalCasesCount() {
+    return await this.countDocuments();
+  }
+
+  async getResolvedCasesCount() {
+    return await this.countDocuments({ status: 'resolved' });
+  }
+
+  async getRecentCases() {
+    return await this.model.find().sort({ createdAt: -1 }).limit(5);
+  }
+
+  private async countDocuments(filter?: any) {
+    return await this.model.countDocuments(filter);
+  }
 }

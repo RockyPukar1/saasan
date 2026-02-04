@@ -294,7 +294,7 @@ const ReportDetailScreen = () => {
           >
             <ThumbsUp
               className={
-                report.user_vote === "up" ? "text-green-600" : "text-gray-500"
+                report.userVote === "up" ? "text-green-600" : "text-gray-500"
               }
               size={20}
             />
@@ -306,7 +306,7 @@ const ReportDetailScreen = () => {
           >
             <ThumbsDown
               className={
-                report.user_vote === "down" ? "text-red-600" : "text-gray-500"
+                report.userVote === "down" ? "text-red-600" : "text-gray-500"
               }
               size={20}
             />

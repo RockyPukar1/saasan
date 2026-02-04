@@ -1,0 +1,95 @@
+import { useCallback, useEffect, useState } from "react";
+import { apiService, type DashboardStats } from "@/services/api";
+import type {
+  HistoricalEvent,
+  MajorCase,
+  ServiceStatus,
+} from "@/types";
+
+export const useDashboard = () => {
+  const [dashboardStats, setDashboardStats] =
+    useState<Partial<DashboardStats> | null>(null);
+  const [majorCases, setMajorCases] = useState<MajorCase[]>([]);
+  const [historicalEvents, setHistoricalEvents] = useState<HistoricalEvent[]>(
+    []
+  );
+  const [serviceStatus] = useState<Partial<ServiceStatus>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const statsResponse = await apiService.getDashboardStats();
+
+      if (statsResponse.success) {
+        setDashboardStats(statsResponse.data);
+        // Extract major cases from the nested structure
+        if ((statsResponse.data as any)?.recentReports) {
+          const cases = (statsResponse.data as any).recentReports.map(
+            (item: any) => ({
+              id: item._id,
+              referenceNumber: item.reference_number,
+              title: item.title,
+              description: item.description,
+              status: (item.status === "verified"
+                ? "ongoing"
+                : item.status === "resolved"
+                ? "solved"
+                : "unsolved") as "unsolved" | "ongoing" | "solved",
+              priority: item.priority,
+              amountInvolved: parseFloat(item.amount_involved) || 0,
+              upvotesCount: item.upvotes_count || 0,
+              createdAt: item.created_at,
+            })
+          );
+          setMajorCases(cases);
+        }
+        if ((statsResponse.data as any)?.recentEvents) {
+          const events = (statsResponse.data as any).recentEvents.map(
+            (item: any) => ({
+              id: item._id,
+              title: item.title,
+              description: item.description,
+              status: item.status,
+              priority: item.priority,
+              referenceNumber: item.referenceNumber,
+              amountInvolved: parseFloat(item.amount_involved) || 0,
+              upvotesCount: item.upvotes_count || 0,
+              createdAt: item.created_at,
+            })
+          );
+          setHistoricalEvents(events);
+        }
+      }
+    } catch (err: any) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch dashboard data"
+      );
+      console.log("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+
+    // set up periodic refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
+
+  return {
+    dashboardStats,
+    majorCases,
+    historicalEvents,
+    serviceStatus,
+    loading,
+    error,
+    refresh: fetchDashboardData,
+  };
+};

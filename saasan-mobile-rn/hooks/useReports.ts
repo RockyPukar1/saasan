@@ -12,6 +12,7 @@ import type { MediaPickerResult } from "~/shared-types";
 export const useReports = (initialFilters?: ReportFilters) => {
   const [reports, setReports] = useState<CorruptionReport[]>([]);
   const [userReports, setUserReports] = useState<CorruptionReport[]>([]);
+  const [allReports, setAllReports] = useState<CorruptionReport[]>([]);
   const [currentReport, setCurrentReport] = useState<CorruptionReport | null>(
     null
   );
@@ -21,23 +22,18 @@ export const useReports = (initialFilters?: ReportFilters) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchReports = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getAllReports(filters);
-      setReports(response.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch reports");
-      console.error("Error fetching reports:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
   const fetchUserReports = useCallback(async () => {
     try {
       const response = await apiService.getUserReports();
+      setUserReports(response.data);
+    } catch (err) {
+      console.error("Error fetching user reports:", err);
+    }
+  }, []);
+
+  const fetchAllReports = useCallback(async () => {
+    try {
+      const response = await apiService.getAllReports();
       setUserReports(response.data);
     } catch (err) {
       console.error("Error fetching user reports:", err);
@@ -63,9 +59,8 @@ export const useReports = (initialFilters?: ReportFilters) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.createReport(data);
-      setReports((prev) => [response.data, ...prev]);
-      return response.data;
+      await apiService.createReport(data);
+      fetchUserReports();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create report");
       throw err;
@@ -135,7 +130,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
             prev
               ? {
                   ...prev,
-                  evidence: [...(prev.evidence || []), ...response.data],
+                  // evidence: [...(prev.evidence || []), ...response.data],
                 }
               : null
           );
@@ -197,24 +192,17 @@ export const useReports = (initialFilters?: ReportFilters) => {
     [currentReport]
   );
 
-  useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
-
-  useEffect(() => {
-    fetchUserReports();
-  }, [fetchUserReports]);
-
   return {
     reports,
     userReports,
+    allReports,
     currentReport,
     loading,
     error,
     filters,
     setFilters,
-    fetchReports,
     fetchUserReports,
+    fetchAllReports,
     fetchReportById,
     createReport,
     updateReportStatus,

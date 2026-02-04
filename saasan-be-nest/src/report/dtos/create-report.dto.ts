@@ -1,14 +1,13 @@
 import {
-  IsArray,
   IsBoolean,
-  IsDate,
   IsEnum,
+  IsISO8601,
   IsMongoId,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ReportStatus } from '../entities/report.entity';
+import { ReportType } from '../entities/report.entity';
 
 export class CreateReportDto {
   @IsString()
@@ -21,13 +20,19 @@ export class CreateReportDto {
   @IsString()
   category?: string;
 
-  @IsOptional()
   @IsMongoId()
-  reporterId?: string;
-
+  reporterId: string
+  
   @IsOptional()
   @IsNumber()
   amountInvolved?: number;
+
+  @IsOptional()
+  @IsEnum(ReportType)
+  reportType?: string
+  
+  @IsBoolean()
+  isAnonymous: boolean
 
   @IsOptional()
   @IsMongoId()
@@ -48,4 +53,11 @@ export class CreateReportDto {
   @IsOptional()
   @IsMongoId()
   wardId?: string;
+
+  @IsISO8601()
+  dateOccurred: Date;
+
+  @IsOptional()
+  @IsNumber()
+  peopleAffectedCount?: number
 }

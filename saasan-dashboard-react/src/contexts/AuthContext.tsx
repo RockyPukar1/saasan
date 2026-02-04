@@ -60,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log(response);
       if (response.success) {
         setUser(response.data.user);
+        console.log(response.data.user)
         localStorage.setItem("accessToken", response.data.accessToken);
         localStorage.setItem("refreshToken", response.data.refreshToken);
       }

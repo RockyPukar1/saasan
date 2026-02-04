@@ -152,39 +152,19 @@ export interface Evidence {
 
 export interface CorruptionReport {
   id: string;
-  referenceNumber: string;
   title: string;
   description: string;
-  categoryId: string;
-  reporterId: string;
-  isAnonymous: boolean;
-  locationDescription?: string;
-  latitude: number;
-  longitude: number;
-  district: string;
-  municipality: string;
-  ward: string;
-  status: ReportStatus;
-  priority: ReportPriority;
-  assignedToOfficerId?: string;
-  dateOccurred: Date | string;
-  amountInvolved: number;
-  peopleAffectedCount: number;
-  publicVisibility: string;
+  status: string;
+  priority: string;
   upvotesCount: number;
   downvotesCount: number;
   viewsCount: number;
-  sharesCount: number;
-  resolvedAt?: Date | string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  evidence?: Evidence[];
-  user_vote?: "up" | "down";
-  status_updates?: Array<{
-    status: string;
-    comment: string;
-    created_at: string;
-  }>;
+  referenceNumber: number;
+  tags: string[];
+  userVote: string;
+  isAnonymous: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Historical events types
@@ -424,9 +404,16 @@ export interface PollComparison {
 export interface ReportCreateData {
   title: string;
   description: string;
-  location: string;
   category: string;
-  evidence?: File[];
+  amountInvolved?: number;
+  isAnonymous: boolean;
+  provinceId: string;
+  districtId: string;
+  constituencyId?: string;
+  municipalityId?: string;
+  wardId: string;
+  dateOccurred: string;
+  peopleAffectedCount?: number;
 }
 
 export interface ReportUpdateData {

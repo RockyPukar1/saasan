@@ -18,12 +18,13 @@ import { VoterIntentSurveyModule } from './vote/voter-intent-survey/voter-intent
 import { VotingSessionModule } from './vote/voting-session/voting-session.module';
 import { VotingCenterModule } from './vote/voting-center/voting-center.module';
 import { UserVoteModule } from './vote/user-vote/user-vote.module';
-import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
+import { CaseSeederModule } from './common/seeders/case/case-seeder.module';
 import { PoliticsModule } from './politics/politics.module';
 import { PoliticsSeederModule } from './common/seeders/politics/politics-seeder.module';
 import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
 import { EventSeederModule } from './common/seeders/event/event-seeder.module';
 import { AppController } from './app.controller';
+import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AppController } from './app.controller';
     }),
     // Seeder modules
     LocationSeederModule,
+    CaseSeederModule,
     ReportSeederModule,
     PoliticsSeederModule,
     PollSeederModule,

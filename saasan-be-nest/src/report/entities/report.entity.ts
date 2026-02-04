@@ -19,6 +19,19 @@ export enum ReportPriority {
   MEDIUM = 'medium',
   LOW = 'low',
 }
+
+export enum ReportPublicVisibility {
+  PUBLIC = "public",
+  PRIVATE = "private",
+  RESTRICTED = "restricted"
+}
+
+export enum ReportType {
+  COMPLAINT = "complaint",
+  WHISTLEBLOWER = "whistleblower",
+  TIP = "tip"
+}
+
 @Schema({ timestamps: true, collection: ReportEntity.collection })
 export class ReportEntity {
   static readonly collection = 'reports';
@@ -35,7 +48,7 @@ export class ReportEntity {
   @Prop({ type: String }) // TODO: separate entity for category
   category?: string;
 
-  @Prop({ type: Types.ObjectId, ref: UserEntity.name })
+  @Prop({ type: Types.ObjectId, ref: UserEntity.name, required: true })
   reporterId: Types.ObjectId;
 
   @Prop({ type: Number })
@@ -55,6 +68,33 @@ export class ReportEntity {
   })
   priority: ReportPriority;
 
+  @Prop({ type: Boolean, default: false, required: true })
+  isResolved: boolean
+
+  @Prop({ type: Date })
+  resolvedAt?: Date
+
+  @Prop({
+    type: [{
+      status: String,
+      comment: String,
+      createdAt: Date
+    }],
+    default: []
+  })
+  statusUpdates: {
+    status: ReportStatus;
+    comment: string;
+    createdAt: Date;
+  }[]
+
+  @Prop({
+    type: String,
+    enum: ReportType,
+    default: ReportType.COMPLAINT
+  })
+  reportType?: string; 
+
   @Prop({ type: Number, default: 0 })
   upvotesCount?: Number;
 
@@ -64,11 +104,11 @@ export class ReportEntity {
   @Prop({ type: Number, default: 0 })
   viewsCount?: Number;
 
-  @Prop({ type: Number, unique: true })
-  referenceNumber?: number;
+  @Prop({ type: String, unique: true })
+  referenceNumber: string;
 
-  @Prop({ type: [String] })
-  tags?: string[];
+  @Prop({ type: [String], default: [] })
+  tags: string[];
 
   @Prop({ type: String })
   verificationNotes?: string;
@@ -79,11 +119,18 @@ export class ReportEntity {
   @Prop({ type: Date })
   verifiedAt: Date;
 
-  @Prop({ type: Boolean, default: false })
-  isPublic: boolean;
+  @Prop({
+    type: String,
+    enum: ReportPublicVisibility,
+    default: ReportPublicVisibility.PUBLIC
+  })
+  publicVisibility: string
+
+  @Prop({ type: Boolean, default: false})
+  isAnonymous: boolean
 
   @Prop({ type: Types.ObjectId, ref: UserEntity.name })
-  assignedToOfficerId: Types.ObjectId;
+  assignedToOfficerId?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: ProvinceEntity.name })
   provinceId?: Types.ObjectId;
@@ -99,7 +146,20 @@ export class ReportEntity {
 
   @Prop({ type: Types.ObjectId, ref: WardEntity.name })
   wardId?: Types.ObjectId;
+
+  @Prop({ type: Date, required: true })
+  dateOccurred: Date;
+
+  @Prop({ type: Number, default: 0, required: true })
+  peopleAffectedCount: number;
 }
 
 export const ReportEntitySchema = SchemaFactory.createForClass(ReportEntity);
+
+ReportEntitySchema.pre("save", function () {
+  const ymd = new Date(Date.now()).toISOString().slice(0, 10).replace(/-/g, "")
+  const shortId = this._id.toString().slice(-6).toUpperCase()
+  this.referenceNumber = `${ymd}${shortId}`
+})
+
 export type ReportEntityDocument = Document & ReportEntity;

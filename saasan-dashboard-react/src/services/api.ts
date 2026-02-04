@@ -104,7 +104,7 @@ const transformReport = (data: Partial<CorruptionReport>) => ({
   updatedAt: data.updatedAt,
 });
 
-const API_BASE_URL = import.meta.env.SAASAN_API_URL!;
+const API_BASE_URL = "http://localhost:7001";
 
 // Create axios instance
 const api = axios.create({
@@ -271,11 +271,7 @@ export const politiciansApi = {
   bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/politicians/bulk-upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/politicians/bulk-upload", formData);
     return response.data;
   },
 };
@@ -377,11 +373,6 @@ export const geographicApi = {
     const response = await api.post(
       "/locations/districts/bulk-upload",
       formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
     );
     return response.data;
   },
@@ -394,11 +385,6 @@ export const geographicApi = {
     const response = await api.post(
       "/locations/municipalities/bulk-upload",
       formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
     );
     return response.data;
   },
@@ -406,11 +392,7 @@ export const geographicApi = {
   bulkUploadWards: async (file: File): Promise<ApiResponse<UploadResult>> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/locations/wards/bulk-upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/locations/wards/bulk-upload", formData);
     return response.data;
   },
 };
@@ -517,11 +499,7 @@ export const historicalEventsApi = {
   bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/event/bulk-upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/event/bulk-upload", formData);
     return response.data;
   },
 };
