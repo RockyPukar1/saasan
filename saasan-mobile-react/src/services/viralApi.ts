@@ -1,6 +1,6 @@
 import { apiService } from "./api";
-import { formatApiResponse, type Language } from "../lib/bilingual";
-import type { Badge, Candidate, ElectionData, FeedItem, LeaderboardEntry, StreakData, TrendingPoll, VerificationStatus, ViralMetrics } from "@/types/viral";
+import { formatApiResponse } from "../lib/bilingual";
+import type { Badge, Candidate, ElectionData, FeedItem, LeaderboardEntry, StreakData, TrendingPoll, VerificationStatus, ViralMetrics, ShareData } from "@/types/viral";
 
 // Viral API functions for mobile app - Real API integration
 export const viralApi = {
@@ -130,7 +130,7 @@ export const viralApi = {
     }
   },
 
-  recordActivity: async (activity: string, points: number): Promise<void> => {
+  recordActivity: async (activity: string): Promise<void> => {
     try {
       await apiService.recordActivity(activity, "user-id"); // TODO: Get actual user ID
     } catch (error) {
@@ -267,7 +267,7 @@ export const viralApi = {
     }
   },
 
-  trackInvite: async (inviteCode: string, platform: string): Promise<void> => {
+  trackInvite: async (inviteCode: string): Promise<void> => {
     try {
       await apiService.trackInvite("inviter-id", inviteCode); // TODO: Get actual inviter ID
     } catch (error) {

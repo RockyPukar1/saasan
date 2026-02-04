@@ -1,8 +1,4 @@
-import React from "react";
 import { LogOut } from "lucide-react";
-import { LanguageToggle } from "./LanguageToggle";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "./ui/button";
 
 interface PageHeaderProps {
@@ -13,12 +9,8 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({
-  showLanguageToggle = true,
   showLogout = false,
 }: PageHeaderProps) {
-  const { t } = useLanguage();
-  const { logout } = useAuthContext();
-
   const handleLogout = () => {
     // console.log("Logout button clicked, platform:", Platform.OS);
     // if (Platform.OS === "web") {
@@ -58,7 +50,6 @@ export function PageHeader({
           )} */}
         </div>
         <div className="flex items-center space-x-2">
-          {showLanguageToggle && <LanguageToggle />}
           {showLogout && (
             <Button
               onClick={() => {

@@ -1,18 +1,16 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { apiService } from "@/services/api";
 import type {
   CorruptionReport,
   ReportFilters,
   ReportCreateData,
   ReportUpdateData,
-  Evidence,
-} from "@/shared";
-import type { MediaPickerResult } from "@/shared";
+  MediaPickerResult,
+} from "@/types";
 
 export const useReports = (initialFilters?: ReportFilters) => {
   const [reports, setReports] = useState<CorruptionReport[]>([]);
   const [userReports, setUserReports] = useState<CorruptionReport[]>([]);
-  const [allReports, setAllReports] = useState<CorruptionReport[]>([]);
   const [currentReport, setCurrentReport] = useState<CorruptionReport | null>(
     null
   );
@@ -126,7 +124,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
         );
 
         if (currentReport?.id === reportId) {
-          setCurrentReport((prev) =>
+          setCurrentReport((prev: CorruptionReport | null) =>
             prev
               ? {
                   ...prev,
@@ -169,7 +167,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
           )
         );
         if (currentReport?.id === id) {
-          setCurrentReport((prev) =>
+          setCurrentReport((prev: CorruptionReport | null) =>
             prev
               ? {
                   ...prev,
@@ -195,7 +193,6 @@ export const useReports = (initialFilters?: ReportFilters) => {
   return {
     reports,
     userReports,
-    allReports,
     currentReport,
     loading,
     error,
