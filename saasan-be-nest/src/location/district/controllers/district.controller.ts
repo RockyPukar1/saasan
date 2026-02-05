@@ -1,31 +1,24 @@
 import {
-  Body,
   Controller,
   Get,
-  HttpCode,
-  Post,
-  UseGuards,
+  Param,
 } from '@nestjs/common';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
-import { CreateDistrictDto } from '../dtos/create-district.dto';
 import { DistrictService } from '../services/district.service';
+import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
 
-@UseGuards(HttpAccessTokenGuard)
 @Controller('district')
 export class DistrictController {
   constructor(private readonly districtService: DistrictService) {}
 
-  @Get()
-  async getDistricts() {}
-
-  @Get('districtId')
-  async getDistrictById() {}
-
-  @HttpCode(201)
-  @Post()
-  async createDistrict(@Body() districtData: CreateDistrictDto) {
-    return this.districtService.createDistrict(districtData);
+  @Get('province/:provinceId')
+  async getDistrictsByProvinceId(
+    @Param() data: ProvinceIdDto
+  ) {
+    return await this.districtService.getAllDistrictsByProvinceId(data)
   }
+
+  @Get(':districtId')
+  async getDistrictById() {}
 
   @Get(':districtId/constituency')
   async getConstituenciesByDistrict() {}

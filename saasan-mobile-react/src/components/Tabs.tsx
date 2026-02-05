@@ -51,14 +51,7 @@ const Tabs = () => {
 
   return (
     <div
-      className="fixed bottom-1 left-2 right-2 bg-white border-t border-gray-200 z-50 rounded-2xl"
-      style={{
-        height: "70px",
-        paddingBottom: "10px",
-        paddingTop: "10px",
-        marginBottom: "5px",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-      }}
+      className="fixed bottom-1 left-1 right-1 bg-white border-t border-gray-200 z-50 rounded-2xl h-18 shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
     >
       <div className="flex justify-around items-center h-full px-4">
         {tabs.map((tab) => {

@@ -12,8 +12,12 @@ export class ProvinceRepository {
     private readonly model: Model<ProvinceEntityDocument>,
   ) {}
 
-  findOne(filter: any) {
+  async findOne(filter: any) {
     return this.model.findOne(filter);
+  }
+
+  async find() {
+    return this.model.find();
   }
 
   async create(provinceData: CreateProvinceDto) {

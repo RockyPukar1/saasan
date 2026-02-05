@@ -70,37 +70,40 @@ export class LocationSeeder {
           { upsert: true, new: true },
         );
 
+        if (!district?.constituencies?.length) continue;
+        
         const districtId = districtDoc._id;
+        const constituencies = district.constituencies;
 
-        if (district?.constituencies?.length) {
-          const constituencies = district.constituencies;
-          for (const constituency of constituencies) {
-            await this.constituencyModel.findOneAndUpdate(
-              {
+        const municipalitySet = new Map<string, MunicipalityEntityDocument>();
+
+        for (const constituency of constituencies) {
+          const constituencyDoc = await this.constituencyModel.findOneAndUpdate(
+            {
+              constituencyNumber: constituency.constituencyNumber,
+              provinceId,
+              districtId,
+            },
+            {
+              $set: {
                 constituencyNumber: constituency.constituencyNumber,
                 provinceId,
                 districtId,
               },
-              {
-                $set: {
-                  constituencyNumber: constituency.constituencyNumber,
-                  provinceId,
-                  districtId,
-                },
-              },
-              { upsert: true, new: true },
-            );
-          }
-        }
+            },
+            { upsert: true, new: true },
+          );
 
-        if (!district?.municipalities?.length) continue;
+          if (!constituency?.municipalities?.length) continue
+          
+          const constituencyId = constituencyDoc._id;
+          const municipalities = constituency.municipalities;
 
-        const municipalities = district.municipalities;
-
-        if (district?.municipalities?.length) {
           for (const municipality of municipalities) {
-            const municipalityDoc =
-              await this.municipalityModel.findOneAndUpdate(
+            let municipalityDoc = municipalitySet.get(municipality.name)
+            
+            if (!municipalityDoc) {
+              municipalityDoc = await this.municipalityModel.findOneAndUpdate(
                 { name: municipality.name, provinceId, districtId },
                 {
                   $set: {
@@ -110,9 +113,11 @@ export class LocationSeeder {
                   },
                 },
                 { upsert: true, new: true },
-              );
+              ) as MunicipalityEntityDocument;
+              municipalitySet.set(municipality.name, municipalityDoc);
+            }
 
-            if (!municipality?.wards?.length) continue;
+            if (!municipality?.wards?.length) continue
 
             const municipalityId = municipalityDoc._id;
             const wards = municipality.wards;
@@ -120,14 +125,15 @@ export class LocationSeeder {
             for (const ward of wards) {
               await this.wardModel.findOneAndUpdate(
                 {
-                  wardNumber: ward.wardNumber,
+                  wardNumber: ward,
                   municipalityId,
                 },
                 {
                   $set: {
-                    wardNumber: ward.wardNumber,
+                    wardNumber: ward,
                     provinceId,
                     districtId,
+                    constituencyId,
                     municipalityId,
                   },
                 },

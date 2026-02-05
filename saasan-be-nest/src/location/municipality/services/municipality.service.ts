@@ -2,6 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateMunicipalityDto } from '../dtos/create-municipality.dto';
 import { MunicipalityRepository } from '../repositories/municipality.repository';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { MunicipalitySerializer } from '../serializers/municipality.serializer';
 
 @Injectable()
 export class MunicipalityService {
@@ -21,6 +24,11 @@ export class MunicipalityService {
     }
 
     this.municipalityRepo.create(municipalityData);
+  }
+
+  async getAllMunicipalitiesByDistrictId(data: DistrictIdDto) {
+    const municipalities = await this.municipalityRepo.findByDistrictId(data);
+    return ResponseHelper.response(MunicipalitySerializer, municipalities, "Municipalities fetched successfully");
   }
 
   private doesMunicipalityExists(filter: any) {

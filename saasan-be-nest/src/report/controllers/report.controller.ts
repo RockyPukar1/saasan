@@ -22,11 +22,6 @@ export class ReportController {
     await this.reportService.create({ ...reportData, reporterId: req.user.id });
   }
 
-  @Get(":evidenceId")
-  async getEvidenceById(@Param() param: EvidenceIdDto) {
-    return await this.reportService.getEvidenceById(param)
-  }
-
   @Get()
   async getAll() {
     return await this.reportService.getAll();
@@ -35,6 +30,11 @@ export class ReportController {
   @Get("my-reports")
   async getMyReports(@Req() req: Request) {
     return await this.reportService.getMyReports(req.user.id)
+  }
+
+  @Get(":evidenceId")
+  async getEvidenceById(@Param() param: EvidenceIdDto) {
+    return await this.reportService.getEvidenceById(param)
   }
 
   @HttpCode(204)

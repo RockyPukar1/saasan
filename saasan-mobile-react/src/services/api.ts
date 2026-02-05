@@ -19,6 +19,8 @@ import {
   type Language,
 } from "@/lib/bilingual";
 import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politician";
+import type { IProvince, IDistrict, IMunicipality, IWard, IConstituency } from "@/types/location";
+import type { IRegisterData } from "@/types/auth";
 
 // Utility function to transform poll data from backend format to frontend format
 const transformPoll = (data: any): Poll => {
@@ -61,15 +63,6 @@ interface LoginData {
   password: string;
 }
 
-interface RegisterData {
-  email: string;
-  password: string;
-  fullName: string;
-  phone?: string;
-  district?: string;
-  municipality?: string;
-  wardNumber?: number;
-}
 
 interface UserProfile {
   id: string;
@@ -194,7 +187,7 @@ class ApiService {
     return response;
   }
 
-  async register(data: RegisterData): Promise<
+  async register(data: IRegisterData): Promise<
     ApiResponse<{
       accessToken: string;
       refreshToken: string;
@@ -259,29 +252,42 @@ class ApiService {
   }
 
   // Location APIs
-  async getDistricts(): Promise<ApiResponse<{ id: string; name: string }[]>> {
-    return this.request<{ id: string; name: string }[]>(
+  async getAllProvinces(): Promise<ApiResponse<IProvince[]>> {
+    return this.request<IProvince[]>(
       "GET",
-      "/locations/districts"
+      "/province"
     );
   }
 
-  async getMunicipalities(
+  async getDistrictsByProvinceId(provinceId: string): Promise<ApiResponse<IDistrict[]>> {
+    return this.request<IDistrict[]>(
+      "GET",
+      `/district/province/${provinceId}`
+    );
+  }
+
+  async getConstituencyByWardId(wardId: string): Promise<ApiResponse<IConstituency>> {
+    return this.request<IConstituency>(
+      "GET",
+      `/constituency/ward/${wardId}`
+    );
+  }
+
+  async getMunicipalitiesByDistrictId(
     districtId: string
-  ): Promise<ApiResponse<{ id: string; name: string }[]>> {
-    return this.request<{ id: string; name: string }[]>(
+  ): Promise<ApiResponse<IMunicipality[]>> {
+    return this.request<IMunicipality[]>(
       "GET",
-      `/locations/districts/${districtId}/municipalities`
+      `/municipality/district/${districtId}`
     );
   }
 
-  async getWards(
-    districtId: string,
+  async getWardsByMunicipalityId(
     municipalityId: string
-  ): Promise<ApiResponse<number[]>> {
-    return this.request<number[]>(
+  ): Promise<ApiResponse<IWard[]>> {
+    return this.request<IWard[]>(
       "GET",
-      `/locations/districts/${districtId}/municipalities/${municipalityId}/wards`
+      `/ward/municipality/${municipalityId}`
     );
   }
 

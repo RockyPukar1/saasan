@@ -67,7 +67,7 @@ export default function PoliticiansScreen() {
 
   // Extract unique parties and positions
   const [currentFilterDropdown, setCurrentFilterDropdown] = useState("");
-  const [filterHeight, setFilterHeight] = useState(70); // Initial height percentage
+  const [filterHeight, setFilterHeight] = useState(80); // Initial height percentage
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(70);
@@ -172,14 +172,14 @@ export default function PoliticiansScreen() {
     <div className="flex-1 bg-gray-50">
       {/* Search Bar */}
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center bg-white rounded-lg px-4 py-3 shadow-sm">
+        <div className="flex items-stretch gap-3">
+          <div className="flex-1 flex items-center bg-white rounded-lg px-4 shadow-sm">
             <Search className="text-gray-500 w-5 h-5" />
             <Input
               placeholder="Search politicians..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 ml-3 text-gray-800 border-0 focus:ring-0"
+              className="flex-1 text-gray-800 border-none outline-none focus-visible:ring-0"
             />
           </div>
           <Button
@@ -201,8 +201,8 @@ export default function PoliticiansScreen() {
         >
           <div className="absolute inset-0 bg-gray-600 opacity-50" onClick={() => setCurrentFilterDropdown("")}></div>
           <div 
-            className="bg-white rounded-t-2xl border-t border-gray-200 shadow-2xl w-full z-70"
-            style={{ height: `${filterHeight}vh`, maxHeight: '80vh' }}
+            className="bg-white rounded-t-2xl border-t border-gray-200 shadow-2xl w-full z-70 mb-8"
+            style={{ height: `${filterHeight}vh`, maxHeight: '70vh' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag Handle */}
@@ -284,7 +284,6 @@ export default function PoliticiansScreen() {
               ))}
             </div>
 
-            {/* Apply Button - Always visible */}
             <div className="px-4 py-3 border-t border-gray-200 bg-white">
               <Button
                 onClick={() => {

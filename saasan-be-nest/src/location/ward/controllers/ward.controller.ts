@@ -1,29 +1,20 @@
 import {
-  Body,
   Controller,
   Get,
-  HttpCode,
-  Post,
-  UseGuards,
+  Param,
 } from '@nestjs/common';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { WardService } from '../services/ward.service';
-import { CreateWardDto } from '../dtos/create-ward.dto';
+import { MunicipalityIdDto } from 'src/location/municipality/dtos/municipality-id.dto';
 
-@UseGuards(HttpAccessTokenGuard)
 @Controller('ward')
 export class WardController {
   constructor(private readonly wardService: WardService) {}
 
-  @Get()
-  async getWards() {}
+  @Get('municipality/:municipalityId')
+  async getAllWardsByMunicipalityId(@Param() data: MunicipalityIdDto) {
+    return await this.wardService.getAllWardsByMunicipalityId(data)
+  }
 
   @Get('wardId')
   async getWardById() {}
-
-  @HttpCode(201)
-  @Post()
-  async createWard(@Body() wardData: CreateWardDto) {
-    return this.wardService.createWard(wardData);
-  }
 }

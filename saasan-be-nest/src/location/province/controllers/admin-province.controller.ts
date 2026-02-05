@@ -10,31 +10,13 @@ import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard'
 import { CreateProvinceDto } from '../dtos/create-province.dto';
 import { ProvinceService } from '../services/province.service';
 
-@Controller('province')
-export class ProvinceController {
+@UseGuards(HttpAccessTokenGuard)
+@Controller('admin/province')
+export class AdminProvinceController {
   constructor(private readonly provinceService: ProvinceService) {}
-
-  @Get()
-  async getAllProvinces() {
-    return await this.provinceService.getAllProvinces()
-  }
-
-  @Get('provinceId')
-  async getProvinceById() {}
-
-  @UseGuards(HttpAccessTokenGuard)
   @HttpCode(201)
   @Post()
   async createProvince(@Body() provinceData: CreateProvinceDto) {
     return this.provinceService.createProvince(provinceData);
   }
-
-  @Get(':provinceId/constituency')
-  async getConstituenciesByProvince() {}
-
-  @Get(':provinceId/municipality')
-  async getMunicipalitiesByProvince() {}
-
-  @Get(':provinceId/ward')
-  async getWardsByProvince() {}
 }

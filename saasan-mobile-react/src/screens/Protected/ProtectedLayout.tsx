@@ -4,7 +4,7 @@ import Tabs from "../../components/Tabs";
 
 export default function ProtectedLayout() {
   const { isAuthenticated, loading } = useAuthContext();
-  console.log("isAuthenticated: ", isAuthenticated)
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

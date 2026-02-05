@@ -3,29 +3,18 @@ import {
   Controller,
   Get,
   HttpCode,
-  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ConstituencyService } from '../services/constituency.service';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { CreateConstituencyDto } from '../dtos/create-constituency.dto';
-import { WardIdDto } from 'src/location/ward/dtos/ward-id.dto';
 
-@Controller('constituency')
-export class ConstituencyController {
+@UseGuards(HttpAccessTokenGuard)
+@Controller('admin/constituency')
+export class AdminConstituencyController {
   constructor(private readonly constituencyService: ConstituencyService) {}
-  @Get()
-  async getConstituencies() {}
 
-  @Get(':constituencyId')
-  async getConstituencyById() {}
-
-  @Get('ward/:wardId')
-  async getConstituencyByWardId(@Param() data: WardIdDto) {
-    return await this.constituencyService.getConstituencyByWardId(data);
-  }
-  
   @HttpCode(201)
   @Post()
   async createConstituency(@Body() constituencyData: CreateConstituencyDto) {
