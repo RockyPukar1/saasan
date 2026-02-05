@@ -1,5 +1,6 @@
 import { LogOut } from "lucide-react";
 import { Button } from "./ui/button";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface PageHeaderProps {
   title: string;
@@ -11,7 +12,9 @@ interface PageHeaderProps {
 export function PageHeader({
   showLogout = false,
 }: PageHeaderProps) {
+  const { logout } = useAuthContext();
   const handleLogout = () => {
+    logout();
     // console.log("Logout button clicked, platform:", Platform.OS);
     // if (Platform.OS === "web") {
     //   // For web, use confirm instead of Alert

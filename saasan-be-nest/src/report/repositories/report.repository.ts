@@ -32,7 +32,9 @@ export class ReportRepository {
   }
 
   async getMyReports(reporterId: string) {
-    return await this.model.find({ reporterId: new Types.ObjectId(reporterId) })
+    return await this.model.find({
+      reporterId: new Types.ObjectId(reporterId)
+    })
   }
 
   async updateStatus({ evidenceId }: EvidenceIdDto, data: UpdateReportStatusDto) {

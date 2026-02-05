@@ -2,6 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { DistrictRepository } from '../repositories/district.repository';
 import { CreateDistrictDto } from '../dtos/create-district.dto';
+import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { DistrictSerializer } from '../serializers/district.serializer';
 
 @Injectable()
 export class DistrictService {
@@ -19,6 +22,11 @@ export class DistrictService {
     }
 
     this.districtRepo.create(districtData);
+  }
+
+  async getAllDistrictsByProvinceId(data: ProvinceIdDto) {
+    const districts = await this.districtRepo.findByProvinceId(data);
+    return ResponseHelper.response(DistrictSerializer, districts, "Districts fetched successfully")
   }
 
   private doesDistrictExists(filter: any) {

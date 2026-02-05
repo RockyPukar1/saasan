@@ -1,11 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
-import HomeScreen from "./pages/Protected/Home";
-import ProtectedLayout from "./pages/Protected/ProtectedLayout";
-import PollScreen from "./pages/Protected/Polls";
-import ReportsScreen from "./pages/Protected/Reports";
+import HomeScreen from "./screens/Protected/HomeScreen";
+import ProtectedLayout from "./screens/Protected/ProtectedLayout";
+import ReportsScreen from "./screens/Protected/Reports";
 
-import LoginScreen from "./pages/NonProtected/Login";
-import PoliticiansScreen from "./pages/Protected/Politicians";
+import LoginScreen from "./screens/NonProtected/LoginScreen";
+import PoliticiansScreen from "./screens/Protected/PoliticiansScreen";
+import RegisterScreen from "./screens/NonProtected/RegisterScreen";
+import PollsScreen from "./screens/Protected/PollsScreen";
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +18,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "/polls",
-        element: <PollScreen />
+        element: <PollsScreen />
       },
       {
         path: "/reports",
@@ -32,5 +33,9 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginScreen />
+  },
+  {
+    path: "/register",
+    element: <RegisterScreen />
   }
 ])

@@ -1,29 +1,39 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiService } from "@/services/api";
+import type { IConstituency, IDistrict, IMunicipality, IProvince, IWard } from "@/types/location";
 
-interface District {
-  id: string;
-  name: string;
-}
-
-interface Municipality {
-  id: string;
-  name: string;
-}
 
 export const useLocation = () => {
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
-  const [wards, setWards] = useState<number[]>([]);
+  const [allProvinces, setAllProvinces] = useState<IProvince[]>([])
+  const [districtsByProvinceId, setDistrictsByProvinceId] = useState<IDistrict[]>([]);
+  const [constituencyByWardId, setConstituencyByWardId] = useState<IConstituency | null>(null)
+  const [municipalitiesByDistrictId, setMunicipalitiesByDistrictId] = useState<IMunicipality[]>([]);
+  const [wardsByMunicipalityId, setWardsByMunicipalityId] = useState<IWard[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDistricts = useCallback(async () => {
+  const fetchAllProvinces = useCallback(async () => {
+   try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getAllProvinces();
+      setAllProvinces(response.data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch provinces"
+      );
+      console.error("Error fetching provinces:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [])
+  
+  const fetchDistrictsByProvinceId = useCallback(async (provinceId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getDistricts();
-      setDistricts(response.data);
+      const response = await apiService.getDistrictsByProvinceId(provinceId);
+      setDistrictsByProvinceId(response.data);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch districts"
@@ -34,12 +44,28 @@ export const useLocation = () => {
     }
   }, []);
 
-  const fetchMunicipalities = useCallback(async (districtId: string) => {
+  const fetchConstituencyByWardId = useCallback(async(wardId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getMunicipalities(districtId);
-      setMunicipalities(response.data);
+      const response = await apiService.getConstituencyByWardId(wardId);
+      setConstituencyByWardId(response.data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch districts"
+      );
+      console.error("Error fetching districts:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [])
+
+  const fetchMunicipalitiesByDistrictId = useCallback(async (districtId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getMunicipalitiesByDistrictId(districtId);
+      setMunicipalitiesByDistrictId(response.data);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch municipalities"
@@ -50,13 +76,13 @@ export const useLocation = () => {
     }
   }, []);
 
-  const fetchWards = useCallback(
-    async (districtId: string, municipalityId: string) => {
+  const fetchWardsByMunicipalityId = useCallback(
+    async (municipalityId: string) => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiService.getWards(districtId, municipalityId);
-        setWards(response.data);
+        const response = await apiService.getWardsByMunicipalityId(municipalityId);
+        setWardsByMunicipalityId(response.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch wards");
         console.error("Error fetching wards:", err);
@@ -68,16 +94,27 @@ export const useLocation = () => {
   );
 
   useEffect(() => {
-    fetchDistricts();
-  }, [fetchDistricts]);
+    fetchAllProvinces();
+  }, [fetchAllProvinces])
 
   return {
-    districts,
-    municipalities,
-    wards,
     loading,
     error,
-    fetchMunicipalities,
-    fetchWards,
+
+    // data
+    allProvinces,
+    districtsByProvinceId,
+    constituencyByWardId,
+    municipalitiesByDistrictId,
+    wardsByMunicipalityId,
+    
+    // constituencyByWardId,
+    
+    // fetch functions
+    fetchAllProvinces,
+    fetchDistrictsByProvinceId,
+    fetchConstituencyByWardId,
+    fetchMunicipalitiesByDistrictId,
+    fetchWardsByMunicipalityId,
   };
 };

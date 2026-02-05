@@ -9,7 +9,7 @@ import type {
 } from "@/types";
 
 export const useReports = (initialFilters?: ReportFilters) => {
-  const [reports, setReports] = useState<CorruptionReport[]>([]);
+  const [allReports, setAllReports] = useState<CorruptionReport[]>([]);
   const [userReports, setUserReports] = useState<CorruptionReport[]>([]);
   const [currentReport, setCurrentReport] = useState<CorruptionReport | null>(
     null
@@ -32,7 +32,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
   const fetchAllReports = useCallback(async () => {
     try {
       const response = await apiService.getAllReports();
-      setUserReports(response.data);
+      setAllReports(response.data);
     } catch (err) {
       console.error("Error fetching user reports:", err);
     }
@@ -73,7 +73,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
         setLoading(true);
         setError(null);
         const response = await apiService.updateReportStatus(id, data);
-        setReports((prev) =>
+        setAllReports((prev) =>
           prev.map((report) => (report.id === id ? response.data : report))
         );
         if (currentReport?.id === id) {
@@ -150,7 +150,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
     async (id: string, isUpvote: boolean) => {
       try {
         await apiService.voteOnReport(id);
-        setReports((prev) =>
+        setAllReports((prev) =>
           prev.map((report) =>
             report.id === id
               ? {
@@ -191,7 +191,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
   );
 
   return {
-    reports,
+    allReports,
     userReports,
     currentReport,
     loading,

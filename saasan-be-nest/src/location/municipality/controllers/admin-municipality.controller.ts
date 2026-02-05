@@ -3,31 +3,21 @@ import {
   Controller,
   Get,
   HttpCode,
-  Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { MunicipalityService } from '../services/municipality.service';
 import { CreateMunicipalityDto } from '../dtos/create-municipality.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
 
-@Controller('municipality')
-export class MunicipalityController {
+@UseGuards(HttpAccessTokenGuard)
+@Controller('admin/municipality')
+export class AdminMunicipalityController {
   constructor(private readonly municipalityService: MunicipalityService) {}
-
-  @Get('district/:districtId')
-  async getAllMunicipalitiesByDistrictId(@Param() data: DistrictIdDto) {
-    return await this.municipalityService.getAllMunicipalitiesByDistrictId(data)
-  }
-
-  @Get(':municipalityId')
-  async getMunicipalityById() {}
 
   @HttpCode(201)
   @Post()
   async createMunicipality(@Body() municipalityData: CreateMunicipalityDto) {
     return this.municipalityService.createMunicipality(municipalityData);
   }
-
-  @Get(':municipalityId/ward')
-  async getWardsByMunicipality() {}
 }

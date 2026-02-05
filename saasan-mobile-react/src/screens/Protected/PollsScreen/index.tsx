@@ -8,7 +8,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import TabSelector from "@/components/common/TabSelector";
 
-const PollScreen = () => {
+export default function PollsScreen() {
   const { user } = useAuthContext();
   const { t } = useLanguage();
   const { loading, currentVotingPollId, error, polls, loadPolls, voteOnPoll } =
@@ -224,5 +224,3 @@ const PollScreen = () => {
     </div>
   );
 };
-
-export default PollScreen;

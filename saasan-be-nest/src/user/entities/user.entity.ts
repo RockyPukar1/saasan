@@ -3,6 +3,12 @@ import { Types } from 'mongoose';
 
 export const PASSWORD_SALT = 10;
 
+export enum UserRole {
+  ADMIN = 'admin',
+  POLITICIAN = 'politician',
+  CITIZEN = 'citizen',
+}
+
 @Schema({ timestamps: true, collection: UserEntity.collection })
 export class UserEntity {
   static readonly collection = 'users';
@@ -36,10 +42,10 @@ export class UserEntity {
 
   @Prop({
     type: String,
-    options: ['admin, politician, citizen'],
-    default: 'citizen',
+    enum: UserRole,
+    default: UserRole.CITIZEN,
   })
-  role: string;
+  role: UserRole;
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;

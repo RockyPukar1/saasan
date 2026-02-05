@@ -309,10 +309,8 @@ const NewReportForm: React.FC<NewReportFormProps> = ({
             All evidence is encrypted and stored securely
           </p>
         </div>
-        <Button onClick={onSubmit} className="bg-red-600 py-3 rounded-md">
-          <p className="text-white text-center font-medium">
-            Submit Report
-          </p>
+        <Button onClick={onSubmit} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium">
+          Submit Report
         </Button>
       </div>
   );
@@ -325,6 +323,8 @@ type MyReportsTabProps = {
 const MyReportsTab: React.FC<MyReportsTabProps> = ({
   setSelectedReport }) => {
   const { userReports: reports, fetchUserReports } = useReports();
+  
+  console.log(reports)
   
   useEffect(() => {
     fetchUserReports();
@@ -412,7 +412,7 @@ type AllReportsTabProps = {
 }
 
 const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
-  const { reports, fetchAllReports } = useReports();
+  const { allReports: reports, fetchAllReports } = useReports();
   
   useEffect(() => {
     fetchAllReports();

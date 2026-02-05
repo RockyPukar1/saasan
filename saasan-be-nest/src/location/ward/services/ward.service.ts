@@ -2,6 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateWardDto } from '../dtos/create-ward.dto';
 import { WardRepository } from '../repositories/ward.repository';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { MunicipalityIdDto } from 'src/location/municipality/dtos/municipality-id.dto';
+import { WardSerializer } from '../serializers/ward.serializer';
 
 @Injectable()
 export class WardService {
@@ -20,6 +23,11 @@ export class WardService {
     }
 
     this.wardRepo.create(wardData);
+  }
+
+  async getAllWardsByMunicipalityId(data: MunicipalityIdDto) {
+    const wards = await this.wardRepo.findByMunicipalityId(data)
+    return ResponseHelper.response(WardSerializer, wards, "Wards fetched successfully");
   }
 
   private doesWardExists(filter: any) {

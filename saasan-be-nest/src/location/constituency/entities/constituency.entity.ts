@@ -18,9 +18,6 @@ export class ConstituencyEntity {
 
   @Prop({ type: Number, required: true })
   constituencyNumber: number;
-
-  @Prop({ type: Number, default: 0 })
-  totalVoters: number;
 }
 
 export const ConstituencyEntitySchema =

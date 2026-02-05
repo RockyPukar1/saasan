@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiService } from "@/services/api";
+import type { IRegisterData } from "@/types/auth";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -50,15 +51,7 @@ export const useAuth = () => {
   }, []);
 
   const register = useCallback(
-    async (data: {
-      fullName: string;
-      email: string;
-      password: string;
-      phone?: string;
-      district?: string;
-      municipality?: string;
-      wardNumber?: number;
-    }) => {
+    async (data: IRegisterData) => {
       try {
         setState((prev) => ({ ...prev, loading: true, error: null }));
         const response = await apiService.register(data);

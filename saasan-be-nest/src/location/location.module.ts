@@ -32,6 +32,11 @@ import {
   MunicipalityEntitySchema,
 } from './municipality/entities/municipality.entity';
 import { WardEntity, WardEntitySchema } from './ward/entities/ward.entity';
+import { AdminDistrictController } from './district/controllers/admin-district.controller';
+import { AdminProvinceController } from './province/controllers/admin-province.controller';
+import { AdminConstituencyController } from './constituency/controllers/admin-constituency.controller';
+import { AdminMunicipalityController } from './municipality/controllers/admin-municipality.controller';
+import { AdminWardController } from './ward/controllers/admin-ward.controller';
 
 @Module({
   imports: [
@@ -44,12 +49,14 @@ import { WardEntity, WardEntitySchema } from './ward/entities/ward.entity';
     ]),
   ],
   providers: [
+    // Services
     ProvinceService,
     DistrictService,
     ConstituencyService,
     MunicipalityService,
     WardService,
-    DistrictController,
+
+    // Repositories
     ProvinceRepository,
     MunicipalityRepository,
     WardRepository,
@@ -62,6 +69,13 @@ import { WardEntity, WardEntitySchema } from './ward/entities/ward.entity';
     ConstituencyController,
     MunicipalityController,
     WardController,
+    
+    // Admin controller
+    AdminProvinceController,
+    AdminDistrictController,
+    AdminConstituencyController,
+    AdminMunicipalityController,
+    AdminWardController
   ],
 })
 export class LocationModule {}
