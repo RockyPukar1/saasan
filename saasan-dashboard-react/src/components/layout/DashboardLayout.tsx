@@ -22,10 +22,10 @@ const navigation = [
   { name: "Politicians", href: "/politicians", icon: Users },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Historical Events", href: "/historical-events", icon: Calendar },
-  { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
-  { name: "Geographic", href: "/geographic", icon: MapPin },
+  // { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
+  // { name: "Geographic", href: "/geographic", icon: MapPin },
   { name: "Polling", href: "/polling", icon: BarChart3 },
-  { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
+  // { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
 ];
 
 export const DashboardLayout: React.FC = () => {

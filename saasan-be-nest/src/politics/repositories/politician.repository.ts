@@ -22,13 +22,13 @@ export class PoliticianRepository {
   }
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {
-    const partyIds = (politicianFilterDto.party || []).map(
+    const partyIds = (politicianFilterDto?.party || []).map(
       (id) => new Types.ObjectId(id),
     );
-    const positionIds = (politicianFilterDto.position || []).map(
+    const positionIds = (politicianFilterDto?.position || []).map(
       (id) => new Types.ObjectId(id),
     );
-    const levelIds = (politicianFilterDto.level || []).map(
+    const levelIds = (politicianFilterDto?.level || []).map(
       (id) => new Types.ObjectId(id),
     );
 

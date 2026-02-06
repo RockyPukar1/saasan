@@ -14,7 +14,7 @@ import Loading from "@/components/Loading";
 import Error from "@/components/Error";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import type { IPolitician } from "@/types/politician";
+import type { IPolitician } from "@/types/politics";
 
 export interface PoliticianFilter {
   level: string[];

@@ -9,7 +9,6 @@ import type {
   Municipality,
   Ward,
   DashboardStats,
-  GovernmentLevel,
   ServiceStatus,
   PollOption,
   PollVote,
@@ -27,29 +26,23 @@ import type {
   PollAnalytics,
   PollComparison,
 } from "../../../shared/types/polling";
+import type { IPoliticianFilter } from "@/pages/PoliticiansPage";
+import type { IGovernmentLevel, IParty, IPolitician, IPosition } from "@/types/politics";
 
 // Utility function to transform snake_case to camelCase
-const transformPolitician = (data: Partial<Politician>) => ({
-  id: data.id,
-  fullName: data.fullName,
-  positionId: data.positionId,
-  partyId: data.partyId,
-  constituencyId: data.constituencyId,
-  biography: data.biography,
-  education: data.education,
-  experienceYears: data.experienceYears,
-  dateOfBirth: data.dateOfBirth,
-  profileImageUrl: data.profileImageUrl,
-  contactPhone: data.contactPhone,
-  contactEmail: data.contactEmail,
-  officialWebsite: data.officialWebsite,
-  socialMediaLinks: data.socialMediaLinks || {},
-  status: data.status,
-  termStartDate: data.termStartDate,
-  termEndDate: data.termEndDate,
-  totalVotesReceived: data.totalVotesReceived,
-  createdAt: data.createdAt,
-  updatedAt: data.updatedAt,
+const transformPolitician = (politician: IPolitician) => ({
+  id: politician.id,
+  fullName: politician.fullName,
+  experienceYears: politician.experienceYears,
+  party: politician.isIndependent ? "Independent" : politician.party,
+  constituency: politician.constituencyNumber,
+  rating: politician.rating || 0,
+  createdAt: politician.createdAt,
+  updatedAt: politician.updatedAt,
+  isIndependent: politician.isIndependent,
+  totalReports: politician.totalReports,
+  verifiedReports: politician.verifiedReports,
+  sourceCategories: politician.sourceCategories,
 });
 
 // Utility function to transform camelCase to snake_case for API requests
@@ -104,7 +97,7 @@ const transformReport = (data: Partial<CorruptionReport>) => ({
   updatedAt: data.updatedAt,
 });
 
-const API_BASE_URL = "http://localhost:7001";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create axios instance
 const api = axios.create({
@@ -196,18 +189,9 @@ export const dashboardApi = {
 };
 
 // Politicians API
-export const politiciansApi = {
-  getAll: async (params?: {
-    district?: string;
-    municipality?: string;
-    partyId?: number;
-    positionId?: number;
-    status?: string;
-    page?: number;
-    limit?: number;
-    search?: string;
-  }): Promise<PaginatedResponse<Politician>> => {
-    const response = await api.get("/politician", { params });
+export const politicsApi = {
+  getAll: async (body?: IPoliticianFilter): Promise<PaginatedResponse<IPolitician>> => {
+    const response = await api.post("/politician", body);
     const transformedData = response.data.data?.map(transformPolitician) || [];
     return {
       ...response.data,
@@ -235,9 +219,19 @@ export const politiciansApi = {
     };
   },
 
-  getGovernmentLevels: async (): Promise<ApiResponse<GovernmentLevel[]>> => {
-    const response = await api.get("/politicians/levels");
-    return response.data;
+  getGovernmentLevels: async (): Promise<IGovernmentLevel[]> => {
+    const response = await api.get("/level");
+    return response.data.data;
+  },
+
+  getPositions: async (): Promise<IPosition[]> => {
+    const response = await api.get("/position");
+    return response.data.data;
+  },
+
+  getParties: async (): Promise<IParty[]> => {
+    const response = await api.get("/party");
+    return response.data.data;
   },
 
   create: async (

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiService } from "@/services/api";
-import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politician";
+import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politics";
 
 
 export const usePoliticians = () => {
