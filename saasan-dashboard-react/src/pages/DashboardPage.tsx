@@ -302,7 +302,7 @@ export const DashboardPage: React.FC = () => {
                     <h4 className="font-medium text-gray-900">
                       {politician.fullName}
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    {/* <p className="text-sm text-gray-600">
                       Position {politician.positionId} • Constituency{" "}
                       {politician.constituencyId}
                     </p>
@@ -313,7 +313,7 @@ export const DashboardPage: React.FC = () => {
                       <span className="text-xs text-gray-500">
                         Experience: {politician.experienceYears} years
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button size="sm" variant="outline">

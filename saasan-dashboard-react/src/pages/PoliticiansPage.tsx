@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -180,7 +180,7 @@ export const PoliticiansPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (politician: IPolitician) => {
+  const handleEdit = (_: IPolitician) => {
     // setEditingPolitician(politician);
     // // Convert Date to string for form handling
     // const formData = {
