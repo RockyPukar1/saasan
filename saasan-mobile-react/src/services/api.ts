@@ -18,7 +18,7 @@ import {
   formatApiResponse,
   type Language,
 } from "@/lib/bilingual";
-import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politician";
+import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politics";
 import type { IProvince, IDistrict, IMunicipality, IWard, IConstituency } from "@/types/location";
 import type { IRegisterData } from "@/types/auth";
 

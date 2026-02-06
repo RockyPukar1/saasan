@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import {
   Users,
   Filter,
   Download,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,14 +31,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { politiciansApi } from "@/services/api";
+import { politicsApi } from "@/services/api";
 import { politicianSchema, type PoliticianFormData } from "@/lib/validations";
 import type { Politician } from "../../../shared/types/politician";
+import { MultiSelect } from "@/components/ui/multi-select";
+import type { IPolitician } from "@/types/politics";
+
+export interface IPoliticianFilter {
+  level: string[];
+  position: string[];
+  party: string[];
+}
+
+const initialFilter: IPoliticianFilter = {
+  level: [],
+  position: [],
+  party: [],
+}
 
 export const PoliticiansPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLevel, setSelectedLevel] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [filter, setFilter] = useState(initialFilter);
+  const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
   const [showForm, setShowForm] = useState(false);
   const [editingPolitician, setEditingPolitician] = useState<Politician | null>(
     null
@@ -55,30 +70,48 @@ export const PoliticiansPage: React.FC = () => {
     resolver: zodResolver(politicianSchema),
   });
 
-  // Fetch politicians
   const { data: politiciansData, isLoading } = useQuery({
-    queryKey: [
-      "politicians",
-      { search: searchQuery, level: selectedLevel, status: selectedStatus },
-    ],
+    queryKey: ["politicians", toApplyFilter],
     queryFn: () =>
-      politiciansApi.getAll({
-        search: searchQuery || undefined,
-        status: selectedStatus !== "all" ? selectedStatus : undefined,
-        page: 1,
-        limit: 50,
-      }),
+      politicsApi.getAll(toApplyFilter),
   });
 
-  // Fetch government levels
-  const { data: levelsData } = useQuery({
+  const { data: governmentLevels } = useQuery({
     queryKey: ["government-levels"],
-    queryFn: () => politiciansApi.getGovernmentLevels(),
+    queryFn: () => politicsApi.getGovernmentLevels(),
   });
+
+  const { data: positions } = useQuery({
+    queryKey: ["positions"],
+    queryFn: () => politicsApi.getPositions(),
+  });
+
+  const { data: parties } = useQuery({
+    queryKey: ["parties"],
+    queryFn: () => politicsApi.getParties(),
+  });
+
+  const filterNames = [
+    {
+      name: "level",
+      text: "Level",
+      data: governmentLevels,
+    },
+    {
+      name: "position",
+      text: "Position",
+      data: positions,
+    },
+    {
+      name: "party",
+      text: "Party",
+      data: parties,
+    },
+  ] as Array<{ name: keyof typeof initialFilter; text: string; data: any[] }>;
 
   // Create politician mutation
   const createMutation = useMutation({
-    mutationFn: politiciansApi.create,
+    mutationFn: politicsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["politicians"] });
       toast.success("Politician created successfully!");
@@ -95,7 +128,7 @@ export const PoliticiansPage: React.FC = () => {
   // Update politician mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Politician> }) =>
-      politiciansApi.update(id, data),
+      politicsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["politicians"] });
       toast.success("Politician updated successfully!");
@@ -112,7 +145,7 @@ export const PoliticiansPage: React.FC = () => {
 
   // Delete politician mutation
   const deleteMutation = useMutation({
-    mutationFn: politiciansApi.delete,
+    mutationFn: politicsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["politicians"] });
       toast.success("Politician deleted successfully!");
@@ -126,7 +159,7 @@ export const PoliticiansPage: React.FC = () => {
 
   // Bulk upload mutation
   const uploadMutation = useMutation({
-    mutationFn: politiciansApi.bulkUpload,
+    mutationFn: politicsApi.bulkUpload,
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["politicians"] });
       toast.success(
@@ -147,26 +180,26 @@ export const PoliticiansPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (politician: Politician) => {
-    setEditingPolitician(politician);
-    // Convert Date to string for form handling
-    const formData = {
-      ...politician,
-      dateOfBirth:
-        typeof politician.dateOfBirth === "string"
-          ? politician.dateOfBirth
-          : politician.dateOfBirth.toISOString().split("T")[0],
-      termStartDate:
-        typeof politician.termStartDate === "string"
-          ? politician.termStartDate
-          : politician.termStartDate.toISOString().split("T")[0],
-      termEndDate:
-        typeof politician.termEndDate === "string"
-          ? politician.termEndDate
-          : politician.termEndDate.toISOString().split("T")[0],
-    };
-    reset(formData);
-    setShowForm(true);
+  const handleEdit = (politician: IPolitician) => {
+    // setEditingPolitician(politician);
+    // // Convert Date to string for form handling
+    // const formData = {
+    //   ...politician,
+    //   dateOfBirth:
+    //     typeof politician.dateOfBirth === "string"
+    //       ? politician.dateOfBirth
+    //       : politician.dateOfBirth.toISOString().split("T")[0],
+    //   termStartDate:
+    //     typeof politician.termStartDate === "string"
+    //       ? politician.termStartDate
+    //       : politician.termStartDate.toISOString().split("T")[0],
+    //   termEndDate:
+    //     typeof politician.termEndDate === "string"
+    //       ? politician.termEndDate
+    //       : politician.termEndDate.toISOString().split("T")[0],
+    // };
+    // reset(formData);
+    // setShowForm(true);
   };
 
   const handleDelete = (id: string) => {
@@ -185,6 +218,8 @@ export const PoliticiansPage: React.FC = () => {
   const politicians = politiciansData?.data || [];
   const total = politiciansData?.total || 0;
 
+  console.log(filter, toApplyFilter)
+  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -228,58 +263,45 @@ export const PoliticiansPage: React.FC = () => {
                 />
               </div>
             </div>
-            <div>
-              <Label>Government Level</Label>
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  {levelsData?.data?.map((level: any) => (
-                    <SelectItem key={level.id} value={level.name.toLowerCase()}>
-                      {level.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                  <SelectItem value="all" className="bg-white hover:bg-gray-50">
-                    All Status
-                  </SelectItem>
-                  <SelectItem
-                    value="active"
-                    className="bg-white hover:bg-gray-50"
-                  >
-                    Active
-                  </SelectItem>
-                  <SelectItem
-                    value="inactive"
-                    className="bg-white hover:bg-gray-50"
-                  >
-                    Inactive
-                  </SelectItem>
-                  <SelectItem
-                    value="deceased"
-                    className="bg-white hover:bg-gray-50"
-                  >
-                    Deceased
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button variant="outline" className="w-full">
-                <Filter className="h-4 w-4 mr-2" />
-                Apply Filters
-              </Button>
+            {filterNames.map(({ name, text, data }) => (
+              <div>
+                <Label>{text}</Label>
+                <MultiSelect
+                  options={data?.map((d) => ({
+                    label: d.name,
+                    value: d.id,
+                  })) ?? []}
+                  value={initialFilter[name]}
+                  onValueChange={(value: string[]) => setFilter((prev) => ({
+                    ...prev,
+                    [name]: value || []
+                  }))}
+                  popoverClassName="bg-white"
+                  placeholder={`Select ${text}`}
+                />
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <div className="flex items-end">
+                <Button onClick={() => setToApplyFilter(filter)} variant="outline" className="w-full">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Apply Filters
+                </Button>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={() => {
+                    setFilter(initialFilter);
+                    setToApplyFilter(initialFilter);
+                  }}
+                  variant="outline"
+                  disabled={Object.values(toApplyFilter).flat(1).length === 0}
+                  className="w-full text-white bg-red-600 rounded-full"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -326,18 +348,63 @@ export const PoliticiansPage: React.FC = () => {
                     <Users className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900">
-                      {politician.fullName}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {politician.contactEmail} • {politician.status}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Term: {new Date(politician.termStartDate).getFullYear()} -{" "}
-                      {new Date(politician.termEndDate).getFullYear()}
-                    </p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {politician.fullName}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {politician.party || "Unknown Party"} • Rating: {politician.rating || 0}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Reports: {politician.verifiedReports || 0}/{politician.totalReports || 0}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 items-end ml-4">
+                        {politician.sourceCategories?.levels?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 items-center">
+                            <span className="text-xs text-gray-500 font-medium mr-1">Level:</span>
+                            {politician.sourceCategories.levels.map((l, index) => (
+                              <div
+                                key={index}
+                                className="px-1.5 py-0.5 rounded bg-red-100 border border-red-300"
+                              >
+                                <p className="text-red-700 text-xs font-bold">
+                                  {l}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {politician.sourceCategories?.positions?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 items-center">
+                            <span className="text-xs text-gray-500 font-medium mr-1">Position:</span>
+                            {politician.sourceCategories.positions.map((p, index) => (
+                              <div
+                                key={index}
+                                className="px-1.5 py-0.5 rounded bg-blue-100 border border-blue-300"
+                              >
+                                <p className="text-blue-700 text-xs font-bold">
+                                  {p}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {politician.sourceCategories?.party && (
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-500 font-medium mr-1">Party:</span>
+                            <div className="px-1.5 py-0.5 rounded bg-green-100 border border-green-300">
+                              <p className="text-green-700 text-xs font-bold">
+                                {politician.sourceCategories.party}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 ml-4">
                     <Button
                       variant="ghost"
                       size="sm"

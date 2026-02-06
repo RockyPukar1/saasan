@@ -13,10 +13,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { PoliticiansPage } from "@/pages/PoliticiansPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { HistoricalEventsPage } from "@/pages/HistoricalEventsPage";
-import { MajorCasesPage } from "@/pages/MajorCasesPage";
-import { GeographicPage } from "@/pages/GeographicPage";
 import PollingPage from "@/pages/PollingPage";
-import { ViralManagementPage } from "@/pages/ViralManagementPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import "./index.css";
 
@@ -53,13 +50,13 @@ function App() {
                   path="historical-events"
                   element={<HistoricalEventsPage />}
                 />
-                <Route path="major-cases" element={<MajorCasesPage />} />
-                <Route path="geographic" element={<GeographicPage />} />
+                {/* <Route path="major-cases" element={<MajorCasesPage />} />
+                <Route path="geographic" element={<GeographicPage />} /> */}
                 <Route path="polling" element={<PollingPage />} />
-                <Route
+                {/* <Route
                   path="viral-management"
                   element={<ViralManagementPage />}
-                />
+                /> */}
               </Route>
             </Routes>
             <Toaster

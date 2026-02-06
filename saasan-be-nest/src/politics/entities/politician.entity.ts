@@ -44,6 +44,12 @@ export class PoliticianEntity {
   @Prop({ type: Number, default: 0 })
   experienceYears?: number;
 
+  @Prop({ type: Date })
+  termStartDate?: Date;
+
+  @Prop({ type: Date })
+  termEndDate?: Date;
+
   @Prop({ type: String })
   photoUrl?: string;
 

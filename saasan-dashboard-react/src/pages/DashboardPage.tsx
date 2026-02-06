@@ -5,7 +5,6 @@ import {
   FileText,
   AlertTriangle,
   TrendingUp,
-  Share,
   Settings,
   Shield,
   BarChart3,
@@ -13,42 +12,40 @@ import {
   Edit,
   Trash2,
   Plus,
-  MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { dashboardApi, reportsApi, politiciansApi } from "@/services/api";
-import { viralApi } from "@/services/viralApi";
+import { dashboardApi, reportsApi, politicsApi } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { safeFormatDate } from "../lib/utils";
+import { safeFormatDate } from "@/lib/utils";
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Admin-specific data queries
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["admin-dashboard-stats"],
+    queryKey: ["dashboard-stats"],
     queryFn: () => dashboardApi.getStats(),
   });
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
-    queryKey: ["admin-reports"],
+    queryKey: ["reports"],
     queryFn: () => reportsApi.getAll({ page: 1, limit: 10 }),
   });
 
   const { data: politicians, isLoading: politiciansLoading } = useQuery({
-    queryKey: ["admin-politicians"],
-    queryFn: () => politiciansApi.getAll(),
+    queryKey: ["politicians"],
+    queryFn: () => politicsApi.getAll(),
   });
 
-  const { data: viralMetrics, isLoading: viralLoading } = useQuery({
-    queryKey: ["viral-metrics"],
-    queryFn: () => viralApi.getViralMetrics(),
-  });
+  // const { data: viralMetrics, isLoading: viralLoading } = useQuery({
+  //   queryKey: ["viral-metrics"],
+  //   queryFn: () => viralApi.getViralMetrics(),
+  // });
 
   const isLoading =
-    statsLoading || reportsLoading || politiciansLoading || viralLoading;
+    statsLoading || reportsLoading || politiciansLoading;
 
   if (isLoading) {
     return (
@@ -183,7 +180,7 @@ export const DashboardPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card
+          {/* <Card
             className="cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => navigate("/viral-management")}
           >
@@ -197,7 +194,7 @@ export const DashboardPage: React.FC = () => {
               <p className="text-gray-600 text-sm mt-2">Viral Shares</p>
               <p className="text-purple-500 text-xs mt-1">Click to manage</p>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card
             className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -341,7 +338,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Viral Metrics Overview */}
-      {viralMetrics && (
+      {/* {viralMetrics && (
         <div className="px-4 mb-6">
           <Card>
             <CardHeader>
@@ -384,7 +381,7 @@ export const DashboardPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      )}
+      )} */}
 
       {/* Admin Actions */}
       <div className="px-4 mb-8">
