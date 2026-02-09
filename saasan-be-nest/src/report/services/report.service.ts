@@ -5,6 +5,7 @@ import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { ReportSerializer } from '../serializers/report.serializer';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
+import { ReportIdDto } from '../dtos/report-id.dto';
 
 @Injectable()
 export class ReportService {
@@ -17,6 +18,10 @@ export class ReportService {
   async getEvidenceById(data: EvidenceIdDto) {
     const report = await this.reportRepo.findById(data)
     return ResponseHelper.response(ReportSerializer, report, "Report fetched successfully");
+  }
+
+  async deleteById(data: ReportIdDto) {
+    await this.reportRepo.deleteById(data)
   }
 
   async getAll() {

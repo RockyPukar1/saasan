@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ReportService } from '../services/report.service';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
@@ -6,6 +6,7 @@ import { type Request } from 'express';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
+import { ReportIdDto } from '../dtos/report-id.dto';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('report')
@@ -27,6 +28,12 @@ export class ReportController {
     return await this.reportService.getAll();
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':reportId')
+  async deleteById(@Param() param: ReportIdDto) {
+    await this.reportService.deleteById(param)
+  }
+  
   @Get("my-reports")
   async getMyReports(@Req() req: Request) {
     return await this.reportService.getMyReports(req.user.id)
