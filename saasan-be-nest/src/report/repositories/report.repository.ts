@@ -6,6 +6,7 @@ import { CreateReportDto } from '../dtos/create-report.dto';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
 import { UserEntity } from 'src/user/entities/user.entity';
+import { ReportIdDto } from '../dtos/report-id.dto';
 
 @Injectable()
 export class ReportRepository {
@@ -23,6 +24,10 @@ export class ReportRepository {
 
   async findById({ evidenceId }: EvidenceIdDto) {
     return await this.model.findById(evidenceId)
+  }
+
+  async deleteById({ reportId }: ReportIdDto) {
+    await this.model.findByIdAndDelete(reportId)
   }
 
   async getAll() {

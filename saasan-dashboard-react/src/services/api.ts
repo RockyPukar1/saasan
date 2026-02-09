@@ -451,6 +451,11 @@ export const reportsApi = {
   ): Promise<ApiResponse<CorruptionReport>> => {
     return reportsApi.updateStatus(id, "resolved", comment);
   },
+
+  delete: async (id: string) => {
+    const response = await api.put(`/report/${id}`);
+    return response;
+  }
 };
 
 // Historical Events API
