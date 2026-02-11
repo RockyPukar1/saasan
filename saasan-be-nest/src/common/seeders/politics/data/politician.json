@@ -2,11 +2,157 @@
   {
     "fullName": "Dr. Rajesh Sharma",
     "party": "Nepal Communist Party (Unified Marxist-Leninist)",
-    "positions": ["Member of Parliament"]
+    "positions": ["Member of Parliament"],
+    "biography": "Experienced politician with 15+ years in public service, focusing on economic development and infrastructure projects.",
+    "education": "Ph.D. in Economics, Harvard University",
+    "profession": "Economist",
+    "experienceYears": 15,
+    "joinedDate": "2009-03-15",
+    "rating": 4.2,
+    "totalVotes": 45234,
+    "contact": {
+      "phone": "+977-1-4211000",
+      "email": "rajesh.sharma@parliament.gov.np",
+      "website": "www.rajeshsharma.com.np"
+    },
+    "socialMedia": {
+      "facebook": "rajesh.sharma.official",
+      "twitter": "@rajeshsharma",
+      "instagram": "@rajeshsharma_np"
+    },
+    "promises": [
+      {
+        "title": "Complete Melamchi Water Project",
+        "description": "Ensure clean drinking water supply to Kathmandu Valley",
+        "status": "fulfilled",
+        "dueDate": "2023-12-31T12:18:00Z",
+        "progress": 100
+      },
+      {
+        "title": "Build 500km of Rural Roads",
+        "description": "Construct strategic roads connecting remote villages",
+        "status": "in-progress",
+        "dueDate": "2024-12-31T12:18:00Z",
+        "progress": 65
+      },
+      {
+        "title": "Create 50,000 Jobs",
+        "description": "Generate employment opportunities for youth through skill development programs",
+        "status": "in-progress",
+        "dueDate": "2024-06-30T12:18:00Z",
+        "progress": 40
+      },
+      {
+        "title": "Digital Nepal Initiative",
+        "description": "Provide internet access to all rural municipalities",
+        "status": "not-started",
+        "dueDate": "2025-12-31T12:18:00Z",
+        "progress": 0
+      }
+    ],
+    "achievements": [
+      {
+        "title": "COVID-19 Response Program",
+        "description": "Successfully managed pandemic response and vaccination drive in constituency",
+        "date": "2021-03-15T12:18:00Z",
+        "category": "social"
+      },
+      {
+        "title": "Economic Recovery Package",
+        "description": "Launched Rs. 30 billion economic stimulus package for local businesses",
+        "date": "2020-07-20T12:18:00Z",
+        "category": "economy"
+      },
+      {
+        "title": "Education Reform Bill",
+        "description": "Passed comprehensive education reform bill focusing on technical education",
+        "date": "2022-01-10T12:18:00Z",
+        "category": "policy"
+      },
+      {
+        "title": "Highway Construction Project",
+        "description": "Completed 120km highway connecting three major districts",
+        "date": "2023-05-15T12:18:00Z",
+        "category": "development"
+      }
+    ]
   },
   {
     "fullName": "Sita Maharjan",
     "party": "Nepali Congress",
-    "positions": ["Member of Parliament"]
+    "positions": ["Member of Parliament"],
+    "biography": "Women's rights advocate and social worker turned politician, championing education and healthcare reforms.",
+    "education": "Master's in Social Work, Tribhuvan University",
+    "profession": "Social Worker",
+    "experienceYears": 12,
+    "joinedDate": "2012-05-20",
+    "rating": 3.8,
+    "totalVotes": 38921,
+    "contact": {
+      "phone": "+977-1-4212000",
+      "email": "sita.maharjan@parliament.gov.np",
+      "website": "www.sitamaharjan.com.np"
+    },
+    "socialMedia": {
+      "facebook": "sita.maharjan.official",
+      "twitter": "@sitamaharjan",
+      "instagram": "@sita_maharjan_np"
+    },
+    "promises": [
+      {
+        "title": "Women's Safety Bill",
+        "description": "Implement comprehensive women's safety and empowerment legislation",
+        "status": "fulfilled",
+        "dueDate": "2023-03-31T12:18:00Z",
+        "progress": 100
+      },
+      {
+        "title": "Healthcare Access Program",
+        "description": "Establish primary healthcare centers in all rural areas of constituency",
+        "status": "in-progress",
+        "dueDate": "2024-09-30T12:18:00Z",
+        "progress": 70
+      },
+      {
+        "title": "Scholarship for Girls",
+        "description": "Provide scholarships for 10,000 girls for higher education",
+        "status": "in-progress",
+        "dueDate": "2024-12-31T12:18:00Z",
+        "progress": 55
+      },
+      {
+        "title": "Clean Energy Initiative",
+        "description": "Install solar panels in 500 rural households",
+        "status": "not-started",
+        "dueDate": "2025-06-30T12:18:00Z",
+        "progress": 0
+      }
+    ],
+    "achievements": [
+      {
+        "title": "Maternal Health Program",
+        "description": "Reduced maternal mortality rate by 40% through improved healthcare access",
+        "date": "2022-08-20T12:18:00Z",
+        "category": "social"
+      },
+      {
+        "title": "Microfinance Support Scheme",
+        "description": "Facilitated Rs. 50 crore in microfinance loans for women entrepreneurs",
+        "date": "2023-02-15T12:18:00Z",
+        "category": "economy"
+      },
+      {
+        "title": "Child Protection Act",
+        "description": "Sponsored and passed landmark child protection legislation",
+        "date": "2021-11-30T12:18:00Z",
+        "category": "policy"
+      },
+      {
+        "title": "Rural School Renovation",
+        "description": "Renovated and equipped 25 rural schools with modern facilities",
+        "date": "2023-07-10T12:18:00Z",
+        "category": "development"
+      }
+    ]
   }
 ]

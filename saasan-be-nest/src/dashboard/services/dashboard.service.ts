@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { CaseRepository } from 'src/case/repositories/case.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { EventRepository } from 'src/event/repositories/event.repository';
-import { PoliticianRepository } from 'src/politics/repositories/politician.repository';
+import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
 import { ReportRepository } from 'src/report/repositories/report.repository';
-import { ServiceRepository } from 'src/service/repositories/service.repository';
 
 @Injectable()
 export class DashboardService {
@@ -17,8 +16,9 @@ export class DashboardService {
 
   async getStats() {
     const totalReportsCount = await this.reportRepo.getTotalReportsCount();
-    const totalCasesCount = await this.caseRepo.getTotalCasesCount()
-    const resolvedReportsCount = await this.reportRepo.getResolvedReportsCount();
+    const totalCasesCount = await this.caseRepo.getTotalCasesCount();
+    const resolvedReportsCount =
+      await this.reportRepo.getResolvedReportsCount();
     const resolvedCasesCount = await this.caseRepo.getResolvedCasesCount();
     const recentReports = await this.reportRepo.getRecentReports();
     const recentCases = await this.caseRepo.getRecentCases();
@@ -46,7 +46,7 @@ export class DashboardService {
       recentReports,
       recentCases,
       recentEvents,
-      eventsOnThisDay
+      eventsOnThisDay,
     };
     return ResponseHelper.success(stats);
   }

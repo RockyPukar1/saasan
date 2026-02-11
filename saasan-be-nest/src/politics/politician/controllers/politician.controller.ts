@@ -13,8 +13,8 @@ import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
 import { PoliticianIdDto } from '../dtos/politician-id.dto';
 import { PoliticianService } from '../services/politician.service';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
-import { LevelNameDto } from '../dtos/level-name.dto';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
+import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 
 @Controller('politician')
 export class PoliticianController {
@@ -23,6 +23,11 @@ export class PoliticianController {
   @Post()
   async getAll(@Body() politicianFilterDto: PoliticianFilterDto) {
     return await this.politicianService.getAll(politicianFilterDto);
+  }
+
+  @Get(':politicianId')
+  async getById(@Param() politicianIdDto: PoliticianIdDto) {
+    return await this.politicianService.getById(politicianIdDto);
   }
 
   @HttpCode(201)
@@ -48,50 +53,5 @@ export class PoliticianController {
   @Get('level/:levelName')
   async getByLevel(@Param() param: LevelNameDto) {
     return await this.politicianService.getByLevel(param);
-  }
-
-  @Get(':politicianId/detailed')
-  async getDetailedProfile() {
-    return await this.politicianService.getDetailedProfile();
-  }
-
-  @Get(':politicianId/promises')
-  async getPromises() {
-    return await this.politicianService.getPromises();
-  }
-
-  @Get(':politicianId/achievements')
-  async getAchievements() {
-    return await this.politicianService.getAchievements();
-  }
-
-  @Get(':politicianId/contacts')
-  async getContacts() {
-    return await this.politicianService.getContacts();
-  }
-
-  @Get(':politicianId/social-media')
-  async getSocialMedia() {
-    return await this.politicianService.getSocialMedia();
-  }
-
-  @Get(':politicianId/budget')
-  async getBudgetTracking() {
-    return await this.politicianService.getBudgetTracking();
-  }
-
-  @Get(':politicianId/attendance')
-  async getAttendance() {
-    return await this.politicianService.getAttendance();
-  }
-
-  @Get(':politicianId/ratings')
-  async getRatings() {
-    return await this.politicianService.getRatings();
-  }
-
-  @Post(':politicianId/rate')
-  async ratePolitician() {
-    return await this.politicianService.ratePolitician();
   }
 }

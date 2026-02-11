@@ -1,8 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Types, Schema as MongooseSchema } from 'mongoose';
 import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
-import { PartyEntity } from 'src/politics/entities/party.entity';
-import { PositionEntity } from 'src/politics/entities/position.entity';
+import { PartyEntity } from 'src/politics/party/entities/party.entity';
+import { PositionEntity } from 'src/politics/position/entities/position.entity';
+
+interface IExperience {
+  category: string;
+  title: string;
+  company: string;
+  startDate: Date;
+  endDate: Date;
+}
 
 @Schema({ timestamps: true, collection: PoliticianEntity.collection })
 export class PoliticianEntity {
@@ -11,6 +19,7 @@ export class PoliticianEntity {
   createdAt: Date;
   updatedAt: Date;
 
+  // Personal information
   @Prop({ type: String, required: true })
   fullName: string;
 
@@ -25,6 +34,38 @@ export class PoliticianEntity {
 
   @Prop({ type: String })
   profession?: string;
+
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+    default: [],
+  })
+  experiences?: IExperience[];
+
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+    default: {},
+  })
+  contact: {
+    phone?: string;
+    email?: string;
+    website?: string;
+  };
+
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+    default: {},
+  })
+  socialMedia: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+  };
+
+  @Prop({ type: Date })
+  joinedDate?: Date;
+
+  @Prop({ type: Number, default: 0 })
+  totalVotes?: number;
 
   @Prop({ type: Types.ObjectId, ref: ConstituencyEntity.name })
   constituencyId?: Types.ObjectId;
