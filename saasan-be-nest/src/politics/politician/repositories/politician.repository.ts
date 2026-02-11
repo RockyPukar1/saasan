@@ -7,8 +7,9 @@ import {
 import { Model, Types } from 'mongoose';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
-import { LevelNameDto } from '../dtos/level-name.dto';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
+import { PoliticianIdDto } from '../dtos/politician-id.dto';
+import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 
 @Injectable()
 export class PoliticianRepository {
@@ -19,6 +20,97 @@ export class PoliticianRepository {
 
   async create(politicianData: CreatePoliticianDto) {
     this.model.create(politicianData);
+  }
+
+  async findById({ politicianId }: PoliticianIdDto) {
+    return (
+      await this.model.aggregate([
+        {
+          $match: {
+            _id: new Types.ObjectId(politicianId),
+          },
+        },
+        {
+          $limit: 1,
+        },
+        {
+          $lookup: {
+            from: 'parties',
+            localField: 'partyId',
+            foreignField: '_id',
+            as: 'partyData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'positions',
+            localField: 'positionIds',
+            foreignField: '_id',
+            as: 'positionData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'levels',
+            localField: 'positionData.levelId',
+            foreignField: '_id',
+            as: 'levelData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'politician-promises',
+            localField: '_id',
+            foreignField: 'politicianId',
+            as: 'promisesData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'politician-achievements',
+            localField: '_id',
+            foreignField: 'politicianId',
+            as: 'achievementsData',
+          },
+        },
+        {
+          $addFields: {
+            sourceCategories: {
+              party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
+              positions: {
+                $map: {
+                  input: '$positionData',
+                  as: 'pos',
+                  in: '$$pos.abbreviation',
+                },
+              },
+              levels: {
+                $map: {
+                  input: '$levelData',
+                  as: 'lvl',
+                  in: '$$lvl.name',
+                },
+              },
+            },
+            promises: {
+              $arrayElemAt: ['$promisesData.promises', 0],
+            },
+            achievements: {
+              $arrayElemAt: ['$achievementsData.achievements', 0],
+            },
+          },
+        },
+        {
+          $project: {
+            partyData: 0,
+            positionData: 0,
+            levelData: 0,
+            promisesData: 0,
+            achievementsData: 0,
+          },
+        },
+      ])
+    )[0];
   }
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {

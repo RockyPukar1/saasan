@@ -1,54 +1,57 @@
-import { PoliticianStatus } from './index';
+import { PoliticianStatus } from "./index";
 
 export { PoliticianStatus };
 
-export interface IPoliticianDetails {
+export interface IPolitician {
   id: string;
   fullName: string;
-  positionId: number;
-  partyId: number;
-  constituencyId: number;
   biography: string;
+  contact: {
+    email: string;
+    phone: string;
+    website: string;
+  };
+  socialMedia: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+  };
   education: string;
   experienceYears: number;
-  dateOfBirth: Date | string;
-  profileImageUrl: string;
-  contactPhone: string;
-  contactEmail: string;
-  officialWebsite: string;
-  socialMediaLinks: Record<string, string>;
-  status: PoliticianStatus;
-  termStartDate: Date | string;
-  termEndDate: Date | string;
-  totalVotesReceived: number;
-  createdAt: Date | string;
-  updatedAt: Date | string;
+  isIndependent: boolean;
+  profession: string;
+  rating: number;
+  totalReports: number;
+  totalVotes: number;
+  verifiedReports: number;
+  sourceCategories: {
+    party: string;
+    positions: string[];
+    levels: string[];
+  };
+  promises: {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    dueDate: Date;
+    progress: number;
+  }[];
+  achievements: {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    date: Date;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IPoliticianFilter {
   level: string[];
   position: string[];
   party: string[];
-}
-
-
-export interface IPolitician {
-  id: string;
-  fullName: string;
-  party: string;
-  experienceYears: number;
-  createdAt: Date;
-  updatedAt: Date;
-  isIndependent: boolean;
-  rating: number;
-  totalReports: number;
-  verifiedReports: number;
-  constituencyNumber?: string;
-  sourceCategories: {
-    party: string | null;
-    positions: string[] | [];
-    levels: string[] | [];
-  };
 }
 
 export interface IGovernmentLevel {
