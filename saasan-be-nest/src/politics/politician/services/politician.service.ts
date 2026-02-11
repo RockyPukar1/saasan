@@ -4,9 +4,10 @@ import { GlobalHttpException } from 'src/common/exceptions/global-http.exception
 import { Types } from 'mongoose';
 import { PoliticianRepository } from '../repositories/politician.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { LevelNameDto } from '../dtos/level-name.dto';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
 import { PoliticianSerializer } from '../serializers/politician.serializer';
+import { PoliticianIdDto } from '../dtos/politician-id.dto';
+import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 
 @Injectable()
 export class PoliticianService {
@@ -18,6 +19,15 @@ export class PoliticianService {
       PoliticianSerializer,
       politicians,
       'Politicians fetched successfully',
+    );
+  }
+
+  async getById(politicianIdDto: PoliticianIdDto) {
+    const politician = await this.politicianRepo.findById(politicianIdDto);
+    return ResponseHelper.response(
+      PoliticianSerializer,
+      politician,
+      'Politician fetched successfully',
     );
   }
 
@@ -52,8 +62,6 @@ export class PoliticianService {
     const politicians = await this.politicianRepo.getByLevel(query);
     return ResponseHelper.success(politicians);
   }
-
-  async getDetailedProfile() {}
 
   async getPromises() {}
 

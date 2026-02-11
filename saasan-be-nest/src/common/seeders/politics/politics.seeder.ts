@@ -9,19 +9,27 @@ import { Model, Types } from 'mongoose';
 import {
   PoliticianEntity,
   PoliticianEntityDocument,
-} from 'src/politics/entities/politician.entity';
+} from 'src/politics/politician/entities/politician.entity';
 import {
   LevelEntity,
   LevelEntityDocument,
-} from 'src/politics/entities/level.entity';
+} from 'src/politics/level/entities/level.entity';
 import {
   PositionEntity,
   PositionEntityDocument,
-} from 'src/politics/entities/position.entity';
+} from 'src/politics/position/entities/position.entity';
 import {
   PartyEntity,
   PartyEntityDocument,
-} from 'src/politics/entities/party.entity';
+} from 'src/politics/party/entities/party.entity';
+import {
+  PoliticianPromiseEntity,
+  PoliticianPromiseEntityDocument,
+} from 'src/politics/politician/entities/politician-promise.entity';
+import {
+  PoliticianAchievementEntity,
+  PoliticianAchievementEntityDocument,
+} from 'src/politics/politician/entities/politician-achievement.entity';
 
 @Injectable()
 export class PoliticsSeeder {
@@ -34,6 +42,10 @@ export class PoliticsSeeder {
     private readonly partyModel: Model<PartyEntityDocument>,
     @InjectModel(PoliticianEntity.name)
     private readonly politicianModel: Model<PoliticianEntityDocument>,
+    @InjectModel(PoliticianPromiseEntity.name)
+    private readonly politicianPromiseModel: Model<PoliticianPromiseEntityDocument>,
+    @InjectModel(PoliticianAchievementEntity.name)
+    private readonly politicianAchievementModel: Model<PoliticianAchievementEntityDocument>,
   ) {}
 
   async seed() {
@@ -106,11 +118,20 @@ export class PoliticsSeeder {
         politician.positions
           ?.map((pos) => positionMap.get(pos))
           .filter(Boolean) || [];
-      await this.politicianModel.findOneAndUpdate(
+      const politicianDoc = await this.politicianModel.findOneAndUpdate(
         { fullName: politician.fullName },
         {
           $setOnInsert: {
             fullName: politician.fullName,
+            biography: politician.biography,
+            education: politician.education,
+            profession: politician.profession,
+            experienceYears: politician.experienceYears,
+            joinedDate: politician.joinedDate,
+            rating: politician.rating,
+            totalVotes: politician.totalVotes,
+            contact: politician.contact,
+            socialMedia: politician.socialMedia,
           },
           ...(isIndependent
             ? { $set: { isIndependent: true } }
@@ -121,6 +142,29 @@ export class PoliticsSeeder {
         },
         { upsert: true, new: true },
       );
+
+      if (politician?.promises?.length) {
+        const promises = politician.promises;
+        await this.politicianPromiseModel.insertOne({
+          politicianId: politicianDoc._id,
+          promises: promises.map((promise) => ({
+            ...promise,
+            dueDate: new Date(promise.dueDate),
+          })),
+        });
+      }
+
+      if (politician?.achievements?.length) {
+        const achievements = politician.achievements;
+
+        await this.politicianAchievementModel.insertOne({
+          politicianId: politicianDoc._id,
+          achievements: achievements.map((achievement) => ({
+            ...achievement,
+            date: new Date(achievement.date),
+          })),
+        });
+      }
     }
     console.log('Politician seeded successfully');
   }

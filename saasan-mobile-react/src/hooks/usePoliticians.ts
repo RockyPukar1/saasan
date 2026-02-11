@@ -1,17 +1,40 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiService } from "@/services/api";
-import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politics";
-
+import type {
+  IGovernmentLevel,
+  IParty,
+  IPolitician,
+  IPoliticianFilter,
+  IPosition,
+} from "@/types/politics";
 
 export const usePoliticians = () => {
   const [politicians, setPoliticians] = useState<IPolitician[]>([]);
   const [governmentLevels, setGovernmentLevels] = useState<IGovernmentLevel[]>(
-    []
+    [],
   );
   const [parties, setParties] = useState<IParty[]>([]);
   const [positions, setPositions] = useState<IPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchPoliticianById = async (politicianId: string) => {
+    let data: IPolitician | null = null;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getPoliticianById(politicianId);
+      data = response.data || [];
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch politician",
+      );
+      console.error("Error fetching politician:", error);
+    } finally {
+      setLoading(false);
+    }
+    return data;
+  };
 
   const fetchPoliticians = async (filter: IPoliticianFilter) => {
     try {
@@ -26,17 +49,26 @@ export const usePoliticians = () => {
           (politician: IPolitician) => ({
             id: politician.id,
             fullName: politician.fullName,
+            biography: politician.biography,
+            contact: politician.contact,
+            socialMedia: politician.socialMedia,
+            education: politician.education,
             experienceYears: politician.experienceYears,
-            party: politician.isIndependent ? "Independent" : politician.party,
-            constituency: politician.constituencyNumber,
+            profession: politician.profession,
+            party: politician.isIndependent
+              ? "Independent"
+              : politician.sourceCategories?.party || "",
             rating: politician.rating || 0,
-            createdAt: politician.createdAt,
-            updatedAt: politician.updatedAt,
-            isIndependent: politician.isIndependent,
+            totalVotes: politician.totalVotes,
             totalReports: politician.totalReports,
             verifiedReports: politician.verifiedReports,
+            isIndependent: politician.isIndependent,
             sourceCategories: politician.sourceCategories,
-          })
+            promises: politician.promises || [],
+            achievements: politician.achievements || [],
+            createdAt: politician.createdAt,
+            updatedAt: politician.updatedAt,
+          }),
         );
 
         setPoliticians(transformedPoliticians);
@@ -45,7 +77,7 @@ export const usePoliticians = () => {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch politicians"
+        err instanceof Error ? err.message : "Failed to fetch politicians",
       );
       console.error("Error fetching politicians:", err);
       setPoliticians([]);
@@ -65,7 +97,7 @@ export const usePoliticians = () => {
             name: level.name.toLowerCase(),
             description: level.description,
             count: level.count || 0,
-          })
+          }),
         );
         setGovernmentLevels(transformedLevels);
       } else {
@@ -114,7 +146,7 @@ export const usePoliticians = () => {
             description: position.description,
             count: position.count,
             abbreviation: position.abbreviation,
-          })
+          }),
         );
         setPositions(transformedPositions);
       } else {
@@ -140,5 +172,6 @@ export const usePoliticians = () => {
     loading,
     error,
     refresh: fetchPoliticians,
+    fetchPoliticianById,
   };
 };
