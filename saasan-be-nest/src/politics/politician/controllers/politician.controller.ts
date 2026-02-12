@@ -21,6 +21,11 @@ export class PoliticianController {
   constructor(private readonly politicianService: PoliticianService) {}
 
   @Post()
+  async create(@Body() politicianData: CreatePoliticianDto) {
+    return await this.politicianService.create(politicianData);
+  }
+
+  @Post('filter')
   async getAll(@Body() politicianFilterDto: PoliticianFilterDto) {
     return await this.politicianService.getAll(politicianFilterDto);
   }
@@ -28,12 +33,6 @@ export class PoliticianController {
   @Get(':politicianId')
   async getById(@Param() politicianIdDto: PoliticianIdDto) {
     return await this.politicianService.getById(politicianIdDto);
-  }
-
-  @HttpCode(201)
-  @Post()
-  async create(@Body() politicianData: CreatePoliticianDto) {
-    return await this.politicianService.create(politicianData);
   }
 
   @Put(':politicianId')
