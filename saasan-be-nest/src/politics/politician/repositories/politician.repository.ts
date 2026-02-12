@@ -19,7 +19,51 @@ export class PoliticianRepository {
   ) {}
 
   async create(politicianData: CreatePoliticianDto) {
-    this.model.create(politicianData);
+    // Start a session for transaction
+    const session = await this.model.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Create the main politician first
+      const politician = await this.model.create([politicianData], { session });
+      const politicianId = politician[0]._id;
+
+      // 2. Create promises if provided
+      if (politicianData.promises && politicianData.promises.length > 0) {
+        await this.model.db.collection('politician-promises').insertOne(
+          {
+            politicianId,
+            promises: politicianData.promises,
+          },
+          { session },
+        );
+      }
+
+      // 3. Create achievements if provided
+      if (
+        politicianData.achievements &&
+        politicianData.achievements.length > 0
+      ) {
+        await this.model.db.collection('politician-achievements').insertOne(
+          {
+            politicianId,
+            achievements: politicianData.achievements,
+          },
+          { session },
+        );
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      return politician[0];
+    } catch (error) {
+      // Abort transaction on error
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
   }
 
   async findById({ politicianId }: PoliticianIdDto) {

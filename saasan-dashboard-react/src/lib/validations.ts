@@ -17,24 +17,167 @@ export const registerSchema = z.object({
 });
 
 // Politician schemas
+export interface PoliticianFormData {
+  fullName: string;
+  biography?: string;
+  education?: string;
+  profession?: string;
+  experienceYears?: number;
+  experiences?: {
+    category: string;
+    title: string;
+    company: string;
+    startDate: Date;
+    endDate: Date;
+  }[];
+  isIndependent?: boolean;
+  party?: string;
+  partyId?: string;
+  positionIds?: string[];
+  constituencyId?: string;
+  status?: "active" | "inactive" | "deceased";
+  contact?: {
+    email?: string;
+    phone?: string;
+    website?: string;
+  };
+  age?: number;
+  rating?: number;
+  totalVotes?: number;
+  totalReports?: number;
+  verifiedReports?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  photoUrl?: string;
+  dateOfBirth?: string;
+  totalVotesReceived?: number;
+  termStartDate?: string;
+  termEndDate?: string;
+  profileImageUrl?: string;
+  officialWebsite?: string;
+  levelIds?: string[];
+  sourceCategories?: {
+    party: string | null;
+    positions: string[];
+    levels: string[];
+  };
+  socialMedia?: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+  };
+  promises?: {
+    title: string;
+    description: string;
+    status: "ongoing" | "fulfilled" | "broken" | "not-started" | "in-progress";
+    dueDate: string;
+    progress: number;
+  }[];
+  achievements?: {
+    title: string;
+    description: string;
+    category: "policy" | "development" | "social" | "economic" | "economy";
+    date: Date;
+  }[];
+}
+
 export const politicianSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
-  positionId: z.number().min(1, "Position ID is required"),
-  partyId: z.number().min(1, "Party ID is required"),
-  constituencyId: z.number().min(1, "Constituency ID is required"),
-  biography: z.string().min(10, "Biography must be at least 10 characters"),
-  education: z.string().min(2, "Education is required"),
-  experienceYears: z.number().min(0, "Experience years must be non-negative"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  profileImageUrl: z.string().url("Invalid profile image URL").optional(),
-  contactPhone: z.string().min(10, "Valid phone number is required"),
-  contactEmail: z.string().email("Invalid email address"),
-  officialWebsite: z.string().url("Invalid website URL").optional(),
-  socialMediaLinks: z.record(z.string(), z.string()).optional(),
-  status: z.enum(["active", "inactive", "deceased"]),
-  termStartDate: z.string().min(1, "Term start date is required"),
-  termEndDate: z.string().min(1, "Term end date is required"),
-  totalVotesReceived: z.number().min(0, "Total votes must be non-negative"),
+  biography: z.string().optional(),
+  education: z.string().optional(),
+  profession: z.string().optional(),
+  experienceYears: z
+    .number()
+    .min(0, "Experience years must be non-negative")
+    .optional(),
+  experiences: z
+    .array(
+      z.object({
+        category: z.string(),
+        title: z.string(),
+        company: z.string(),
+        startDate: z.date(),
+        endDate: z.date(),
+      }),
+    )
+    .optional(),
+  isIndependent: z.boolean().optional(),
+  party: z.string().optional(),
+  partyId: z.string().optional(),
+  positionIds: z.array(z.string()).optional(),
+  constituencyId: z.string().optional(),
+  status: z.enum(["active", "inactive", "deceased"]).optional(),
+  contact: z
+    .object({
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      website: z.string().url().optional(),
+    })
+    .optional(),
+  age: z.number().min(0).max(150).optional(),
+  rating: z.number().min(0).max(5).optional(),
+  totalVotes: z.number().min(0).optional(),
+  totalReports: z.number().min(0).optional(),
+  verifiedReports: z.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  photoUrl: z.string().url().optional(),
+  dateOfBirth: z.string().optional(),
+  totalVotesReceived: z.number().min(0).optional(),
+  termStartDate: z.string().optional(),
+  termEndDate: z.string().optional(),
+  profileImageUrl: z.string().url().optional(),
+  officialWebsite: z.string().url().optional(),
+  levelIds: z.array(z.string()).optional(),
+  sourceCategories: z
+    .object({
+      party: z.string().nullable(),
+      positions: z.array(z.string()),
+      levels: z.array(z.string()),
+    })
+    .optional(),
+  socialMedia: z
+    .object({
+      facebook: z.string().optional(),
+      twitter: z.string().optional(),
+      instagram: z.string().optional(),
+    })
+    .optional(),
+  promises: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+        status: z.enum([
+          "ongoing",
+          "fulfilled",
+          "broken",
+          "not-started",
+          "in-progress",
+        ]),
+        dueDate: z.string(),
+        progress: z.number().min(0).max(100),
+      }),
+    )
+    .optional(),
+  achievements: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+        category: z.enum([
+          "policy",
+          "development",
+          "social",
+          "economic",
+          "economy",
+        ]),
+        date: z.date(),
+      }),
+    )
+    .optional(),
 });
 
 export const politicianUpdateSchema = politicianSchema.partial();
@@ -172,7 +315,6 @@ export const filterSchema = z.object({
 // Type exports
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
-export type PoliticianFormData = z.infer<typeof politicianSchema>;
 export type PoliticianUpdateFormData = z.infer<typeof politicianUpdateSchema>;
 export type ReportStatusUpdateFormData = z.infer<
   typeof reportStatusUpdateSchema

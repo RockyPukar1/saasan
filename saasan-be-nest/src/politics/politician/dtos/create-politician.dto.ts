@@ -5,7 +5,75 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// Promise DTO
+class PromiseDto {
+  @IsString()
+  title: string;
+
+  @IsString()
+  description: string;
+
+  @IsString()
+  status: 'ongoing' | 'fulfilled' | 'broken';
+
+  @IsOptional()
+  @IsString()
+  dueDate?: Date;
+
+  @IsOptional()
+  @IsNumber()
+  progress?: number;
+}
+
+// Achievement DTO
+class AchievementDto {
+  @IsString()
+  title: string;
+
+  @IsString()
+  description: string;
+
+  @IsString()
+  category: 'policy' | 'development' | 'social' | 'economic';
+
+  @IsOptional()
+  @IsString()
+  date?: Date;
+}
+
+// Contact DTO
+class ContactDto {
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  website?: string;
+}
+
+// Social Media DTO
+class SocialMediaDto {
+  @IsOptional()
+  @IsString()
+  facebook?: string;
+
+  @IsOptional()
+  @IsString()
+  twitter?: string;
+
+  @IsOptional()
+  @IsString()
+  instagram?: string;
+}
 
 export class CreatePoliticianDto {
   @IsString()
@@ -45,10 +113,35 @@ export class CreatePoliticianDto {
   positionIds?: string[];
 
   @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  levelIds?: string[];
+
+  @IsOptional()
   @IsNumber()
   experienceYears?: number;
 
   @IsOptional()
   @IsNumber()
   rating?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ContactDto)
+  contact?: ContactDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SocialMediaDto)
+  socialMedia?: SocialMediaDto;
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => PromiseDto)
+  promises?: PromiseDto[];
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => AchievementDto)
+  achievements?: AchievementDto[];
 }

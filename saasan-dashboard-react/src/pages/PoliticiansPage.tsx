@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { politicsApi } from "@/services/api";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IPolitician } from "@/types/politics";
 import PoliticianEditForm from "@/components/politics/PoliticianEditForm";
 
@@ -37,26 +38,23 @@ const initialFilter: IPoliticianFilter = {
   level: [],
   position: [],
   party: [],
-}
+};
 
 export const PoliticiansPage: React.FC = () => {
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
   const [showForm, setShowForm] = useState(false);
-  const [editingPolitician, setEditingPolitician] = useState<IPolitician | null>(
-    null
-  );
+  const [editingPolitician, setEditingPolitician] =
+    useState<IPolitician | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const queryClient = useQueryClient();
 
-  
-
   const { data: politiciansData, isLoading } = useQuery({
     queryKey: ["politicians", toApplyFilter],
-    queryFn: () =>
-      politicsApi.getAll(toApplyFilter),
+    queryFn: () => politicsApi.getAll(toApplyFilter),
   });
 
   const { data: governmentLevels } = useQuery({
@@ -101,7 +99,7 @@ export const PoliticiansPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to delete politician"
+        error.response?.data?.message || "Failed to delete politician",
       );
     },
   });
@@ -112,7 +110,7 @@ export const PoliticiansPage: React.FC = () => {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["politicians"] });
       toast.success(
-        `Successfully imported ${response.data.imported} politicians`
+        `Successfully imported ${response.data.imported} politicians`,
       );
       setShowUploadModal(false);
     },
@@ -121,18 +119,29 @@ export const PoliticiansPage: React.FC = () => {
     },
   });
 
-  
+  const handleEdit = async (politician: IPolitician) => {
+    try {
+      // Fetch complete politician data before opening form
+      const response = await politicsApi.getById(politician.id);
+      const completePoliticianData = response.data;
 
-  const handleEdit = (politician: IPolitician) => {
-    setEditingPolitician(politician);
-    // reset(formData);
-    setShowForm(true);
+      setEditingPolitician(completePoliticianData as unknown as IPolitician);
+      setShowForm(true);
+    } catch (error) {
+      console.error("Error fetching politician data:", error);
+      toast.error("Failed to load politician data");
+    }
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this politician?")) {
-      deleteMutation.mutate(id);
-    }
+    confirm({
+      title: "Delete Politician",
+      description:
+        "Are you sure you want to delete this politician? This action cannot be undone.",
+      variant: "destructive",
+      confirmText: "Delete",
+      onConfirm: () => deleteMutation.mutate(id),
+    });
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,8 +154,6 @@ export const PoliticiansPage: React.FC = () => {
   const politicians = politiciansData?.data || [];
   const total = politiciansData?.total || 0;
 
-  console.log(filter, toApplyFilter)
-  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -194,15 +201,19 @@ export const PoliticiansPage: React.FC = () => {
               <div>
                 <Label>{text}</Label>
                 <MultiSelect
-                  options={data?.map((d) => ({
-                    label: d.name,
-                    value: d.id,
-                  })) ?? []}
+                  options={
+                    data?.map((d) => ({
+                      label: d.name,
+                      value: d.id,
+                    })) ?? []
+                  }
                   value={initialFilter[name]}
-                  onValueChange={(value: string[]) => setFilter((prev) => ({
-                    ...prev,
-                    [name]: value || []
-                  }))}
+                  onValueChange={(value: string[]) =>
+                    setFilter((prev) => ({
+                      ...prev,
+                      [name]: value || [],
+                    }))
+                  }
                   popoverClassName="bg-white"
                   placeholder={`Select ${text}`}
                 />
@@ -210,7 +221,11 @@ export const PoliticiansPage: React.FC = () => {
             ))}
             <div className="flex gap-2">
               <div className="flex items-end">
-                <Button onClick={() => setToApplyFilter(filter)} variant="outline" className="w-full">
+                <Button
+                  onClick={() => setToApplyFilter(filter)}
+                  variant="outline"
+                  className="w-full"
+                >
                   <Filter className="h-4 w-4 mr-2" />
                   Apply Filters
                 </Button>
@@ -281,46 +296,58 @@ export const PoliticiansPage: React.FC = () => {
                           {politician.fullName}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {politician.party || "Unknown Party"} • Rating: {politician.rating || 0}
+                          {politician.party || "Unknown Party"} • Rating:{" "}
+                          {politician.rating || 0}
                         </p>
                         <p className="text-xs text-gray-400">
-                          Reports: {politician.verifiedReports || 0}/{politician.totalReports || 0}
+                          Reports: {politician.verifiedReports || 0}/
+                          {politician.totalReports || 0}
                         </p>
                       </div>
                       <div className="flex flex-col gap-2 items-end ml-4">
                         {politician.sourceCategories?.levels?.length > 0 && (
                           <div className="flex flex-wrap gap-1 items-center">
-                            <span className="text-xs text-gray-500 font-medium mr-1">Level:</span>
-                            {politician.sourceCategories.levels.map((l, index) => (
-                              <div
-                                key={index}
-                                className="px-1.5 py-0.5 rounded bg-red-100 border border-red-300"
-                              >
-                                <p className="text-red-700 text-xs font-bold">
-                                  {l}
-                                </p>
-                              </div>
-                            ))}
+                            <span className="text-xs text-gray-500 font-medium mr-1">
+                              Level:
+                            </span>
+                            {politician.sourceCategories.levels.map(
+                              (l, index) => (
+                                <div
+                                  key={index}
+                                  className="px-1.5 py-0.5 rounded bg-red-100 border border-red-300"
+                                >
+                                  <p className="text-red-700 text-xs font-bold">
+                                    {l}
+                                  </p>
+                                </div>
+                              ),
+                            )}
                           </div>
                         )}
                         {politician.sourceCategories?.positions?.length > 0 && (
                           <div className="flex flex-wrap gap-1 items-center">
-                            <span className="text-xs text-gray-500 font-medium mr-1">Position:</span>
-                            {politician.sourceCategories.positions.map((p, index) => (
-                              <div
-                                key={index}
-                                className="px-1.5 py-0.5 rounded bg-blue-100 border border-blue-300"
-                              >
-                                <p className="text-blue-700 text-xs font-bold">
-                                  {p}
-                                </p>
-                              </div>
-                            ))}
+                            <span className="text-xs text-gray-500 font-medium mr-1">
+                              Position:
+                            </span>
+                            {politician.sourceCategories.positions.map(
+                              (p, index) => (
+                                <div
+                                  key={index}
+                                  className="px-1.5 py-0.5 rounded bg-blue-100 border border-blue-300"
+                                >
+                                  <p className="text-blue-700 text-xs font-bold">
+                                    {p}
+                                  </p>
+                                </div>
+                              ),
+                            )}
                           </div>
                         )}
                         {politician.sourceCategories?.party && (
                           <div className="flex items-center">
-                            <span className="text-xs text-gray-500 font-medium mr-1">Party:</span>
+                            <span className="text-xs text-gray-500 font-medium mr-1">
+                              Party:
+                            </span>
                             <div className="px-1.5 py-0.5 rounded bg-green-100 border border-green-300">
                               <p className="text-green-700 text-xs font-bold">
                                 {politician.sourceCategories.party}
@@ -356,7 +383,14 @@ export const PoliticiansPage: React.FC = () => {
       </Card>
 
       {/* Add/Edit Form Modal */}
-      {showForm && <PoliticianEditForm setShowForm={setShowForm} editingPolitician={editingPolitician!} setEditingPolitician={setEditingPolitician} setShowUploadModal={setShowUploadModal} />}
+      {showForm && (
+        <PoliticianEditForm
+          setShowForm={setShowForm}
+          editingPolitician={editingPolitician!}
+          setEditingPolitician={setEditingPolitician}
+          setShowUploadModal={setShowUploadModal}
+        />
+      )}
 
       {/* Upload Modal */}
       {showUploadModal && (
@@ -439,6 +473,7 @@ export const PoliticiansPage: React.FC = () => {
           </Card>
         </div>
       )}
+      <ConfirmDialog />
     </div>
   );
 };
