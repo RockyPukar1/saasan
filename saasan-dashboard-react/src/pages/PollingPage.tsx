@@ -374,7 +374,7 @@ const PollingPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            poll.status
+                            poll.status,
                           )}`}
                         >
                           {getStatusText(poll.status)}
