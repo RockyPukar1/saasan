@@ -5,7 +5,7 @@ import {
   ReportEntityDocument,
   ReportPublicVisibility,
 } from '../entities/report.entity';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
@@ -18,11 +18,19 @@ export class ReportRepository {
     private readonly model: Model<ReportEntityDocument>,
   ) {}
 
-  async create({ reporterId, ...data }: CreateReportDto) {
-    return await this.model.create({
-      ...data,
-      reporterId: new Types.ObjectId(reporterId),
-    });
+  async create(
+    { reporterId, ...data }: CreateReportDto,
+    session?: ClientSession,
+  ) {
+    return await this.model.create(
+      [
+        {
+          ...data,
+          reporterId: new Types.ObjectId(reporterId),
+        },
+      ],
+      { session },
+    );
   }
 
   async findById({ reportId }: ReportIdDto) {

@@ -492,7 +492,7 @@ const initialReport: ReportCreateData = {
   peopleAffectedCount: 0,
 };
 export default function ReportsScreen() {
-  const { createReportWithEvidence } = useReports();
+  const { createReport } = useReports();
 
   const [activeTab, setActiveTab] = useState<
     "new" | "my_reports" | "all_reports"
@@ -510,7 +510,7 @@ export default function ReportsScreen() {
     }
 
     try {
-      await createReportWithEvidence(form, selectedFiles);
+      await createReport(form, selectedFiles);
 
       toast.success("Report submitted successfully");
       setForm(initialReport);

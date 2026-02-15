@@ -52,69 +52,23 @@ export const useReports = (initialFilters?: ReportFilters) => {
     }
   }, []);
 
-  const createReport = useCallback(async (data: ReportCreateData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.createReport(data);
-      fetchUserReports();
-      return response.data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create report");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const uploadEvidence = useCallback(
-    async (reportId: string, file: File) => {
+  const createReport = useCallback(
+    async (data: ReportCreateData, files: File[]) => {
       try {
         setLoading(true);
         setError(null);
-        await apiService.uploadEvidence(reportId, file);
+        await apiService.createReport(data, files);
+        fetchUserReports();
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to upload evidence",
+          err instanceof Error ? err.message : "Failed to create report",
         );
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [currentReport],
-  );
-
-  const createReportWithEvidence = useCallback(
-    async (reportData: ReportCreateData, files: File[]) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Create report
-
-        const createdReport = await createReport(reportData);
-        const reportId = createdReport.id;
-
-        // Upload report
-        if (files.length > 0) {
-          const uploadPromises = files.map((file) =>
-            uploadEvidence(reportId, file),
-          );
-          await Promise.all(uploadPromises);
-        }
-
-        return createdReport;
-      } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Failed to submit report",
-        );
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [createReport, uploadEvidence],
+    [],
   );
 
   const updateReportStatus = useCallback(
@@ -197,9 +151,8 @@ export const useReports = (initialFilters?: ReportFilters) => {
     fetchUserReports,
     fetchAllReports,
     fetchReportById,
-    createReportWithEvidence,
+    createReport,
     updateReportStatus,
-    uploadEvidence,
     voteOnReport,
     getReport: fetchReportById,
   };

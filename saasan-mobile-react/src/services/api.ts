@@ -1,5 +1,4 @@
 import type {
-  Evidence,
   ReportCreateData,
   ReportFilters,
   ReportUpdateData,
@@ -295,8 +294,23 @@ class ApiService {
   }
 
   // Reports APIs
-  async createReport(data: ReportCreateData): Promise<ApiResponse<IReport>> {
-    return this.request<IReport>("POST", "/report", data);
+  async createReport(
+    data: ReportCreateData,
+    files: File[],
+  ): Promise<ApiResponse<IReport>> {
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    return this.request<IReport>("POST", "/report", formData);
   }
 
   async getAllReports(
@@ -329,20 +343,6 @@ class ApiService {
     data: ReportUpdateData,
   ): Promise<ApiResponse<IReport>> {
     return this.request<IReport>("PUT", `/report/${id}/status`, data);
-  }
-
-  async uploadEvidence(
-    reportId: string,
-    file: File,
-  ): Promise<ApiResponse<Evidence[]>> {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    return this.request<Evidence[]>(
-      "POST",
-      `/report-evidence/${reportId}/upload`,
-      formData,
-    );
   }
 
   async voteOnReport(id: string): Promise<ApiResponse<void>> {
