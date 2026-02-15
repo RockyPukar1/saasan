@@ -6,6 +6,7 @@ import { MunicipalityEntity } from 'src/location/municipality/entities/municipal
 import { ProvinceEntity } from 'src/location/province/entities/province.entity';
 import { WardEntity } from 'src/location/ward/entities/ward.entity';
 import { UserEntity } from 'src/user/entities/user.entity';
+import { ReportCategoryEntity } from './report-category.entity';
 
 export enum ReportStatus {
   PENDING = 'pending',
@@ -21,15 +22,15 @@ export enum ReportPriority {
 }
 
 export enum ReportPublicVisibility {
-  PUBLIC = "public",
-  PRIVATE = "private",
-  RESTRICTED = "restricted"
+  PUBLIC = 'public',
+  PRIVATE = 'private',
+  RESTRICTED = 'restricted',
 }
 
 export enum ReportType {
-  COMPLAINT = "complaint",
-  WHISTLEBLOWER = "whistleblower",
-  TIP = "tip"
+  COMPLAINT = 'complaint',
+  WHISTLEBLOWER = 'whistleblower',
+  TIP = 'tip',
 }
 
 @Schema({ timestamps: true, collection: ReportEntity.collection })
@@ -45,7 +46,7 @@ export class ReportEntity {
   @Prop({ type: String, required: true })
   description: string;
 
-  @Prop({ type: String }) // TODO: separate entity for category
+  @Prop({ type: Types.ObjectId, ref: ReportCategoryEntity.name })
   category?: string;
 
   @Prop({ type: Types.ObjectId, ref: UserEntity.name, required: true })
@@ -69,31 +70,33 @@ export class ReportEntity {
   priority: ReportPriority;
 
   @Prop({ type: Boolean, default: false, required: true })
-  isResolved: boolean
+  isResolved: boolean;
 
   @Prop({ type: Date })
-  resolvedAt?: Date
+  resolvedAt?: Date;
 
   @Prop({
-    type: [{
-      status: String,
-      comment: String,
-      createdAt: Date
-    }],
-    default: []
+    type: [
+      {
+        status: String,
+        comment: String,
+        createdAt: Date,
+      },
+    ],
+    default: [],
   })
   statusUpdates: {
     status: ReportStatus;
     comment: string;
     createdAt: Date;
-  }[]
+  }[];
 
   @Prop({
     type: String,
     enum: ReportType,
-    default: ReportType.COMPLAINT
+    default: ReportType.COMPLAINT,
   })
-  reportType?: string; 
+  reportType?: string;
 
   @Prop({ type: Number, default: 0 })
   upvotesCount?: Number;
@@ -122,12 +125,12 @@ export class ReportEntity {
   @Prop({
     type: String,
     enum: ReportPublicVisibility,
-    default: ReportPublicVisibility.PUBLIC
+    default: ReportPublicVisibility.PUBLIC,
   })
-  publicVisibility: string
+  publicVisibility: string;
 
-  @Prop({ type: Boolean, default: false})
-  isAnonymous: boolean
+  @Prop({ type: Boolean, default: false })
+  isAnonymous: boolean;
 
   @Prop({ type: Types.ObjectId, ref: UserEntity.name })
   assignedToOfficerId?: Types.ObjectId;
@@ -156,10 +159,10 @@ export class ReportEntity {
 
 export const ReportEntitySchema = SchemaFactory.createForClass(ReportEntity);
 
-ReportEntitySchema.pre("save", function () {
-  const ymd = new Date(Date.now()).toISOString().slice(0, 10).replace(/-/g, "")
-  const shortId = this._id.toString().slice(-6).toUpperCase()
-  this.referenceNumber = `${ymd}${shortId}`
-})
+ReportEntitySchema.pre('save', function () {
+  const ymd = new Date(Date.now()).toISOString().slice(0, 10).replace(/-/g, '');
+  const shortId = this._id.toString().slice(-6).toUpperCase();
+  this.referenceNumber = `${ymd}${shortId}`;
+});
 
 export type ReportEntityDocument = Document & ReportEntity;

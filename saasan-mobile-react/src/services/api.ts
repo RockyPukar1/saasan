@@ -1,5 +1,4 @@
 import type {
-  CorruptionReport,
   Evidence,
   ReportCreateData,
   ReportFilters,
@@ -18,9 +17,22 @@ import {
   formatApiResponse,
   type Language,
 } from "@/lib/bilingual";
-import type { IGovernmentLevel, IParty, IPolitician, IPoliticianFilter, IPosition } from "@/types/politics";
-import type { IProvince, IDistrict, IMunicipality, IWard, IConstituency } from "@/types/location";
+import type {
+  IGovernmentLevel,
+  IParty,
+  IPolitician,
+  IPoliticianFilter,
+  IPosition,
+} from "@/types/politics";
+import type {
+  IProvince,
+  IDistrict,
+  IMunicipality,
+  IWard,
+  IConstituency,
+} from "@/types/location";
 import type { IRegisterData } from "@/types/auth";
+import type { IReport } from "@/types/reports";
 
 // Utility function to transform poll data from backend format to frontend format
 const transformPoll = (data: any): Poll => {
@@ -63,7 +75,6 @@ interface LoginData {
   password: string;
 }
 
-
 interface UserProfile {
   id: string;
   email: string;
@@ -87,7 +98,7 @@ export interface DashboardStats {
     totalPoliticians: number;
     activePoliticians: number;
     reportResolutionRate: number;
-    caseResolutionRate: number
+    caseResolutionRate: number;
   };
   recentReports: any[];
   recentCases: any[];
@@ -108,7 +119,7 @@ class ApiService {
 
   private async setAuthToken(
     accessToken: string,
-    refreshToken: string
+    refreshToken: string,
   ): Promise<void> {
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("refreshToken", refreshToken);
@@ -123,11 +134,11 @@ class ApiService {
     endpoint: string,
     body?: any,
     options: RequestInit = {},
-    language: Language = "en"
+    language: Language = "en",
   ): Promise<ApiResponse<T>> {
     const token = await this.getAuthToken();
 
-    const isFormData = body instanceof FormData
+    const isFormData = body instanceof FormData;
 
     const config: RequestInit = {
       method,
@@ -182,7 +193,7 @@ class ApiService {
     }>("POST", "/auth/login", data);
     await this.setAuthToken(
       response.data.accessToken,
-      response.data.refreshToken
+      response.data.refreshToken,
     );
     return response;
   }
@@ -201,7 +212,7 @@ class ApiService {
     }>("POST", "/auth/register", data);
     await this.setAuthToken(
       response.data.accessToken,
-      response.data.refreshToken
+      response.data.refreshToken,
     );
     return response;
   }
@@ -221,10 +232,10 @@ class ApiService {
 
   // Politicians APIs
   async getPoliticiansByFilter(
-    filter: IPoliticianFilter
+    filter: IPoliticianFilter,
   ): Promise<ApiResponse<IPolitician[]>> {
     try {
-      return this.request<IPolitician[]>("POST", "/politician", filter);
+      return this.request<IPolitician[]>("POST", "/politician/filter", filter);
     } catch (error) {
       console.error("Error fetching politicians:", error);
       throw error;
@@ -253,107 +264,84 @@ class ApiService {
 
   // Location APIs
   async getAllProvinces(): Promise<ApiResponse<IProvince[]>> {
-    return this.request<IProvince[]>(
-      "GET",
-      "/province"
-    );
+    return this.request<IProvince[]>("GET", "/province");
   }
 
-  async getDistrictsByProvinceId(provinceId: string): Promise<ApiResponse<IDistrict[]>> {
-    return this.request<IDistrict[]>(
-      "GET",
-      `/district/province/${provinceId}`
-    );
+  async getDistrictsByProvinceId(
+    provinceId: string,
+  ): Promise<ApiResponse<IDistrict[]>> {
+    return this.request<IDistrict[]>("GET", `/district/province/${provinceId}`);
   }
 
-  async getConstituencyByWardId(wardId: string): Promise<ApiResponse<IConstituency>> {
-    return this.request<IConstituency>(
-      "GET",
-      `/constituency/ward/${wardId}`
-    );
+  async getConstituencyByWardId(
+    wardId: string,
+  ): Promise<ApiResponse<IConstituency>> {
+    return this.request<IConstituency>("GET", `/constituency/ward/${wardId}`);
   }
 
   async getMunicipalitiesByDistrictId(
-    districtId: string
+    districtId: string,
   ): Promise<ApiResponse<IMunicipality[]>> {
     return this.request<IMunicipality[]>(
       "GET",
-      `/municipality/district/${districtId}`
+      `/municipality/district/${districtId}`,
     );
   }
 
   async getWardsByMunicipalityId(
-    municipalityId: string
+    municipalityId: string,
   ): Promise<ApiResponse<IWard[]>> {
-    return this.request<IWard[]>(
-      "GET",
-      `/ward/municipality/${municipalityId}`
-    );
+    return this.request<IWard[]>("GET", `/ward/municipality/${municipalityId}`);
   }
 
   // Reports APIs
-  async createReport(
-    data: ReportCreateData
-  ): Promise<ApiResponse<CorruptionReport>> {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (key === "evidence" && value) {
-        value.forEach((file: File) => {
-          formData.append("evidence", file);
-        });
-      } else {
-        formData.append(key, value as string);
-      }
-    });
-
-    return this.request<CorruptionReport>("POST", "/report", formData);
+  async createReport(data: ReportCreateData): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("POST", "/report", data);
   }
 
   async getAllReports(
-    filters?: ReportFilters
-  ): Promise<ApiResponse<CorruptionReport[]>> {
+    filters?: ReportFilters,
+  ): Promise<ApiResponse<IReport[]>> {
     const queryParams = filters
       ? "?" +
         Object.entries(filters)
           .filter(([_, value]) => value)
           .map(
             ([key, value]) =>
-              `${key}=${encodeURIComponent(JSON.stringify(value))}`
+              `${key}=${encodeURIComponent(JSON.stringify(value))}`,
           )
           .join("&")
       : "";
 
-    return this.request<CorruptionReport[]>("GET", `/report${queryParams}`);
+    return this.request<IReport[]>("GET", `/report${queryParams}`);
   }
 
-  async getReportById(id: string): Promise<ApiResponse<CorruptionReport>> {
-    return this.request<CorruptionReport>("GET", `/report/${id}`);
+  async getReportById(id: string): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("GET", `/report/${id}`);
   }
 
-  async getUserReports(): Promise<ApiResponse<CorruptionReport[]>> {
-    return this.request<CorruptionReport[]>("GET", "/report/my-reports");
+  async getUserReports(): Promise<ApiResponse<IReport[]>> {
+    return this.request<IReport[]>("GET", "/report/my-reports");
   }
 
   async updateReportStatus(
     id: string,
-    data: ReportUpdateData
-  ): Promise<ApiResponse<CorruptionReport>> {
-    return this.request<CorruptionReport>("PUT", `/report/${id}/status`, data);
+    data: ReportUpdateData,
+  ): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("PUT", `/report/${id}/status`, data);
   }
 
   async uploadEvidence(
     reportId: string,
-    evidence: File[]
+    file: File,
   ): Promise<ApiResponse<Evidence[]>> {
     const formData = new FormData();
-    evidence.forEach((file) => {
-      formData.append("evidence", file);
-    });
+    formData.append("file", file);
 
     return this.request<Evidence[]>(
-      "PUT",
-      `/report/${reportId}/evidence`,
-      formData
+      "POST",
+      `/report-evidence/${reportId}/upload`,
+      formData,
     );
   }
 
@@ -373,14 +361,14 @@ class ApiService {
           .filter(([_, value]) => value)
           .map(
             ([key, value]) =>
-              `${key}=${encodeURIComponent(JSON.stringify(value))}`
+              `${key}=${encodeURIComponent(JSON.stringify(value))}`,
           )
           .join("&")
       : "";
 
     const response = await this.request<Promise<Poll[]>>(
       "GET",
-      `/poll${queryParams}`
+      `/poll${queryParams}`,
     );
     return response.data;
   }
@@ -403,7 +391,7 @@ class ApiService {
 
   async updatePoll(
     id: string,
-    data: UpdatePollData
+    data: UpdatePollData,
   ): Promise<ApiResponse<Poll>> {
     const response = await this.request<any>("PUT", `/poll/${id}`, data);
     return {
@@ -418,7 +406,7 @@ class ApiService {
 
   async voteOnPoll(
     pollId: string,
-    optionId: string | string[]
+    optionId: string | string[],
   ): Promise<ApiResponse<PollVote>> {
     // Handle single choice polls
     if (typeof optionId === "string") {
@@ -429,7 +417,7 @@ class ApiService {
     for (const id of optionId) {
       const result = await this.request<PollVote>(
         "POST",
-        `/poll/${pollId}/vote/${id}`
+        `/poll/${pollId}/vote/${id}`,
       );
       results.push(result.data);
     }
@@ -469,7 +457,7 @@ class ApiService {
 
     return this.request<any[]>(
       "GET",
-      `/campaign/voter-registrations?${queryParams.toString()}`
+      `/campaign/voter-registrations?${queryParams.toString()}`,
     );
   }
 
@@ -478,12 +466,12 @@ class ApiService {
     data: {
       status: "verified" | "rejected";
       notes?: string;
-    }
+    },
   ): Promise<ApiResponse<any>> {
     return this.request<any>(
       "PUT",
       `/campaign/voter-registrations/${id}/verify`,
-      data
+      data,
     );
   }
 
@@ -511,28 +499,28 @@ class ApiService {
 
     return this.request<any[]>(
       "GET",
-      `/campaign/voter-surveys?${queryParams.toString()}`
+      `/campaign/voter-surveys?${queryParams.toString()}`,
     );
   }
 
   async getCandidatesByConstituency(
     constituencyId: number,
-    electionType: string
+    electionType: string,
   ): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(
       "GET",
-      `/campaign/candidates/constituency/${constituencyId}?electionType=${electionType}`
+      `/campaign/candidates/constituency/${constituencyId}?electionType=${electionType}`,
     );
   }
 
   async compareCandidatesCampaign(
     candidate1Id: number,
     candidate2Id: number,
-    userId: number
+    userId: number,
   ): Promise<ApiResponse<any>> {
     return this.request<any>(
       "GET",
-      `/campaign/candidates/compare/${candidate1Id}/${candidate2Id}?userId=${userId}`
+      `/campaign/candidates/compare/${candidate1Id}/${candidate2Id}?userId=${userId}`,
     );
   }
 
@@ -565,7 +553,7 @@ class ApiService {
 
     return this.request<any>(
       "GET",
-      `/campaign/analytics?${queryParams.toString()}`
+      `/campaign/analytics?${queryParams.toString()}`,
     );
   }
 
@@ -576,7 +564,7 @@ class ApiService {
   // Viral APIs
   async generateShareContent(
     data: any,
-    userId: string
+    userId: string,
   ): Promise<ApiResponse<any>> {
     return this.request<any>("POST", "/viral/generate-share", {
       ...data,
@@ -588,7 +576,7 @@ class ApiService {
     itemId: string,
     itemType: string,
     platform: string,
-    userId: string
+    userId: string,
   ): Promise<void> {
     await this.request<void>("POST", "/viral/track-share", {
       itemId,
@@ -609,11 +597,11 @@ class ApiService {
 
   async getLeaderboard(
     type: string,
-    period: string
+    period: string,
   ): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(
       "GET",
-      `/viral/leaderboard?type=${type}&period=${period}`
+      `/viral/leaderboard?type=${type}&period=${period}`,
     );
   }
 
@@ -624,7 +612,7 @@ class ApiService {
   async voteOnPollViral(
     pollId: string,
     optionId: string,
-    userId: string
+    userId: string,
   ): Promise<ApiResponse<any>> {
     return this.request<any>("POST", "/viral/vote-poll", {
       pollId,
@@ -635,11 +623,11 @@ class ApiService {
 
   async getTransparencyFeed(
     limit: number = 20,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(
       "GET",
-      `/viral/transparency-feed?limit=${limit}&offset=${offset}`
+      `/viral/transparency-feed?limit=${limit}&offset=${offset}`,
     );
   }
 
@@ -647,7 +635,7 @@ class ApiService {
     itemId: string,
     itemType: string,
     reaction: string,
-    userId: string
+    userId: string,
   ): Promise<void> {
     await this.request<void>("POST", "/viral/react-feed", {
       itemId,
@@ -671,11 +659,11 @@ class ApiService {
 
   async getComments(
     itemId: string,
-    itemType: string
+    itemType: string,
   ): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(
       "GET",
-      `/viral/comments?itemId=${itemId}&itemType=${itemType}`
+      `/viral/comments?itemId=${itemId}&itemType=${itemType}`,
     );
   }
 
@@ -683,7 +671,7 @@ class ApiService {
     itemId: string,
     itemType: string,
     content: string,
-    userId: string
+    userId: string,
   ): Promise<ApiResponse<any>> {
     return this.request<any>("POST", "/viral/comments", {
       itemId,
@@ -696,7 +684,7 @@ class ApiService {
   async replyToComment(
     commentId: string,
     content: string,
-    userId: string
+    userId: string,
   ): Promise<ApiResponse<any>> {
     return this.request<any>("POST", `/viral/comments/${commentId}/reply`, {
       content,
@@ -707,7 +695,7 @@ class ApiService {
   async voteOnComment(
     commentId: string,
     vote: "up" | "down",
-    userId: string
+    userId: string,
   ): Promise<void> {
     await this.request<void>("POST", `/viral/comments/${commentId}/vote`, {
       vote,
@@ -718,7 +706,7 @@ class ApiService {
   async reportComment(
     commentId: string,
     reason: string,
-    userId: string
+    userId: string,
   ): Promise<void> {
     await this.request<void>("POST", `/viral/comments/${commentId}/report`, {
       reason,
@@ -728,11 +716,11 @@ class ApiService {
 
   async getVerificationStatus(
     itemId: string,
-    itemType: string
+    itemType: string,
   ): Promise<ApiResponse<any>> {
     return this.request<any>(
       "GET",
-      `/viral/verification-status?itemId=${itemId}&itemType=${itemType}`
+      `/viral/verification-status?itemId=${itemId}&itemType=${itemType}`,
     );
   }
 
@@ -740,7 +728,7 @@ class ApiService {
     itemId: string,
     itemType: string,
     vote: "verify" | "reject",
-    userId: string
+    userId: string,
   ): Promise<void> {
     await this.request<void>("POST", "/viral/verification-vote", {
       itemId,
@@ -776,13 +764,13 @@ class ApiService {
       queryParams.append("electionType", params.electionType);
     return this.request<any[]>(
       "GET",
-      `/viral/candidates?${queryParams.toString()}`
+      `/viral/candidates?${queryParams.toString()}`,
     );
   }
 
   async compareCandidatesViral(
     candidate1Id: string,
-    candidate2Id: string
+    candidate2Id: string,
   ): Promise<ApiResponse<any>> {
     return this.request<any>("POST", "/viral/compare-candidates", {
       candidate1Id,
@@ -799,7 +787,7 @@ class ApiService {
       const response = await this.request<any>("GET", "/viral/updates");
       const updates = formatApiResponse(response.data, "en");
       updates.forEach((update: any) =>
-        callbacks.forEach((callback) => callback(update))
+        callbacks.forEach((callback) => callback(update)),
       );
     } catch (error) {
       console.error("Error fetching updates:", error);

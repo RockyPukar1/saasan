@@ -5,17 +5,16 @@ import type {
   ReportFilters,
   ReportCreateData,
   ReportUpdateData,
-  MediaPickerResult,
 } from "@/types";
 
 export const useReports = (initialFilters?: ReportFilters) => {
   const [allReports, setAllReports] = useState<CorruptionReport[]>([]);
   const [userReports, setUserReports] = useState<CorruptionReport[]>([]);
   const [currentReport, setCurrentReport] = useState<CorruptionReport | null>(
-    null
+    null,
   );
   const [filters, setFilters] = useState<ReportFilters | undefined>(
-    initialFilters
+    initialFilters,
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,8 +56,9 @@ export const useReports = (initialFilters?: ReportFilters) => {
     try {
       setLoading(true);
       setError(null);
-      await apiService.createReport(data);
+      const response = await apiService.createReport(data);
       fetchUserReports();
+      return response.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create report");
       throw err;
@@ -67,6 +67,56 @@ export const useReports = (initialFilters?: ReportFilters) => {
     }
   }, []);
 
+  const uploadEvidence = useCallback(
+    async (reportId: string, file: File) => {
+      try {
+        setLoading(true);
+        setError(null);
+        await apiService.uploadEvidence(reportId, file);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to upload evidence",
+        );
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentReport],
+  );
+
+  const createReportWithEvidence = useCallback(
+    async (reportData: ReportCreateData, files: File[]) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Create report
+
+        const createdReport = await createReport(reportData);
+        const reportId = createdReport.id;
+
+        // Upload report
+        if (files.length > 0) {
+          const uploadPromises = files.map((file) =>
+            uploadEvidence(reportId, file),
+          );
+          await Promise.all(uploadPromises);
+        }
+
+        return createdReport;
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : "Failed to submit report",
+        );
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [createReport, uploadEvidence],
+  );
+
   const updateReportStatus = useCallback(
     async (id: string, data: ReportUpdateData) => {
       try {
@@ -74,7 +124,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
         setError(null);
         const response = await apiService.updateReportStatus(id, data);
         setAllReports((prev) =>
-          prev.map((report) => (report.id === id ? response.data : report))
+          prev.map((report) => (report.id === id ? response.data : report)),
         );
         if (currentReport?.id === id) {
           setCurrentReport(response.data);
@@ -82,68 +132,14 @@ export const useReports = (initialFilters?: ReportFilters) => {
         return response.data;
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to update report status"
+          err instanceof Error ? err.message : "Failed to update report status",
         );
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [currentReport]
-  );
-
-  const uploadEvidence = useCallback(
-    async (reportId: string, file: MediaPickerResult) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Create FormData
-        const formData = new FormData();
-
-        if ("uri" in file) {
-          // Handle ImagePicker result
-          formData.append("evidence", {
-            uri: file.uri,
-            type: (file as any).type || "image/jpeg",
-            name: (file as any).fileName || "photo.jpg",
-          } as any);
-        } else if ("assets" in file) {
-          // Handle DocumentPicker result
-          const asset = (file as any).assets[0];
-          formData.append("evidence", {
-            uri: asset.uri,
-            type: asset.mimeType || "application/octet-stream",
-            name: asset.name || "document",
-          } as any);
-        }
-
-        const response = await apiService.uploadEvidence(
-          reportId,
-          formData as any
-        );
-
-        if (currentReport?.id === reportId) {
-          setCurrentReport((prev: CorruptionReport | null) =>
-            prev
-              ? {
-                  ...prev,
-                  // evidence: [...(prev.evidence || []), ...response.data],
-                }
-              : null
-          );
-        }
-        return response.data;
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to upload evidence"
-        );
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [currentReport]
+    [currentReport],
   );
 
   const voteOnReport = useCallback(
@@ -163,8 +159,8 @@ export const useReports = (initialFilters?: ReportFilters) => {
                     : report.downvotesCount || 0,
                   user_vote: isUpvote ? "up" : "down",
                 }
-              : report
-          )
+              : report,
+          ),
         );
         if (currentReport?.id === id) {
           setCurrentReport((prev: CorruptionReport | null) =>
@@ -179,7 +175,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
                     : prev.downvotesCount || 0,
                   user_vote: isUpvote ? "up" : "down",
                 }
-              : null
+              : null,
           );
         }
       } catch (err) {
@@ -187,7 +183,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
         throw err;
       }
     },
-    [currentReport]
+    [currentReport],
   );
 
   return {
@@ -201,7 +197,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
     fetchUserReports,
     fetchAllReports,
     fetchReportById,
-    createReport,
+    createReportWithEvidence,
     updateReportStatus,
     uploadEvidence,
     voteOnReport,

@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import HomeScreen from "./screens/Protected/HomeScreen";
 import ProtectedLayout from "./screens/Protected/ProtectedLayout";
-import ReportsScreen from "./screens/Protected/Reports";
+import ReportsScreen from "./screens/Protected/ReportsScreen";
 
 import LoginScreen from "./screens/NonProtected/LoginScreen";
 import PoliticiansScreen from "./screens/Protected/PoliticiansScreen";
@@ -15,32 +15,32 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <HomeScreen />
+        element: <HomeScreen />,
       },
       {
         path: "/polls",
-        element: <PollsScreen />
+        element: <PollsScreen />,
       },
       {
         path: "/reports",
-        element: <ReportsScreen />
+        element: <ReportsScreen />,
       },
       {
         path: "/politicians",
-        element: <PoliticiansScreen />
+        element: <PoliticiansScreen />,
       },
       {
         path: "/politicians/:politicianId",
-        element: <PoliticianDetailScreen />
-      }
-    ]
+        element: <PoliticianDetailScreen />,
+      },
+    ],
   },
   {
     path: "/login",
-    element: <LoginScreen />
+    element: <LoginScreen />,
   },
   {
     path: "/register",
-    element: <RegisterScreen />
-  }
-])
+    element: <RegisterScreen />,
+  },
+]);

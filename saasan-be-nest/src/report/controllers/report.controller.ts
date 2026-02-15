@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ReportService } from '../services/report.service';
 import { CreateReportDto } from '../dtos/create-report.dto';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { type Request } from 'express';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
@@ -12,15 +23,14 @@ import { ReportIdDto } from '../dtos/report-id.dto';
 @Controller('report')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}
-  
+
   @HttpCode(201)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
-  async create(
-    @Req() req: Request,
-    @Body() reportData: CreateReportDto,
-  ) {
-    await this.reportService.create({ ...reportData, reporterId: req.user.id });
+  async create(@Req() req: Request, @Body() reportData: CreateReportDto) {
+    return await this.reportService.create({
+      ...reportData,
+      reporterId: req.user.id,
+    });
   }
 
   @Get()
@@ -31,28 +41,22 @@ export class ReportController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':reportId')
   async deleteById(@Param() param: ReportIdDto) {
-    await this.reportService.deleteById(param)
-  }
-  
-  @Get("my-reports")
-  async getMyReports(@Req() req: Request) {
-    return await this.reportService.getMyReports(req.user.id)
+    await this.reportService.deleteById(param);
   }
 
-  @Get(":evidenceId")
-  async getEvidenceById(@Param() param: EvidenceIdDto) {
-    return await this.reportService.getEvidenceById(param)
+  @Get('my-reports')
+  async getMyReports(@Req() req: Request) {
+    return await this.reportService.getMyReports(req.user.id);
   }
 
   @HttpCode(204)
   @Put(':reportId/status')
-  async updateStatus(@Body() body: UpdateReportStatusDto, @Param() evidenceIdDto: EvidenceIdDto) {
-    await this.reportService.updateStatus(evidenceIdDto, body)
+  async updateStatus(
+    @Body() body: UpdateReportStatusDto,
+    @Param() evidenceIdDto: EvidenceIdDto,
+  ) {
+    await this.reportService.updateStatus(evidenceIdDto, body);
   }
-
-  @HttpCode(204)
-  @Put(':reportId/evidence')
-  async uploadEvidence() {}
 
   @HttpCode(204)
   @Put(':reportId/vote')
