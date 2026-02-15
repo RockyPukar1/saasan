@@ -11,6 +11,7 @@ import {
   Shield,
   Clock,
   CheckCircle2,
+  X,
 } from "lucide-react";
 import { ShareableImage } from "@/components/ShareableImage";
 import { useReports } from "@/hooks/useReports";
@@ -18,6 +19,7 @@ import type { CorruptionReport, ReportCreateData } from "@/types";
 import EvidencePicker from "@/components/EvidencePicker";
 import { Input } from "@/components/ui/input";
 import TabSelector from "@/components/common/TabSelector";
+import toast from "react-hot-toast";
 interface ReportCategory {
   id: string;
   name: string;
@@ -85,9 +87,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 }) => {
   return (
     <div className="mb-6">
-      <p className="text-lg font-bold text-gray-800 mb-3">
-        Report Category
-      </p>
+      <p className="text-lg font-bold text-gray-800 mb-3">Report Category</p>
 
       <div className="flex flex-wrap">
         {reportCategories.map((category) => {
@@ -137,6 +137,8 @@ type NewReportFormProps = {
   form: ReportCreateData;
   setForm: React.Dispatch<React.SetStateAction<ReportCreateData>>;
   reportCategories: ReportCategory[];
+  selectedFiles: File[];
+  setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>;
   onSubmit: () => void;
 };
 
@@ -144,192 +146,174 @@ const NewReportForm: React.FC<NewReportFormProps> = ({
   form,
   setForm,
   reportCategories,
+  selectedFiles,
+  setSelectedFiles,
   onSubmit,
 }) => {
+  const handleFileSelect = (newFiles: File[]) => {
+    const validFiles = newFiles.filter((file) => file.size <= 10 * 1024 * 1024);
+    if (validFiles.length !== newFiles.length) {
+      toast.error("Some files exceed 10MB limit and were skipped");
+    }
+    setSelectedFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   return (
-      <div
-        className="flex-1 px-4 py-4"
-      >
-        <CategorySelector
-          reportCategories={reportCategories}
-          selectedCategory={form.category}
-          setSelectedCategory={(id) =>
-            setForm((prev) => ({ ...prev, category: id }))
+    <div className="flex-1 px-4 py-4">
+      <CategorySelector
+        reportCategories={reportCategories}
+        selectedCategory={form.category}
+        setSelectedCategory={(id) =>
+          setForm((prev) => ({ ...prev, category: id }))
+        }
+      />
+
+      {/* Anonymous Toggle */}
+      <div className="mb-6">
+        <div
+          onClick={() =>
+            setForm((prev) => ({ ...prev, isAnonymous: !prev.isAnonymous }))
           }
-        />
-
-        {/* Anonymous Toggle */}
-        <div className="mb-6">
+          className="flex items-center p-4 bg-gray-100 rounded-lg cursor-pointer transition-colors hover:bg-gray-200"
+        >
           <div
-            onClick={() =>
-              setForm((prev) => ({ ...prev, isAnonymous: !prev.isAnonymous }))
-            }
-            className="flex items-center p-4 bg-gray-100 rounded-lg cursor-pointer transition-colors hover:bg-gray-200"
+            className={`w-6 h-6 rounded border-2 mr-3 flex items-center justify-center ${
+              form.isAnonymous ? "bg-red-600 border-red-600" : "border-gray-400"
+            }`}
           >
-            <div
-              className={`w-6 h-6 rounded border-2 mr-3 flex items-center justify-center ${
-                form.isAnonymous
-                  ? "bg-red-600 border-red-600"
-                  : "border-gray-400"
-              }`}
-            >
-              {form.isAnonymous && <CheckCircle2 className="w-4 h-4 text-white" />}
-            </div>
-
-            <div className="flex-1">
-              <p className="font-bold text-gray-800">
-                Report Anonymously
-              </p>
-              <p className="text-gray-600 text-sm">
-                Your identity will be protected
-              </p>
-            </div>
-          {form.isAnonymous ? (
-            <EyeOff className="text-red-600 w-6 h-6" />
-            ) : (
-              <Eye className="text-gray-600 w-6 h-6" />
+            {form.isAnonymous && (
+              <CheckCircle2 className="w-4 h-4 text-white" />
             )}
           </div>
-        </div>
 
-        {/* Report Title */}
-        <div className="mb-4">
-          <p className="font-bold text-gray-800 mb-2">Report Title *</p>
-          <Input
-          placeholder="Brief title for your report"
-            value={form.title}
-            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-            className="outline-none border border-gray-300 rounded-lg p-3 text-gray-800"
-          />
-        </div>
-
-        {/* Description */}
-        <div className="mb-6">
-          <p className="font-bold text-gray-800 mb-2">
-            Detailed Description *
-          </p>
-          <Input
-          placeholder="Provide detailed information about the incident..."
-            value={form.description}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, description: e.target.value }))
-            }
-            className="outline-none border border-gray-300 rounded-lg p-3 text-gray-800"
-          />
-        </div>
-
-        {/* TODO: Province, District, Municipality, Ward */}
-        {/* <div className="mb-4">
-          <p className="font-bold text-gray-800 mb-2">Location</p>
-          <div className="flex-row items-center border border-gray-300 rounded-lg pl-3">
-            <MapPin className="text-gray-500" size={20} />
-            <Input
-              placeholder="Where did this happen?"
-              value={form.location}
-              onChange={(v) => setForm((p) => ({ ...p, location: v }))}
-              className="outline-none flex-1 rounded-lg px-3 p-3"
-            />
+          <div className="flex-1">
+            <p className="font-bold text-gray-800">Report Anonymously</p>
+            <p className="text-gray-600 text-sm">
+              Your identity will be protected
+            </p>
           </div>
-        </div> */}
-        <div className="mb-6">
-          <p className="font-bold text-gray-800 mb-2">
-            Evidence (Optional)
-          </p>
-          <div className="flex space-x-2 gap-2">
-            <EvidencePicker
-              onClick={async () => {
-                // try {
-                //   const { status } =
-                //     await ImagePicker.requestCameraPermissionsAsync();
-                //   if (status !== "granted") {
-                //     Alert.alert(
-                //       "Permission needed",
-                //       "Camera permission is required to take photos"
-                //     );
-                //     return;
-                //   }
-                //   const result = await ImagePicker.launchCameraAsync({
-                //     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                //     quality: 0.8,
-                //   });
-                //   if (!result.canceled) {
-                //     // Handle photo
-                //   }
-                // } catch (error) {
-                //   Alert.alert("Error", "Failed to take photo");
-                // }
-              }}
-              background="blue"
-              Icon={Camera}
-              text="Photo"
-            />
-           <EvidencePicker
-              onClick={async () => {
-                // try {
-                //   const result = await DocumentPicker.getDocumentAsync({
-                //     type: ["application/pdf", "image/*"],
-                //   });
-                //   if ("assets" in result && result.assets && result.assets[0]) {
-                //     // Handle document
-                //     const file = result.assets[0];
-                //   }
-                // } catch (error) {
-                //   Alert.alert("Error", "Failed to pick document");
-                // }
-              }}
-              background="green"
-              Icon={FileText}
-              text="Document"
-           />
-            <EvidencePicker
-              onClick={async () => {
-                // try {
-                //   const { status } = await Audio.requestPermissionsAsync();
-                //   if (status !== "granted") {
-                //     Alert.alert(
-                //       "Permission needed",
-                //       "Audio recording permission is required"
-                //     );
-                //     return;
-                //   }
-                //   const recording = new Audio.Recording();
-                //   await recording.prepareToRecordAsync();
-                //   await recording.startAsync();
-                //   // Handle recording
-                // } catch (error) {
-                //   Alert.alert("Error", "Failed to start recording");
-                // }
-              }}
-              background="purple"
-              Icon={Upload}
-              text="Audio"
-            />
-          </div>
-          <p className="text-gray-500 text-xs mt-2">
-            All evidence is encrypted and stored securely
-          </p>
+          {form.isAnonymous ? (
+            <EyeOff className="text-red-600 w-6 h-6" />
+          ) : (
+            <Eye className="text-gray-600 w-6 h-6" />
+          )}
         </div>
-        <Button onClick={onSubmit} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium">
-          Submit Report
-        </Button>
       </div>
+
+      {/* Report Title */}
+      <div className="mb-4">
+        <p className="font-bold text-gray-800 mb-2">Report Title *</p>
+        <Input
+          placeholder="Brief title for your report"
+          value={form.title}
+          onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+          className="outline-none border border-gray-300 rounded-lg p-3 text-gray-800"
+        />
+      </div>
+
+      {/* Description */}
+      <div className="mb-6">
+        <p className="font-bold text-gray-800 mb-2">Detailed Description *</p>
+        <Input
+          placeholder="Provide detailed information about the incident..."
+          value={form.description}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, description: e.target.value }))
+          }
+          className="outline-none border border-gray-300 rounded-lg p-3 text-gray-800"
+        />
+      </div>
+
+      {/* TODO: Province, District, Municipality, Ward */}
+
+      <div className="mb-6">
+        <p className="font-bold text-gray-800 mb-2">Evidence (Optional)</p>
+        <div className="flex flex-wrap gap-2">
+          <EvidencePicker
+            onFileSelect={handleFileSelect}
+            background="blue"
+            text="Photo"
+            Icon={Camera}
+            accept="image/*"
+            multiple={true}
+          />
+          <EvidencePicker
+            onFileSelect={handleFileSelect}
+            background="green"
+            text="Document"
+            Icon={FileText}
+            accept="application/pdf,.doc,.docx"
+            multiple={true}
+          />
+          <EvidencePicker
+            onFileSelect={handleFileSelect}
+            background="purple"
+            text="Audio"
+            Icon={Upload}
+            accept="audio/*"
+            multiple={true}
+          />
+        </div>
+        {selectedFiles.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm font-medium text-gray-700">Selected Files:</p>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {selectedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="relative flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
+                >
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-3 w-3 text-gray-500" />
+                    <span className="text-gray-700 truncate max-w-xs">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => removeFile(index)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-transparent text-red-500 hover:text-red-700"
+                  >
+                    <X />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <p className="text-gray-500 text-xs mt-2">
+          All evidence is encrypted and stored securely
+        </p>
+      </div>
+      <Button
+        onClick={onSubmit}
+        className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium"
+      >
+        Submit Report
+      </Button>
+    </div>
   );
 };
 
 type MyReportsTabProps = {
-  setSelectedReport: React.Dispatch<React.SetStateAction<CorruptionReport | null>>;
+  setSelectedReport: React.Dispatch<
+    React.SetStateAction<CorruptionReport | null>
+  >;
 };
 
-const MyReportsTab: React.FC<MyReportsTabProps> = ({
-  setSelectedReport }) => {
+const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
   const { userReports: reports, fetchUserReports } = useReports();
-  
-  console.log(reports)
-  
+
   useEffect(() => {
     fetchUserReports();
-  }, [])
-  
+  }, []);
+
   return (
     <div className="flex-1 px-4 py-4">
       {reports.map((report: CorruptionReport) => (
@@ -356,7 +340,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({
                 </div>
                 <div
                   className={`px-3 py-1 rounded-full ${getStatusColor(
-                    report.status
+                    report.status,
                   )}`}
                 >
                   <p className="text-white text-xs font-bold uppercase">
@@ -378,9 +362,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({
                 {report.isAnonymous && (
                   <div className="flex items-center">
                     <EyeOff className="text-gray-500 w-3.5 h-3.5" />
-                    <p className="text-gray-500 text-xs ml-1">
-                      Anonymous
-                    </p>
+                    <p className="text-gray-500 text-xs ml-1">Anonymous</p>
                   </div>
                 )}
               </div>
@@ -408,16 +390,18 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({
 };
 
 type AllReportsTabProps = {
-  setSelectedReport: React.Dispatch<React.SetStateAction<CorruptionReport | null>>;
-}
+  setSelectedReport: React.Dispatch<
+    React.SetStateAction<CorruptionReport | null>
+  >;
+};
 
 const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
   const { allReports: reports, fetchAllReports } = useReports();
-  
+
   useEffect(() => {
     fetchAllReports();
-  }, [])
-  
+  }, []);
+
   return (
     <div className="flex-1 px-4 py-4">
       {reports.map((report: CorruptionReport) => (
@@ -444,7 +428,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
                 </div>
                 <div
                   className={`px-3 py-1 rounded-full ${getStatusColor(
-                    report.status
+                    report.status,
                   )}`}
                 >
                   <p className="text-white text-xs font-bold uppercase">
@@ -466,9 +450,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
                 {report.isAnonymous && (
                   <div className="flex items-center">
                     <EyeOff className="text-gray-500 w-3.5 h-3.5" />
-                    <p className="text-gray-500 text-xs ml-1">
-                      Anonymous
-                    </p>
+                    <p className="text-gray-500 text-xs ml-1">Anonymous</p>
                   </div>
                 )}
               </div>
@@ -507,49 +489,46 @@ const initialReport: ReportCreateData = {
   municipalityId: "",
   wardId: "",
   dateOccurred: new Date().toISOString(),
-  peopleAffectedCount: 0
+  peopleAffectedCount: 0,
 };
 export default function ReportsScreen() {
-  const { createReport } = useReports()
-  
-  const [activeTab, setActiveTab] = useState<"new" | "my_reports" | "all_reports">("new");
-  const [selectedReport, setSelectedReport] = useState<CorruptionReport | null>(null);
-  const [form, setForm] = useState<ReportCreateData>(initialReport);
+  const { createReportWithEvidence } = useReports();
 
-  const handleSubmitReport = () => {
-    // if (
-    //   !form.title ||
-    //   !form.description ||
-    //   !form.dateOccurred
-    // ) {
-    //   Alert.alert("Error", "Please fill all required fields");
-    //   return;
-    // }
-    createReport(form)
-    // Alert.alert(
-    //   "Report Submitted",
-    //   "Your report has been submitted successfully. You will receive updates on its status.",
-    //   [
-    //     {
-    //       text: "OK",
-    //       onPress: () => {
-    //         setForm(initialReport);
-    //         setActiveTab("my_reports");
-    //       },
-    //     },
-    //   ]
-    // );
+  const [activeTab, setActiveTab] = useState<
+    "new" | "my_reports" | "all_reports"
+  >("new");
+  const [selectedReport, setSelectedReport] = useState<CorruptionReport | null>(
+    null,
+  );
+  const [form, setForm] = useState<ReportCreateData>(initialReport);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const handleSubmitReport = async () => {
+    if (!form.title || !form.description || !form.dateOccurred) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      await createReportWithEvidence(form, selectedFiles);
+
+      toast.success("Report submitted successfully");
+      setForm(initialReport);
+      setSelectedFiles([]);
+      setActiveTab("my_reports");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to submit report. Please try again");
+    }
   };
 
   return (
     <div className="flex-1 bg-gray-50">
       <div>
-
-
-      {/* Tab Selector */}
-      <div className="bg-white border-b border-gray-200">
-        {/* Reports Summary */}
-        {/* <div className="px-4 py-3 border-b border-gray-100">
+        {/* Tab Selector */}
+        <div className="bg-white border-b border-gray-200">
+          {/* Reports Summary */}
+          {/* <div className="px-4 py-3 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <FileText className="text-red-600 mr-2 w-4 h-4" />
@@ -577,67 +556,68 @@ export default function ReportsScreen() {
             </div>
           </div>
         </div> */}
-        <TabSelector
+          <TabSelector
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             tabs={[
               {
                 label: "New Report",
-                value: "new"
+                value: "new",
               },
               {
                 label: "All Reports",
-                value: "all_reports"
+                value: "all_reports",
               },
               {
                 label: "My Reports",
-                value: "my_reports"
-              }
+                value: "my_reports",
+              },
             ]}
           />
-      </div>
+        </div>
 
-      {/* Content */}
-      {activeTab === "new" ? (
-        <NewReportForm
-          form={form}
-          setForm={setForm}
-          reportCategories={reportCategories}
-          onSubmit={handleSubmitReport}
-        />
-      ) : activeTab === "my_reports" ? (
-        <MyReportsTab setSelectedReport={setSelectedReport} />
-      ) : (
-        <AllReportsTab setSelectedReport={setSelectedReport} />
-      )}
+        {/* Content */}
+        {activeTab === "new" ? (
+          <NewReportForm
+            form={form}
+            setForm={setForm}
+            selectedFiles={selectedFiles}
+            setSelectedFiles={setSelectedFiles}
+            reportCategories={reportCategories}
+            onSubmit={handleSubmitReport}
+          />
+        ) : activeTab === "my_reports" ? (
+          <MyReportsTab setSelectedReport={setSelectedReport} />
+        ) : (
+          <AllReportsTab setSelectedReport={setSelectedReport} />
+        )}
 
-      {/* Share Modal */}
-      {selectedReport && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-h-[80%] max-w-md w-full">
-            <div className="p-4 border-b border-gray-200 relative">
-              <p className="text-lg font-bold text-gray-800">
-                Share This Report
-              </p>
-              <Button
-                onClick={() => setSelectedReport(null)}
-                className="absolute right-4 top-4 p-1"
-              >
-                <p className="text-gray-500 text-xl leading-none">×</p>
-              </Button>
-            </div>
-            <div className="max-h-96">
-              <ShareableImage
-                type="corruption_report"
-                data={selectedReport}
-                onShare={() => setSelectedReport(null)}
-              />
+        {/* Share Modal */}
+        {selectedReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-h-[80%] max-w-md w-full">
+              <div className="p-4 border-b border-gray-200 relative">
+                <p className="text-lg font-bold text-gray-800">
+                  Share This Report
+                </p>
+                <Button
+                  onClick={() => setSelectedReport(null)}
+                  className="absolute right-4 top-4 p-1"
+                >
+                  <p className="text-gray-500 text-xl leading-none">×</p>
+                </Button>
+              </div>
+              <div className="max-h-96">
+                <ShareableImage
+                  type="corruption_report"
+                  data={selectedReport}
+                  onShare={() => setSelectedReport(null)}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
-      
     </div>
   );
-};
+}
