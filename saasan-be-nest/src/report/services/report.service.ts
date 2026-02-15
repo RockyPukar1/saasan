@@ -12,33 +12,43 @@ export class ReportService {
   constructor(private readonly reportRepo: ReportRepository) {}
 
   async create(reportData: CreateReportDto) {
-    await this.reportRepo.create(reportData);
-  }
-
-  async getEvidenceById(data: EvidenceIdDto) {
-    const report = await this.reportRepo.findById(data)
-    return ResponseHelper.response(ReportSerializer, report, "Report fetched successfully");
+    const report = await this.reportRepo.create(reportData);
+    return ResponseHelper.response(
+      ReportSerializer,
+      report,
+      'Report created successfully',
+    );
   }
 
   async deleteById(data: ReportIdDto) {
-    await this.reportRepo.deleteById(data)
+    await this.reportRepo.deleteById(data);
+    // TODO: remove evidence using transaction
   }
 
   async getAll() {
     const reports = await this.reportRepo.getAll();
-    return ResponseHelper.response(ReportSerializer, reports, "Reports fetched successfully");
+    return ResponseHelper.response(
+      ReportSerializer,
+      reports,
+      'Reports fetched successfully',
+    );
   }
-  
+
   async getMyReports(reporterId: string) {
-    const reports = await this.reportRepo.getMyReports(reporterId)
-    return ResponseHelper.response(ReportSerializer, reports, "Reports fetched successfully");
+    const reports = await this.reportRepo.getMyReports(reporterId);
+    return ResponseHelper.response(
+      ReportSerializer,
+      reports,
+      'Reports fetched successfully',
+    );
   }
 
-  async updateStatus(evidenceIdDto: EvidenceIdDto, data: UpdateReportStatusDto) {
-    await this.reportRepo.updateStatus(evidenceIdDto, data)
+  async updateStatus(
+    evidenceIdDto: EvidenceIdDto,
+    data: UpdateReportStatusDto,
+  ) {
+    await this.reportRepo.updateStatus(evidenceIdDto, data);
   }
-
-  async uploadEvidence() {}
 
   async vote() {}
 

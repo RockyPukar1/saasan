@@ -293,17 +293,6 @@ export interface ExpressRequest {
   };
 }
 
-// Mobile-specific types
-export type MediaFile = {
-  uri: string;
-  type?: string;
-  name?: string;
-  mimeType?: string;
-  size?: number;
-};
-
-export type MediaPickerResult = MediaFile;
-
 // Poll-specific interfaces
 export interface PollFilters {
   status?: PollStatus;
