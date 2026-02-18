@@ -37,6 +37,10 @@ export class ReportRepository {
     return await this.model.findById(reportId);
   }
 
+  async getById({ reportId }: ReportIdDto) {
+    return await this.model.findById(reportId);
+  }
+
   async deleteById({ reportId }: ReportIdDto) {
     await this.model.findByIdAndDelete(reportId);
   }
@@ -62,6 +66,17 @@ export class ReportRepository {
         status: data.status,
       },
     });
+  }
+
+  async updateReport(
+    { reportId }: ReportIdDto,
+    updateData: Partial<CreateReportDto>,
+  ) {
+    return await this.model.findByIdAndUpdate(
+      reportId,
+      { $set: updateData },
+      { new: true },
+    );
   }
 
   async getTotalReportsCount() {

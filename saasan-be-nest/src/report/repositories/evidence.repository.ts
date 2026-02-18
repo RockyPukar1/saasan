@@ -22,6 +22,7 @@ export class EvidenceRepository {
     evidences: any,
     session: ClientSession,
   ) {
+    console.log('Repository received evidences:', evidences);
     return await this.model.updateOne(
       { reportId: new Types.ObjectId(reportId) },
       {
@@ -30,10 +31,7 @@ export class EvidenceRepository {
         },
         $push: {
           evidences: {
-            $each: evidences.map((evidence) => ({
-              id: new Types.ObjectId(),
-              ...evidence,
-            })),
+            $each: evidences,
           },
         },
       },

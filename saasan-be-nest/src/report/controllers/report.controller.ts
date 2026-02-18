@@ -62,15 +62,28 @@ export class ReportController {
     return await this.reportService.getAll();
   }
 
+  @Get('my-reports')
+  async getMyReports(@Req() req: Request) {
+    return await this.reportService.getMyReports(req.user.id);
+  }
+
+  @Get(':reportId')
+  async getById(@Param() param: ReportIdDto) {
+    return await this.reportService.getById(param);
+  }
+
+  @Put(':reportId')
+  async updateReport(
+    @Param() param: ReportIdDto,
+    @Body() updateData: Partial<CreateReportDto>,
+  ) {
+    return await this.reportService.updateReport(param, updateData);
+  }
+
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':reportId')
   async deleteById(@Param() param: ReportIdDto) {
     await this.reportService.deleteById(param);
-  }
-
-  @Get('my-reports')
-  async getMyReports(@Req() req: Request) {
-    return await this.reportService.getMyReports(req.user.id);
   }
 
   @HttpCode(204)

@@ -334,6 +334,13 @@ class ApiService {
     return this.request<IReport>("GET", `/report/${id}`);
   }
 
+  async updateReport(
+    id: string,
+    data: Partial<ReportCreateData>,
+  ): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("PUT", `/report/${id}`, data);
+  }
+
   async getUserReports(): Promise<ApiResponse<IReport[]>> {
     return this.request<IReport[]>("GET", "/report/my-reports");
   }
@@ -349,9 +356,34 @@ class ApiService {
     return this.request<void>("POST", `/report/${id}/vote`);
   }
 
+  async uploadEvidence(id: string, files: File[]): Promise<ApiResponse<void>> {
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    return this.request<void>("POST", `/report-evidence/${id}`, formData);
+  }
+
+  async deleteEvidence(
+    reportId: string,
+    evidenceId: string,
+    cloudinaryPublicId: string,
+  ): Promise<ApiResponse<void>> {
+    return this.request<void>(
+      "DELETE",
+      `/report-evidence/${reportId}/${evidenceId}`,
+      {
+        cloudinaryPublicId,
+      },
+    );
+  }
+
   // Polling APIs
   async createPoll(data: CreatePollData): Promise<ApiResponse<Poll>> {
     return this.request<Poll>("POST", "/poll", data);
+    // ... (rest of the code remains the same)
   }
 
   async getAllPolls(filters?: PollFilters): Promise<Poll[]> {

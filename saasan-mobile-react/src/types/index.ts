@@ -144,10 +144,21 @@ export interface Ward {
 // Report types
 export interface Evidence {
   id: string;
-  url: string;
-  type: "image" | "document" | "video";
+  fileName: string;
+  originalName: string;
+  filePath: string;
+  mimeType: string;
+  fileSize: number;
+  fileType: "image" | "video" | "audio" | "document";
   uploadedAt: string;
-  description?: string;
+  cloudinaryPublicId: string;
+}
+
+export interface StatusUpdate {
+  id: string;
+  status: string;
+  comment: string;
+  createdAt: string;
 }
 
 export interface CorruptionReport {
@@ -159,12 +170,15 @@ export interface CorruptionReport {
   upvotesCount: number;
   downvotesCount: number;
   viewsCount: number;
-  referenceNumber: number;
+  referenceNumber: string;
   tags: string[];
-  userVote: string;
+  userVote?: string;
   isAnonymous: boolean;
   createdAt: string;
   updatedAt: string;
+  evidence?: Evidence[];
+  statusUpdates?: StatusUpdate[];
+  sharesCount?: number;
 }
 
 // Historical events types
