@@ -12,6 +12,7 @@ import {
 import { ReportEvidenceController } from './controllers/evidence.controller';
 import { EvidenceService } from './services/evidence.service';
 import { EvidenceRepository } from './repositories/evidence.repository';
+import { TransactionModule } from 'src/common/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EvidenceRepository } from './repositories/evidence.repository';
       { name: EvidenceEntity.name, schema: EvidenceEntitySchema },
     ]),
     CloudinaryModule,
+    TransactionModule,
   ],
   controllers: [ReportController, ReportEvidenceController],
   providers: [

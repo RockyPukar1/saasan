@@ -8,6 +8,7 @@ import PoliticiansScreen from "./screens/Protected/PoliticiansScreen";
 import RegisterScreen from "./screens/NonProtected/RegisterScreen";
 import PollsScreen from "./screens/Protected/PollsScreen";
 import PoliticianDetailScreen from "./screens/Protected/PoliticiansScreen/PoliticianDetailScreen";
+import ReportDetailScreen from "./screens/Protected/ReportsScreen/ReportDetailScreen";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
       {
         path: "/reports",
         element: <ReportsScreen />,
+      },
+      {
+        path: "/reports/:reportId",
+        element: <ReportDetailScreen />,
       },
       {
         path: "/politicians",
