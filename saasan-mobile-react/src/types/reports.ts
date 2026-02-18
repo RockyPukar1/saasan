@@ -1,3 +1,5 @@
+import type { Evidence, StatusUpdate } from "./index";
+
 export interface IReport {
   id: string;
   title: string;
@@ -7,10 +9,13 @@ export interface IReport {
   upvotesCount: number;
   downvotesCount: number;
   viewsCount: number;
-  referenceNumber: number;
+  referenceNumber: string;
   tags: string[];
-  userVote: string;
+  userVote?: string;
   isAnonymous: boolean;
   createdAt: string;
   updatedAt: string;
+  evidence?: Evidence[];
+  statusUpdates?: StatusUpdate[];
+  sharesCount?: number;
 }

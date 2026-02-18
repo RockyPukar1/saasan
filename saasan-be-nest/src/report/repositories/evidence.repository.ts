@@ -3,7 +3,7 @@ import {
   EvidenceEntity,
   EvidenceEntityDocument,
 } from '../entities/evidence.entity';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 
@@ -17,7 +17,12 @@ export class EvidenceRepository {
     return await this.model.findOne({ reportId: new Types.ObjectId(reportId) });
   }
 
-  async addEvidence({ reportId }: ReportIdDto, evidence: any) {
+  async addEvidence(
+    { reportId }: ReportIdDto,
+    evidences: any,
+    session: ClientSession,
+  ) {
+    console.log('Repository received evidences:', evidences);
     return await this.model.updateOne(
       { reportId: new Types.ObjectId(reportId) },
       {
@@ -26,12 +31,11 @@ export class EvidenceRepository {
         },
         $push: {
           evidences: {
-            id: new Types.ObjectId(),
-            ...evidence,
+            $each: evidences,
           },
         },
       },
-      { upsert: true },
+      { upsert: true, session },
     );
   }
 

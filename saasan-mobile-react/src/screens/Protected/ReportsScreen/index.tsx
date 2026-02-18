@@ -20,6 +20,7 @@ import EvidencePicker from "@/components/EvidencePicker";
 import { Input } from "@/components/ui/input";
 import TabSelector from "@/components/common/TabSelector";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 interface ReportCategory {
   id: string;
   name: string;
@@ -310,6 +311,8 @@ type MyReportsTabProps = {
 const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
   const { userReports: reports, fetchUserReports } = useReports();
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     fetchUserReports();
   }, []);
@@ -317,10 +320,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
   return (
     <div className="flex-1 px-4 py-4">
       {reports.map((report: CorruptionReport) => (
-        <div
-          key={report.id}
-          // onPress={() => router.push(`/report/${report.id}`)}
-        >
+        <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)}>
           <Card className="mb-4">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-3">
@@ -397,6 +397,7 @@ type AllReportsTabProps = {
 
 const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
   const { allReports: reports, fetchAllReports } = useReports();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAllReports();
@@ -405,10 +406,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
   return (
     <div className="flex-1 px-4 py-4">
       {reports.map((report: CorruptionReport) => (
-        <div
-          key={report.id}
-          // onPress={() => router.push(`/report/${report.id}`)}
-        >
+        <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)}>
           <Card className="mb-4">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-3">
@@ -492,7 +490,7 @@ const initialReport: ReportCreateData = {
   peopleAffectedCount: 0,
 };
 export default function ReportsScreen() {
-  const { createReportWithEvidence } = useReports();
+  const { createReport } = useReports();
 
   const [activeTab, setActiveTab] = useState<
     "new" | "my_reports" | "all_reports"
@@ -510,7 +508,7 @@ export default function ReportsScreen() {
     }
 
     try {
-      await createReportWithEvidence(form, selectedFiles);
+      await createReport(form, selectedFiles);
 
       toast.success("Report submitted successfully");
       setForm(initialReport);

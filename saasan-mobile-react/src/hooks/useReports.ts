@@ -52,69 +52,23 @@ export const useReports = (initialFilters?: ReportFilters) => {
     }
   }, []);
 
-  const createReport = useCallback(async (data: ReportCreateData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.createReport(data);
-      fetchUserReports();
-      return response.data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create report");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const uploadEvidence = useCallback(
-    async (reportId: string, file: File) => {
+  const createReport = useCallback(
+    async (data: ReportCreateData, files: File[]) => {
       try {
         setLoading(true);
         setError(null);
-        await apiService.uploadEvidence(reportId, file);
+        await apiService.createReport(data, files);
+        fetchUserReports();
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to upload evidence",
+          err instanceof Error ? err.message : "Failed to create report",
         );
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [currentReport],
-  );
-
-  const createReportWithEvidence = useCallback(
-    async (reportData: ReportCreateData, files: File[]) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Create report
-
-        const createdReport = await createReport(reportData);
-        const reportId = createdReport.id;
-
-        // Upload report
-        if (files.length > 0) {
-          const uploadPromises = files.map((file) =>
-            uploadEvidence(reportId, file),
-          );
-          await Promise.all(uploadPromises);
-        }
-
-        return createdReport;
-      } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Failed to submit report",
-        );
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [createReport, uploadEvidence],
+    [],
   );
 
   const updateReportStatus = useCallback(
@@ -142,6 +96,91 @@ export const useReports = (initialFilters?: ReportFilters) => {
     [currentReport],
   );
 
+  const updateReport = useCallback(
+    async (id: string, data: Partial<ReportCreateData>) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await apiService.updateReport(id, data);
+
+        // Update current report if it's the one being edited
+        if (currentReport?.id === id) {
+          setCurrentReport(response.data);
+        }
+
+        // Update reports lists
+        setAllReports((prev) =>
+          prev.map((report) => (report.id === id ? response.data : report)),
+        );
+        setUserReports((prev) =>
+          prev.map((report) => (report.id === id ? response.data : report)),
+        );
+
+        return response.data;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to update report",
+        );
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentReport],
+  );
+
+  const deleteEvidence = useCallback(
+    async (
+      reportId: string,
+      evidenceId: string,
+      cloudinaryPublicId: string,
+    ) => {
+      try {
+        setLoading(true);
+        setError(null);
+        await apiService.deleteEvidence(
+          reportId,
+          evidenceId,
+          cloudinaryPublicId,
+        );
+
+        // Refresh the report to get updated evidence
+        if (currentReport?.id === reportId) {
+          await fetchReportById(reportId);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to delete evidence",
+        );
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentReport, fetchReportById],
+  );
+
+  const uploadEvidence = useCallback(
+    async (id: string, files: File[]) => {
+      try {
+        setLoading(true);
+        setError(null);
+        await apiService.uploadEvidence(id, files);
+        // Refresh the report to get updated evidence
+        if (currentReport?.id === id) {
+          await fetchReportById(id);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to upload evidence",
+        );
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentReport, fetchReportById],
+  );
   const voteOnReport = useCallback(
     async (id: string, isUpvote: boolean) => {
       try {
@@ -157,7 +196,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
                   downvotesCount: !isUpvote
                     ? (report.downvotesCount || 0) + 1
                     : report.downvotesCount || 0,
-                  user_vote: isUpvote ? "up" : "down",
+                  userVote: isUpvote ? "up" : "down",
                 }
               : report,
           ),
@@ -167,13 +206,13 @@ export const useReports = (initialFilters?: ReportFilters) => {
             prev
               ? {
                   ...prev,
-                  upvotes_count: isUpvote
+                  upvotesCount: isUpvote
                     ? (prev.upvotesCount || 0) + 1
                     : prev.upvotesCount || 0,
-                  downvotes_count: !isUpvote
+                  downvotesCount: !isUpvote
                     ? (prev.downvotesCount || 0) + 1
                     : prev.downvotesCount || 0,
-                  user_vote: isUpvote ? "up" : "down",
+                  userVote: isUpvote ? "up" : "down",
                 }
               : null,
           );
@@ -197,10 +236,12 @@ export const useReports = (initialFilters?: ReportFilters) => {
     fetchUserReports,
     fetchAllReports,
     fetchReportById,
-    createReportWithEvidence,
+    createReport,
+    updateReport,
     updateReportStatus,
-    uploadEvidence,
     voteOnReport,
+    uploadEvidence,
+    deleteEvidence,
     getReport: fetchReportById,
   };
 };

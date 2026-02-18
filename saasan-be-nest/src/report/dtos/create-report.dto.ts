@@ -21,18 +21,18 @@ export class CreateReportDto {
   category?: string;
 
   @IsMongoId()
-  reporterId: string
-  
+  reporterId: string;
+
   @IsOptional()
   @IsNumber()
   amountInvolved?: number;
 
   @IsOptional()
   @IsEnum(ReportType)
-  reportType?: string
-  
+  reportType?: string;
+
   @IsBoolean()
-  isAnonymous: boolean
+  isAnonymous: boolean;
 
   @IsOptional()
   @IsMongoId()
@@ -59,5 +59,5 @@ export class CreateReportDto {
 
   @IsOptional()
   @IsNumber()
-  peopleAffectedCount?: number
+  peopleAffectedCount?: number;
 }

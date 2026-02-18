@@ -1,5 +1,4 @@
 import type {
-  Evidence,
   ReportCreateData,
   ReportFilters,
   ReportUpdateData,
@@ -295,8 +294,23 @@ class ApiService {
   }
 
   // Reports APIs
-  async createReport(data: ReportCreateData): Promise<ApiResponse<IReport>> {
-    return this.request<IReport>("POST", "/report", data);
+  async createReport(
+    data: ReportCreateData,
+    files: File[],
+  ): Promise<ApiResponse<IReport>> {
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    return this.request<IReport>("POST", "/report", formData);
   }
 
   async getAllReports(
@@ -320,6 +334,13 @@ class ApiService {
     return this.request<IReport>("GET", `/report/${id}`);
   }
 
+  async updateReport(
+    id: string,
+    data: Partial<ReportCreateData>,
+  ): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("PUT", `/report/${id}`, data);
+  }
+
   async getUserReports(): Promise<ApiResponse<IReport[]>> {
     return this.request<IReport[]>("GET", "/report/my-reports");
   }
@@ -331,27 +352,38 @@ class ApiService {
     return this.request<IReport>("PUT", `/report/${id}/status`, data);
   }
 
-  async uploadEvidence(
-    reportId: string,
-    file: File,
-  ): Promise<ApiResponse<Evidence[]>> {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    return this.request<Evidence[]>(
-      "POST",
-      `/report-evidence/${reportId}/upload`,
-      formData,
-    );
-  }
-
   async voteOnReport(id: string): Promise<ApiResponse<void>> {
     return this.request<void>("POST", `/report/${id}/vote`);
+  }
+
+  async uploadEvidence(id: string, files: File[]): Promise<ApiResponse<void>> {
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    return this.request<void>("POST", `/report-evidence/${id}`, formData);
+  }
+
+  async deleteEvidence(
+    reportId: string,
+    evidenceId: string,
+    cloudinaryPublicId: string,
+  ): Promise<ApiResponse<void>> {
+    return this.request<void>(
+      "DELETE",
+      `/report-evidence/${reportId}/${evidenceId}`,
+      {
+        cloudinaryPublicId,
+      },
+    );
   }
 
   // Polling APIs
   async createPoll(data: CreatePollData): Promise<ApiResponse<Poll>> {
     return this.request<Poll>("POST", "/poll", data);
+    // ... (rest of the code remains the same)
   }
 
   async getAllPolls(filters?: PollFilters): Promise<Poll[]> {

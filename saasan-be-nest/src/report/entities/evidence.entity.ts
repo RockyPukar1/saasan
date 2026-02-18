@@ -21,7 +21,7 @@ export class EvidenceEntity {
   @Prop({
     type: [
       {
-        id: {
+        _id: {
           type: Types.ObjectId,
           required: true,
         },
