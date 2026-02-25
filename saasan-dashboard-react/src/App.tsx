@@ -8,14 +8,18 @@ import {
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { LoginPage } from "@/pages/LoginPage";
-import { DashboardPage } from "@/pages/DashboardPage";
-import { PoliticiansPage } from "@/pages/PoliticiansPage";
-import { ReportsPage } from "@/pages/ReportsPage";
-import { HistoricalEventsPage } from "@/pages/HistoricalEventsPage";
-import PollingPage from "@/pages/PollingPage";
+import { LoginPage } from "@/screens/LoginPage";
+import { DashboardPage } from "@/screens/DashboardPage";
+import { PoliticiansPage } from "@/screens/PoliticiansPage";
+import { HistoricalEventsPage } from "@/screens/HistoricalEventsPage";
+import PollingPage from "@/screens/PollingPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import "./index.css";
+import ReportsScreen from "./screens/ReportsScreen";
+import ReportTypesScreen from "./screens/ReportsScreen/ReportTypeScreen";
+import ReportStatusesScreen from "./screens/ReportsScreen/ReportStatusScreen";
+import ReportPrioritiesScreen from "./screens/ReportsScreen/ReportPrioritiesScreen";
+import ReportVisibilitiesScreen from "./screens/ReportsScreen/ReportVisibilityScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,7 +49,20 @@ function App() {
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="politicians" element={<PoliticiansPage />} />
-                <Route path="reports" element={<ReportsPage />} />
+                <Route path="reports" element={<ReportsScreen />} />
+                <Route path="reports/types" element={<ReportTypesScreen />} />
+                <Route
+                  path="reports/statuses"
+                  element={<ReportStatusesScreen />}
+                />
+                <Route
+                  path="reports/priorities"
+                  element={<ReportPrioritiesScreen />}
+                />
+                <Route
+                  path="reports/visibilities"
+                  element={<ReportVisibilitiesScreen />}
+                />
                 <Route
                   path="historical-events"
                   element={<HistoricalEventsPage />}

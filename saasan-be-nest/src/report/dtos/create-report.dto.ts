@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ReportType } from '../entities/report.entity';
 
 export class CreateReportDto {
   @IsString()
@@ -27,9 +26,8 @@ export class CreateReportDto {
   @IsNumber()
   amountInvolved?: number;
 
-  @IsOptional()
-  @IsEnum(ReportType)
-  reportType?: string;
+  @IsMongoId()
+  typeId: string;
 
   @IsBoolean()
   isAnonymous: boolean;

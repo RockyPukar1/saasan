@@ -13,22 +13,66 @@ import { ReportEvidenceController } from './controllers/evidence.controller';
 import { EvidenceService } from './services/evidence.service';
 import { EvidenceRepository } from './repositories/evidence.repository';
 import { TransactionModule } from 'src/common/transaction/transaction.module';
-
+import {
+  ReportActivityEntity,
+  ReportActivityEntitySchema,
+} from './entities/report-activity.entity';
+import { ReportActivityRepository } from './repositories/report-activity.repository';
+import { ReportTypeRepository } from './repositories/report-type.repository';
+import {
+  ReportTypeEntity,
+  ReportTypeEntitySchema,
+} from './entities/report-type.entity';
+import { ReportStatusRepository } from './repositories/report-status.repository';
+import {
+  ReportStatusEntity,
+  ReportStatusEntitySchema,
+} from './entities/report-status.entity';
+import { ReportVisibilityRepository } from './repositories/report-visibility.repository';
+import { ReportPriorityRepository } from './repositories/report-priority.repository';
+import {
+  ReportPriorityEntity,
+  ReportPriorityEntitySchema,
+} from './entities/report-priority.entity';
+import {
+  ReportVisibilityEntity,
+  ReportVisibilityEntitySchema,
+} from './entities/report-visibility.entity';
+import { AdminReportController } from './controllers/admin-report.controller';
+import { UserModule } from 'src/user/user.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ReportEntity.name, schema: ReportEntitySchema },
       { name: EvidenceEntity.name, schema: EvidenceEntitySchema },
+      { name: ReportActivityEntity.name, schema: ReportActivityEntitySchema },
+      { name: ReportTypeEntity.name, schema: ReportTypeEntitySchema },
+      { name: ReportStatusEntity.name, schema: ReportStatusEntitySchema },
+      { name: ReportPriorityEntity.name, schema: ReportPriorityEntitySchema },
+      {
+        name: ReportVisibilityEntity.name,
+        schema: ReportVisibilityEntitySchema,
+      },
     ]),
     CloudinaryModule,
     TransactionModule,
+    UserModule,
   ],
-  controllers: [ReportController, ReportEvidenceController],
+  controllers: [
+    ReportController,
+    ReportEvidenceController,
+    AdminReportController,
+  ],
   providers: [
     ReportService,
     EvidenceService,
     ReportRepository,
     EvidenceRepository,
+    ReportActivityRepository,
+    ReportTypeRepository,
+    ReportStatusRepository,
+    ReportPriorityRepository,
+    ReportVisibilityRepository,
   ],
   exports: [ReportRepository],
 })

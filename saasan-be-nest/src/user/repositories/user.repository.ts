@@ -2,6 +2,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { RegisterUserDto } from 'src/auth/dtos/register.dto';
 import { UserEntity, UserEntityDocument } from '../entities/user.entity';
 import { Model } from 'mongoose';
+import { UserIdDto } from '../dtos/user-id.dto';
 
 export class UserRepository {
   constructor(
@@ -19,6 +20,10 @@ export class UserRepository {
 
   findOne(filter: any) {
     return this.model.findOne(filter);
+  }
+
+  async findById({ userId }: UserIdDto) {
+    return this.model.findById(userId);
   }
 
   async create(userData: RegisterUserDto) {

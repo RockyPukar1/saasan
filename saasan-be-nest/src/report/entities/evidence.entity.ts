@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
+import { ReportEntity } from './report.entity';
 
 export enum FileTypeEnum {
   IMAGE = 'image',
@@ -10,12 +11,12 @@ export enum FileTypeEnum {
 
 @Schema({ timestamps: true, collection: EvidenceEntity.collection })
 export class EvidenceEntity {
-  static readonly collection = 'report-evidences';
+  static readonly collection = 'report_evidences';
   _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 
-  @Prop({ type: Types.ObjectId, required: true })
+  @Prop({ type: Types.ObjectId, ref: ReportEntity.name, required: true })
   reportId: Types.ObjectId;
 
   @Prop({
