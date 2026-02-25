@@ -14,14 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportVisibilitiesApi } from "@/services/api";
-
-interface ReportVisibility {
-  _id: string;
-  visibility: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { IReportVisibility } from "@/types/reports";
 
 const visibilityColors = {
   public: "bg-green-100 text-green-800",
@@ -35,11 +28,11 @@ const visibilityColors = {
 //   restricted: <Globe className="h-4 w-4" />,
 // };
 
-export default function ReportVisibilityScreen() {
+export default function IReportVisibilityScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingVisibility, setEditingVisibility] =
-    useState<ReportVisibility | null>(null);
+    useState<IReportVisibility | null>(null);
   const [formData, setFormData] = useState({
     visibility: "",
     description: "",
@@ -114,10 +107,10 @@ export default function ReportVisibilityScreen() {
     createMutation.mutate(formData);
   };
 
-  const handleEdit = (visibility: ReportVisibility) => {
+  const handleEdit = (visibility: IReportVisibility) => {
     setEditingVisibility(visibility);
     setFormData({
-      visibility: visibility.visibility,
+      visibility: visibility.title,
       description: visibility.description,
     });
     setShowCreateForm(true);
@@ -133,7 +126,7 @@ export default function ReportVisibilityScreen() {
       return;
     }
     updateMutation.mutate({
-      id: editingVisibility._id,
+      id: editingVisibility.id,
       data: formData,
     });
   };
@@ -162,11 +155,9 @@ export default function ReportVisibilityScreen() {
   // };
 
   const filteredVisibilities =
-    visibilitiesData?.data?.filter(
-      (visibility: ReportVisibility) =>
-        visibility.visibility
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
+    visibilitiesData?.filter(
+      (visibility: IReportVisibility) =>
+        visibility.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         visibility.description
           .toLowerCase()
           .includes(searchQuery.toLowerCase()),
@@ -296,19 +287,19 @@ export default function ReportVisibilityScreen() {
             <div className="space-y-4">
               {visibilities.map((visibility) => (
                 <div
-                  key={visibility._id}
+                  key={visibility.id}
                   className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-lg font-medium text-gray-900">
-                          {visibility.visibility}
+                          {visibility.title}
                         </h3>
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getVisibilityColor(visibility.visibility)}`}
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getVisibilityColor(visibility.title)}`}
                         >
-                          {visibility.visibility}
+                          {visibility.title}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">
@@ -330,7 +321,7 @@ export default function ReportVisibilityScreen() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(visibility._id)}
+                        onClick={() => handleDelete(visibility.id)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />

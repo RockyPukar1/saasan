@@ -1,16 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  Clock,
-  X,
-} from "lucide-react";
+import { Search, Plus, Edit, Trash2, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,29 +14,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportStatusesApi } from "@/services/api";
-
-interface ReportStatus {
-  _id: string;
-  status: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const statusColors = {
-  pending: "bg-gray-100 text-gray-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  under_review: "bg-yellow-100 text-yellow-800",
-  verified: "bg-blue-100 text-blue-800",
-  resolved: "bg-green-100 text-green-800",
-  dismissed: "bg-red-100 text-red-800",
-};
+import type { IReportStatus } from "@/types/reports";
 
 export default function ReportStatusScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingStatus, setEditingStatus] = useState<ReportStatus | null>(null);
+  const [editingStatus, setEditingStatus] = useState<IReportStatus | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     status: "",
     description: "",
@@ -120,10 +96,10 @@ export default function ReportStatusScreen() {
     createMutation.mutate(formData);
   };
 
-  const handleEdit = (status: ReportStatus) => {
+  const handleEdit = (status: IReportStatus) => {
     setEditingStatus(status);
     setFormData({
-      status: status.status,
+      status: status.title,
       description: status.description,
     });
     setShowCreateForm(true);
@@ -139,7 +115,7 @@ export default function ReportStatusScreen() {
       return;
     }
     updateMutation.mutate({
-      id: editingStatus._id,
+      id: editingStatus.id,
       data: formData,
     });
   };
@@ -150,17 +126,10 @@ export default function ReportStatusScreen() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return (
-      statusColors[status as keyof typeof statusColors] ||
-      "bg-gray-100 text-gray-800"
-    );
-  };
-
   const filteredStatuses =
-    statusesData?.data?.filter(
-      (status: ReportStatus) =>
-        status.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    statusesData?.filter(
+      (status: IReportStatus) =>
+        status.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         status.description.toLowerCase().includes(searchQuery.toLowerCase()),
     ) || [];
 
@@ -284,19 +253,17 @@ export default function ReportStatusScreen() {
             <div className="space-y-4">
               {statuses.map((status) => (
                 <div
-                  key={status._id}
+                  key={status.id}
                   className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-lg font-medium text-gray-900">
-                          {status.status}
+                          {status.title}
                         </h3>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(status.status)}`}
-                        >
-                          {status.status}
+                        <span className="px-2 py-1 text-xs font-medium rounded-full">
+                          {status.title}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">
@@ -318,7 +285,7 @@ export default function ReportStatusScreen() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(status._id)}
+                        onClick={() => handleDelete(status.id)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />

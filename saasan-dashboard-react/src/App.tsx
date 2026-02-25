@@ -18,7 +18,7 @@ import "./index.css";
 import ReportsScreen from "./screens/ReportsScreen";
 import ReportTypesScreen from "./screens/ReportsScreen/ReportTypeScreen";
 import ReportStatusesScreen from "./screens/ReportsScreen/ReportStatusScreen";
-import ReportPrioritiesScreen from "./screens/ReportPrioritiesScreen/ReportPrioritiesScreen";
+import ReportPrioritiesScreen from "./screens/ReportsScreen/ReportPrioritiesScreen";
 import ReportVisibilitiesScreen from "./screens/ReportsScreen/ReportVisibilityScreen";
 
 const queryClient = new QueryClient({

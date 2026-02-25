@@ -14,19 +14,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportTypesApi } from "@/services/api";
-
-interface ReportType {
-  _id: string;
-  type: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { IReportType } from "@/types/reports";
 
 export default function ReportTypeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingType, setEditingType] = useState<ReportType | null>(null);
+  const [editingType, setEditingType] = useState<IReportType | null>(null);
   const [formData, setFormData] = useState({
     type: "",
     description: "",
@@ -101,10 +94,10 @@ export default function ReportTypeScreen() {
     createMutation.mutate(formData);
   };
 
-  const handleEdit = (type: ReportType) => {
+  const handleEdit = (type: IReportType) => {
     setEditingType(type);
     setFormData({
-      type: type.type,
+      type: type.title,
       description: type.description,
     });
     setShowCreateForm(true);
@@ -116,7 +109,7 @@ export default function ReportTypeScreen() {
       return;
     }
     updateMutation.mutate({
-      id: editingType._id,
+      id: editingType.id,
       data: formData,
     });
   };
@@ -128,9 +121,9 @@ export default function ReportTypeScreen() {
   };
 
   const filteredTypes =
-    typesData?.data?.filter(
-      (type: ReportType) =>
-        type.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    typesData?.filter(
+      (type: IReportType) =>
+        type.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         type.description.toLowerCase().includes(searchQuery.toLowerCase()),
     ) || [];
 
@@ -254,17 +247,17 @@ export default function ReportTypeScreen() {
             <div className="space-y-4">
               {types.map((type) => (
                 <div
-                  key={type._id}
+                  key={type.id}
                   className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-lg font-medium text-gray-900">
-                          {type.type}
+                          {type.title}
                         </h3>
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                          {type.type}
+                          {type.title}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">
@@ -285,7 +278,7 @@ export default function ReportTypeScreen() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(type._id)}
+                        onClick={() => handleDelete(type.id)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />

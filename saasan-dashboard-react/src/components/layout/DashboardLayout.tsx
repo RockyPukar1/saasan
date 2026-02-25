@@ -12,18 +12,10 @@ import {
   User,
   ChevronDown,
   ChevronRight,
-  Flag,
-  Clock,
   AlertTriangle,
-  Eye,
-  EyeOff,
-  Globe,
-  MapPin,
-  TrendingUp,
   Tag,
   CheckCircle,
   Shield,
-  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -185,7 +177,7 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
+        <div className="flex flex-col grow bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-4 bg-saasan-red">
             <h1 className="text-xl font-bold text-white">Saasan Admin</h1>
           </div>

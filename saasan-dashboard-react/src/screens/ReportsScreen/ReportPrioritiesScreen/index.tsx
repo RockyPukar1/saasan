@@ -1,16 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  AlertTriangle,
-  ArrowUp,
-  ArrowDown,
-  X,
-} from "lucide-react";
+import { Search, Plus, Edit, Trash2, AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,45 +13,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { reportPrioritiesApi } from "@/services/api";
-
-interface ReportPriority {
-  _id: string;
-  priority: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const priorityColors = {
-  urgent: "bg-red-100 text-red-800",
-  critical: "bg-red-100 text-red-800",
-  high: "bg-orange-100 text-orange-800",
-  medium: "bg-yellow-100 text-yellow-800",
-  low: "bg-green-100 text-green-800",
-};
-
-const priorityIcons = {
-  urgent: <AlertTriangle className="h-4 w-4" />,
-  critical: <AlertTriangle className="h-4 w-4" />,
-  high: <ArrowUp className="h-4 w-4" />,
-  medium: <ArrowUp className="h-4 w-4" />,
-  low: <ArrowDown className="h-4 w-4" />,
-};
+import type { IReportPriority } from "@/types/reports";
 
 export default function ReportPrioritiesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingPriority, setEditingPriority] = useState<ReportPriority | null>(
-    null,
-  );
+  const [editingPriority, setEditingPriority] =
+    useState<IReportPriority | null>(null);
   const [formData, setFormData] = useState({
     priority: "",
     description: "",
@@ -135,10 +95,10 @@ export default function ReportPrioritiesScreen() {
     createMutation.mutate(formData);
   };
 
-  const handleEdit = (priority: ReportPriority) => {
+  const handleEdit = (priority: IReportPriority) => {
     setEditingPriority(priority);
     setFormData({
-      priority: priority.priority,
+      priority: priority.title,
       description: priority.description,
     });
     setShowCreateForm(true);
@@ -154,7 +114,7 @@ export default function ReportPrioritiesScreen() {
       return;
     }
     updateMutation.mutate({
-      id: editingPriority._id,
+      id: editingPriority.id,
       data: formData,
     });
   };
@@ -167,25 +127,10 @@ export default function ReportPrioritiesScreen() {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    return (
-      priorityColors[priority as keyof typeof priorityColors] ||
-      "bg-gray-100 text-gray-800"
-    );
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    return (
-      priorityIcons[priority as keyof typeof priorityIcons] || (
-        <AlertTriangle className="h-4 w-4" />
-      )
-    );
-  };
-
   const filteredPriorities =
-    prioritiesData?.data?.filter(
-      (priority: ReportPriority) =>
-        priority.priority.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    prioritiesData?.filter(
+      (priority: IReportPriority) =>
+        priority.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         priority.description.toLowerCase().includes(searchQuery.toLowerCase()),
     ) || [];
 
@@ -313,19 +258,17 @@ export default function ReportPrioritiesScreen() {
             <div className="space-y-4">
               {priorities.map((priority) => (
                 <div
-                  key={priority._id}
+                  key={priority.id}
                   className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-lg font-medium text-gray-900">
-                          {priority.priority}
+                          {priority.title}
                         </h3>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(priority.priority)}`}
-                        >
-                          {priority.priority}
+                        <span className="px-2 py-1 text-xs font-medium rounded-full">
+                          {priority.title}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">
@@ -347,7 +290,7 @@ export default function ReportPrioritiesScreen() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(priority._id)}
+                        onClick={() => handleDelete(priority.id)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />

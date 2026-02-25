@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { dashboardApi, reportsApi, politicsApi } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { safeFormatDate } from "@/lib/utils";
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ export const DashboardPage: React.FC = () => {
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ["reports"],
-    queryFn: () => reportsApi.getAll({ page: 1, limit: 10 }),
+    queryFn: () => reportsApi.getAll(),
   });
 
   const { data: politicians, isLoading: politiciansLoading } = useQuery({
@@ -44,8 +43,7 @@ export const DashboardPage: React.FC = () => {
   //   queryFn: () => viralApi.getViralMetrics(),
   // });
 
-  const isLoading =
-    statsLoading || reportsLoading || politiciansLoading;
+  const isLoading = statsLoading || reportsLoading || politiciansLoading;
 
   if (isLoading) {
     return (
@@ -74,7 +72,7 @@ export const DashboardPage: React.FC = () => {
     resolutionRate: 0,
   };
 
-  const recentReports = reports?.data?.slice(0, 5) || [];
+  const recentReports = reports?.slice(0, 5) || [];
   const recentPoliticians = politicians?.data?.slice(0, 5) || [];
 
   // const statCards = [
@@ -241,7 +239,7 @@ export const DashboardPage: React.FC = () => {
                     <p className="text-sm text-gray-600">
                       {report.description?.substring(0, 100)}...
                     </p>
-                    <div className="flex items-center space-x-4 mt-1">
+                    {/* <div className="flex items-center space-x-4 mt-1">
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
                           report.status === "verified"
@@ -254,7 +252,7 @@ export const DashboardPage: React.FC = () => {
                       <span className="text-xs text-gray-500">
                         {safeFormatDate(report.createdAt, "MMM dd")}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button size="sm" variant="outline">
@@ -434,7 +432,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Admin Reminder */}
-      <div className="mx-4 mb-6 bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg">
+      <div className="mx-4 mb-6 bg-linear-to-r from-blue-500 to-blue-600 p-4 rounded-lg">
         <p className="text-white font-bold text-center mb-2">
           📢 Admin Reminder
         </p>
