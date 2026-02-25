@@ -1,18 +1,16 @@
 import { useState, useCallback } from "react";
 import { apiService } from "@/services/api";
 import type {
-  CorruptionReport,
   ReportFilters,
   ReportCreateData,
   ReportUpdateData,
 } from "@/types";
+import type { IReport } from "@/types/reports";
 
 export const useReports = (initialFilters?: ReportFilters) => {
-  const [allReports, setAllReports] = useState<CorruptionReport[]>([]);
-  const [userReports, setUserReports] = useState<CorruptionReport[]>([]);
-  const [currentReport, setCurrentReport] = useState<CorruptionReport | null>(
-    null,
-  );
+  const [allReports, setAllReports] = useState<IReport[]>([]);
+  const [userReports, setUserReports] = useState<IReport[]>([]);
+  const [currentReport, setCurrentReport] = useState<IReport | null>(null);
   const [filters, setFilters] = useState<ReportFilters | undefined>(
     initialFilters,
   );
@@ -202,7 +200,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
           ),
         );
         if (currentReport?.id === id) {
-          setCurrentReport((prev: CorruptionReport | null) =>
+          setCurrentReport((prev: IReport | null) =>
             prev
               ? {
                   ...prev,

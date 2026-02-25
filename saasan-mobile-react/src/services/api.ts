@@ -1,8 +1,4 @@
-import type {
-  ReportCreateData,
-  ReportFilters,
-  ReportUpdateData,
-} from "@/types";
+import type { ReportCreateData, ReportUpdateData } from "@/types";
 import type {
   Poll,
   PollFilters,
@@ -313,21 +309,8 @@ class ApiService {
     return this.request<IReport>("POST", "/report", formData);
   }
 
-  async getAllReports(
-    filters?: ReportFilters,
-  ): Promise<ApiResponse<IReport[]>> {
-    const queryParams = filters
-      ? "?" +
-        Object.entries(filters)
-          .filter(([_, value]) => value)
-          .map(
-            ([key, value]) =>
-              `${key}=${encodeURIComponent(JSON.stringify(value))}`,
-          )
-          .join("&")
-      : "";
-
-    return this.request<IReport[]>("GET", `/report${queryParams}`);
+  async getAllReports(): Promise<ApiResponse<IReport[]>> {
+    return this.request<IReport[]>("POST", `/report/filter`);
   }
 
   async getReportById(id: string): Promise<ApiResponse<IReport>> {
