@@ -21,7 +21,7 @@ import type {
   PollAnalytics,
   PollComparison,
 } from "../../../shared/types/polling";
-import type { IPoliticianFilter } from "@/pages/PoliticiansPage";
+import type { IPoliticianFilter } from "@/screens/PoliticiansPage";
 import type {
   IGovernmentLevel,
   IParty,
@@ -33,6 +33,13 @@ import type {
   PaginatedResponse,
   UploadResult,
 } from "../../../shared/types/common";
+import type {
+  IReport,
+  IReportPriority,
+  IReportType,
+  IReportVisibility,
+  IReportStatus,
+} from "@/types/reports";
 
 // Utility function to transform snake_case to camelCase
 const transformPolitician = (politician: IPolitician) => ({
@@ -133,34 +140,38 @@ const transformPoliticianForApi = (data: Partial<Politician> | any) => {
 };
 
 // Utility function to transform report data from snake_case to camelCase
-const transformReport = (data: Partial<CorruptionReport>) => ({
-  id: data.id,
+const transformReport = (data: any) => ({
+  id: data._id || data.id,
   referenceNumber: data.referenceNumber,
   title: data.title,
   description: data.description,
-  categoryId: data.categoryId,
+  typeId: data.typeId,
   reporterId: data.reporterId,
   isAnonymous: data.isAnonymous,
-  locationDescription: data.locationDescription,
-  latitude: data.latitude,
-  longitude: data.longitude,
-  district: data.district,
-  municipality: data.municipality,
-  ward: data.ward,
+  verificationNotes: data.verificationNotes,
+  verifiedById: data.verifiedById,
+  verifiedAt: data.verifiedAt,
+  provinceId: data.provinceId,
+  districtId: data.districtId,
+  constituencyId: data.constituencyId,
+  municipalityId: data.municipalityId,
+  wardId: data.wardId,
   status: data.status,
   priority: data.priority,
+  isResolved: data.isResolved,
   assignedToOfficerId: data.assignedToOfficerId,
   dateOccurred: data.dateOccurred,
   amountInvolved: data.amountInvolved,
   peopleAffectedCount: data.peopleAffectedCount,
   publicVisibility: data.publicVisibility,
+  tags: data.tags,
   upvotesCount: data.upvotesCount,
   downvotesCount: data.downvotesCount,
   viewsCount: data.viewsCount,
-  sharesCount: data.sharesCount,
   resolvedAt: data.resolvedAt,
   createdAt: data.createdAt,
   updatedAt: data.updatedAt,
+  statusUpdates: data.statusUpdates,
 });
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -498,26 +509,33 @@ export const geographicApi = {
 // Reports API
 export const reportsApi = {
   getAll: async (params?: {
-    status?: string;
-    category?: string;
-    district?: string;
-    municipality?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<PaginatedResponse<CorruptionReport>> => {
-    const response = await api.get("/report", { params });
-    return {
-      ...response.data,
-      data: response.data.data?.map(transformReport) || [],
-    };
+    status?: string[];
+    priority?: string[];
+    visibility?: string[];
+    type?: string[];
+  }): Promise<IReport[]> => {
+    const response = await api.post("/report/filter", params || {});
+    return response.data.data;
   },
 
-  getById: async (id: string): Promise<ApiResponse<CorruptionReport>> => {
-    const response = await api.get(`/reports/${id}`);
-    return {
-      ...response.data,
-      data: transformReport(response.data.data),
-    };
+  // Admin update report endpoint
+  adminUpdateReport: async (
+    id: string,
+    data: {
+      priorityId?: string;
+      typeId?: string;
+      statusId?: string;
+      visibilityId?: string;
+      comment: string;
+    },
+  ) => {
+    const response = await api.put(`/admin/report/${id}`, data);
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<IReport> => {
+    const response = await api.get(`/report/${id}`);
+    return response.data.data;
   },
 
   updateStatus: async (
@@ -559,6 +577,185 @@ export const reportsApi = {
   delete: async (id: string) => {
     const response = await api.put(`/report/${id}`);
     return response;
+  },
+
+  getActivities: async (
+    id: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<any>> => {
+    const response = await api.get(`/report/${id}/activities`, {
+      params: { page, limit },
+    });
+    return response.data;
+  },
+
+  getRecentActivities: async (limit?: number): Promise<any[]> => {
+    const response = await api.get(`/report/activities/recent`, {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  updatePriority: async (
+    id: string,
+    priority: string,
+    comment?: string,
+  ): Promise<ApiResponse<CorruptionReport>> => {
+    const response = await api.put(`/reports/${id}/priority`, {
+      priority,
+      comment,
+    });
+    return {
+      ...response.data,
+      data: transformReport(response.data.data),
+    };
+  },
+
+  updateVisibility: async (
+    id: string,
+    publicVisibility: string,
+    comment?: string,
+  ): Promise<ApiResponse<CorruptionReport>> => {
+    const response = await api.put(`/reports/${id}/visibility`, {
+      publicVisibility,
+      comment,
+    });
+    return {
+      ...response.data,
+      data: transformReport(response.data.data),
+    };
+  },
+
+  updateReportType: async (
+    id: string,
+    reportType: string,
+    comment?: string,
+  ): Promise<ApiResponse<CorruptionReport>> => {
+    const response = await api.put(`/reports/${id}/type`, {
+      reportType,
+      comment,
+    });
+    return {
+      ...response.data,
+      data: transformReport(response.data.data),
+    };
+  },
+};
+
+// Report Types API
+export const reportTypesApi = {
+  getAll: async (): Promise<IReportType[]> => {
+    const response = await api.get("/admin/report/types");
+    return response.data.data;
+  },
+
+  create: async (data: {
+    type: string;
+    description: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await api.post("/admin/report/types", data);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: { type: string; description: string },
+  ): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/admin/report/types/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/admin/report/types/${id}`);
+    return response.data;
+  },
+};
+
+// Report Statuses API
+export const reportStatusesApi = {
+  getAll: async (): Promise<IReportStatus[]> => {
+    const response = await api.get("/admin/report/statuses");
+    return response.data.data;
+  },
+
+  create: async (data: {
+    status: string;
+    description: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await api.post("/admin/report/statuses", data);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: { status: string; description: string },
+  ): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/admin/report/statuses/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/admin/report/statuses/${id}`);
+    return response.data;
+  },
+};
+
+// Report Priorities API
+export const reportPrioritiesApi = {
+  getAll: async (): Promise<IReportPriority[]> => {
+    const response = await api.get("/admin/report/priorities");
+    return response.data.data;
+  },
+
+  create: async (data: {
+    priority: string;
+    description: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await api.post("/admin/report/priorities", data);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: { priority: string; description: string },
+  ): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/admin/report/priorities/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/admin/report/priorities/${id}`);
+    return response.data;
+  },
+};
+
+// Report Visibilities API
+export const reportVisibilitiesApi = {
+  getAll: async (): Promise<IReportVisibility[]> => {
+    const response = await api.get("/admin/report/visibilities");
+    return response.data.data;
+  },
+
+  create: async (data: {
+    visibility: string;
+    description: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await api.post("/admin/report/visibilities", data);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: { visibility: string; description: string },
+  ): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/admin/report/visibilities/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/admin/report/visibilities/${id}`);
+    return response.data;
   },
 };
 

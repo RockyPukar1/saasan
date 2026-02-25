@@ -1,11 +1,23 @@
 import { Expose, Transform, Type } from 'class-transformer';
 
+export class SourceCategories {
+  @Expose() type: string;
+  @Expose() priority: string;
+  @Expose() visibility: string;
+  @Expose() status: string;
+}
 export class ReportSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
   @Expose() title: string;
   @Expose() description: string;
-  @Expose() status: string;
-  @Expose() priority: string;
+  @Expose() @Transform(({ obj }) => obj.statusId as string) statusId: string;
+  @Expose()
+  @Transform(({ obj }) => obj.priorityId as string)
+  priorityId: string;
+  @Expose()
+  @Transform(({ obj }) => obj.visibilityId as string)
+  visibilityId: string;
+  @Expose() @Transform(({ obj }) => obj.typeId as string) typeId: string;
   @Expose() upvotesCount: number;
   @Expose() downvotesCount: number;
   @Expose() viewsCount: number;
@@ -21,7 +33,7 @@ export class ReportSerializer {
   @Expose()
   @Transform(
     ({ obj }) =>
-      obj.evidence?.map((e: any) => ({
+      obj.evidences?.map((e: any) => ({
         id: e._id?.toString(),
         originalName: e.originalName,
         filePath: e.filePath, // Cloudinary URL
@@ -30,7 +42,7 @@ export class ReportSerializer {
         cloudinaryPublicId: e.cloudinaryPublicId,
       })) || [],
   )
-  evidence: any[];
+  evidences?: any[];
   @Expose()
   @Transform(
     ({ obj }) =>
@@ -43,4 +55,7 @@ export class ReportSerializer {
   )
   statusUpdates: any[];
   @Expose() sharesCount: number;
+  @Expose()
+  @Type(() => SourceCategories)
+  sourceCategories: SourceCategories;
 }

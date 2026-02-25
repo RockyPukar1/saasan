@@ -11,6 +11,7 @@ import {
   ParseFilePipe,
   Post,
   Put,
+  Query,
   Req,
   UploadedFiles,
   UseGuards,
@@ -21,9 +22,9 @@ import { ReportService } from '../services/report.service';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { type Request } from 'express';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
-import { EvidenceIdDto } from '../dtos/evidence-id.dto';
-import { UpdateReportStatusDto } from '../dtos/update-report-status.dto';
 import { ReportIdDto } from '../dtos/report-id.dto';
+import { GetReportActivitiesDto } from '../dtos/get-report-activities.dto';
+import { ReportFilterDto } from '../dtos/report-filter.dto';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('report')
@@ -57,9 +58,9 @@ export class ReportController {
     );
   }
 
-  @Get()
-  async getAll() {
-    return await this.reportService.getAll();
+  @Post('filter')
+  async getAll(@Body() reportFilterDto: ReportFilterDto) {
+    return await this.reportService.getAll(reportFilterDto);
   }
 
   @Get('my-reports')
@@ -87,19 +88,28 @@ export class ReportController {
   }
 
   @HttpCode(204)
-  @Put(':reportId/status')
-  async updateStatus(
-    @Body() body: UpdateReportStatusDto,
-    @Param() evidenceIdDto: EvidenceIdDto,
-  ) {
-    await this.reportService.updateStatus(evidenceIdDto, body);
-  }
-
-  @HttpCode(204)
   @Put(':reportId/vote')
   async vote() {}
 
-  // Admin routes for report management
+  @Get(':reportId/activities')
+  async getReportActivities(
+    @Param() param: ReportIdDto,
+    @Query() query: GetReportActivitiesDto,
+  ) {
+    return await this.reportService.getReportActivities(
+      param.reportId,
+      query.page,
+      query.limit,
+    );
+  }
+
+  @Get('activities/recent')
+  async getRecentActivities(@Query('limit') limit?: string) {
+    return await this.reportService.getRecentActivities(
+      limit ? parseInt(limit) : undefined,
+    );
+  }
+
   @HttpCode(204)
   @Post(':reportId/approve')
   async approve() {}

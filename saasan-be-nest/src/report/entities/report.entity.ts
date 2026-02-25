@@ -6,32 +6,10 @@ import { MunicipalityEntity } from 'src/location/municipality/entities/municipal
 import { ProvinceEntity } from 'src/location/province/entities/province.entity';
 import { WardEntity } from 'src/location/ward/entities/ward.entity';
 import { UserEntity } from 'src/user/entities/user.entity';
-import { ReportCategoryEntity } from './report-category.entity';
-
-export enum ReportStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-}
-
-export enum ReportPriority {
-  CRITICAL = 'critical',
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
-}
-
-export enum ReportPublicVisibility {
-  PUBLIC = 'public',
-  PRIVATE = 'private',
-  RESTRICTED = 'restricted',
-}
-
-export enum ReportType {
-  COMPLAINT = 'complaint',
-  WHISTLEBLOWER = 'whistleblower',
-  TIP = 'tip',
-}
+import { ReportTypeEntity } from './report-type.entity';
+import { ReportVisibilityEntity } from './report-visibility.entity';
+import { ReportPriorityEntity } from './report-priority.entity';
+import { ReportStatusEntity } from './report-status.entity';
 
 @Schema({ timestamps: true, collection: ReportEntity.collection })
 export class ReportEntity {
@@ -46,8 +24,23 @@ export class ReportEntity {
   @Prop({ type: String, required: true })
   description: string;
 
-  @Prop({ type: Types.ObjectId, ref: ReportCategoryEntity.name })
-  category?: string;
+  @Prop({ type: Types.ObjectId, ref: ReportTypeEntity.name })
+  typeId: Types.ObjectId;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: ReportVisibilityEntity.name,
+  })
+  visibilityId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: ReportPriorityEntity.name })
+  priorityId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: ReportStatusEntity.name })
+  statusId: Types.ObjectId;
+
+  @Prop({ type: String })
+  comment?: string;
 
   @Prop({ type: Types.ObjectId, ref: UserEntity.name, required: true })
   reporterId: Types.ObjectId;
@@ -55,48 +48,11 @@ export class ReportEntity {
   @Prop({ type: Number })
   amountInvolved?: number;
 
-  @Prop({
-    type: String,
-    enum: ReportStatus,
-    default: ReportStatus.PENDING,
-  })
-  status: ReportStatus;
-
-  @Prop({
-    type: String,
-    enum: ReportPriority,
-    default: ReportPriority.LOW,
-  })
-  priority: ReportPriority;
-
   @Prop({ type: Boolean, default: false, required: true })
   isResolved: boolean;
 
   @Prop({ type: Date })
   resolvedAt?: Date;
-
-  @Prop({
-    type: [
-      {
-        status: String,
-        comment: String,
-        createdAt: Date,
-      },
-    ],
-    default: [],
-  })
-  statusUpdates: {
-    status: ReportStatus;
-    comment: string;
-    createdAt: Date;
-  }[];
-
-  @Prop({
-    type: String,
-    enum: ReportType,
-    default: ReportType.COMPLAINT,
-  })
-  reportType?: string;
 
   @Prop({ type: Number, default: 0 })
   upvotesCount?: Number;
@@ -121,13 +77,6 @@ export class ReportEntity {
 
   @Prop({ type: Date })
   verifiedAt: Date;
-
-  @Prop({
-    type: String,
-    enum: ReportPublicVisibility,
-    default: ReportPublicVisibility.PUBLIC,
-  })
-  publicVisibility: string;
 
   @Prop({ type: Boolean, default: false })
   isAnonymous: boolean;
