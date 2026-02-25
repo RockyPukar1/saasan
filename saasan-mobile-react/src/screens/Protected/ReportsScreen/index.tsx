@@ -15,12 +15,13 @@ import {
 } from "lucide-react";
 import { ShareableImage } from "@/components/ShareableImage";
 import { useReports } from "@/hooks/useReports";
-import type { CorruptionReport, ReportCreateData } from "@/types";
+import type { ReportCreateData } from "@/types";
 import EvidencePicker from "@/components/EvidencePicker";
 import { Input } from "@/components/ui/input";
 import TabSelector from "@/components/common/TabSelector";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import type { IReport } from "@/types/reports";
 interface ReportCategory {
   id: string;
   name: string;
@@ -65,21 +66,6 @@ const reportCategories: ReportCategory[] = [
     description: "Favoritism in appointments or contracts",
   },
 ];
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "submitted":
-      return "bg-gray-500";
-    case "under_review":
-      return "bg-yellow-500";
-    case "verified":
-      return "bg-blue-500";
-    case "resolved":
-      return "bg-green-500";
-    default:
-      return "bg-gray-500";
-  }
-};
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({
   reportCategories,
@@ -303,9 +289,7 @@ const NewReportForm: React.FC<NewReportFormProps> = ({
 };
 
 type MyReportsTabProps = {
-  setSelectedReport: React.Dispatch<
-    React.SetStateAction<CorruptionReport | null>
-  >;
+  setSelectedReport: React.Dispatch<React.SetStateAction<IReport | null>>;
 };
 
 const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
@@ -319,7 +303,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
 
   return (
     <div className="flex-1 px-4 py-4">
-      {reports.map((report: CorruptionReport) => (
+      {reports.map((report: IReport) => (
         <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)}>
           <Card className="mb-4">
             <CardContent className="p-4">
@@ -338,7 +322,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
                     </p>
                   </div> */}
                 </div>
-                <div
+                {/* <div
                   className={`px-3 py-1 rounded-full ${getStatusColor(
                     report.status,
                   )}`}
@@ -346,7 +330,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
                   <p className="text-white text-xs font-bold uppercase">
                     {report.status.replace("_", " ")}
                   </p>
-                </div>
+                </div> */}
               </div>
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -390,9 +374,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
 };
 
 type AllReportsTabProps = {
-  setSelectedReport: React.Dispatch<
-    React.SetStateAction<CorruptionReport | null>
-  >;
+  setSelectedReport: React.Dispatch<React.SetStateAction<IReport | null>>;
 };
 
 const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
@@ -405,7 +387,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
 
   return (
     <div className="flex-1 px-4 py-4">
-      {reports.map((report: CorruptionReport) => (
+      {reports.map((report: IReport) => (
         <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)}>
           <Card className="mb-4">
             <CardContent className="p-4">
@@ -424,7 +406,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
                     </p>
                   </div> */}
                 </div>
-                <div
+                {/* <div
                   className={`px-3 py-1 rounded-full ${getStatusColor(
                     report.status,
                   )}`}
@@ -432,7 +414,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
                   <p className="text-white text-xs font-bold uppercase">
                     {report.status.replace("_", " ")}
                   </p>
-                </div>
+                </div> */}
               </div>
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -495,9 +477,7 @@ export default function ReportsScreen() {
   const [activeTab, setActiveTab] = useState<
     "new" | "my_reports" | "all_reports"
   >("new");
-  const [selectedReport, setSelectedReport] = useState<CorruptionReport | null>(
-    null,
-  );
+  const [selectedReport, setSelectedReport] = useState<IReport | null>(null);
   const [form, setForm] = useState<ReportCreateData>(initialReport);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 

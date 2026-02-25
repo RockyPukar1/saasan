@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useReports } from "@/hooks/useReports";
-import type { CorruptionReport } from "@/types";
 import Loading from "@/components/Loading";
 import EvidencePicker from "@/components/EvidencePicker";
 import toast from "react-hot-toast";
+import type { IReport } from "@/types/reports";
 
 export default function ReportDetailScreen() {
   const { reportId } = useParams();
@@ -36,7 +36,7 @@ export default function ReportDetailScreen() {
     updateReport,
     deleteEvidence,
   } = useReports();
-  const [report, setReport] = useState<CorruptionReport | null>(null);
+  const [report, setReport] = useState<IReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -110,7 +110,7 @@ export default function ReportDetailScreen() {
 
     try {
       // Find the evidence to get its cloudinaryPublicId
-      const evidence = report.evidence?.find((e) => e.id === evidenceToDelete);
+      const evidence = report.evidences?.find((e) => e.id === evidenceToDelete);
       if (!evidence) {
         toast.error("Evidence not found");
         return;
@@ -156,21 +156,6 @@ export default function ReportDetailScreen() {
       }
     } catch (error) {
       toast.error("Failed to share report");
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return "bg-gray-500";
-      case "under_review":
-        return "bg-yellow-500";
-      case "verified":
-        return "bg-blue-500";
-      case "resolved":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
     }
   };
 
@@ -259,7 +244,7 @@ export default function ReportDetailScreen() {
         )}
 
         <div className="flex items-center justify-between mt-2">
-          <div
+          {/* <div
             className={`px-3 py-1 rounded-full ${getStatusColor(
               report.status,
             )}`}
@@ -267,7 +252,7 @@ export default function ReportDetailScreen() {
             <span className="text-white text-xs font-bold uppercase">
               {report.status.replace("_", " ")}
             </span>
-          </div>
+          </div> */}
 
           {isEditing && (
             <div className="flex space-x-2">
@@ -414,9 +399,9 @@ export default function ReportDetailScreen() {
           </div>
         )}
 
-        {report.evidence && report.evidence.length > 0 ? (
+        {report.evidences && report.evidences.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {report.evidence.map((item, index: number) => (
+            {report.evidences.map((item, index: number) => (
               <div key={index} className="relative group">
                 <div
                   className="w-full h-32 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-blue-400 transition-colors"
@@ -528,18 +513,18 @@ export default function ReportDetailScreen() {
         </div>
 
         {/* Status Updates */}
-        <div>
+        {/* <div>
           <h2 className="text-lg font-bold text-gray-800 mb-3">
             Status Updates
           </h2>
-          {report.statusUpdates && report.statusUpdates.length > 0 ? (
-            report.statusUpdates.map((update, index: number) => (
+          {report.activities && report.activities.length > 0 ? (
+            report.activities.map((update, index: number) => (
               <Card key={index} className="mb-3">
                 <CardContent className="p-4">
-                  <h3 className="font-bold text-gray-800">{update.status}</h3>
-                  <p className="text-gray-600 mt-1">{update.comment}</p>
+                  <h3 className="font-bold text-gray-800">{update.category}</h3>
+                  <p className="text-gray-600 mt-1">{update.}</p>
                   <p className="text-gray-500 text-sm mt-2">
-                    {new Date(update.createdAt).toLocaleDateString()}
+                    {new Date(update.modifiedAt).toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
@@ -547,7 +532,7 @@ export default function ReportDetailScreen() {
           ) : (
             <p className="text-gray-500 text-center">No status updates yet</p>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Delete Confirmation Modal */}

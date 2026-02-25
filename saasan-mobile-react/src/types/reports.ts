@@ -1,11 +1,31 @@
-import type { Evidence, StatusUpdate } from "./index";
+export interface Evidence {
+  id: string;
+  originalName: string;
+  filePath: string;
+  fileType: "image" | "document" | "video" | "audio";
+  uploadedAt: string;
+  cloudinaryPublicId: string;
+}
 
+export interface ReportActivity {
+  category: string;
+  modifiedBy: {
+    id: string;
+    fullName: string;
+  };
+  oldValue?: string;
+  newValue: string;
+  modifiedAt: string;
+}
 export interface IReport {
   id: string;
   title: string;
   description: string;
-  status: string;
-  priority: string;
+  statusId?: string;
+  priorityId?: string;
+  visibilityId?: string;
+  typeId?: string;
+  comment?: string;
   upvotesCount: number;
   downvotesCount: number;
   viewsCount: number;
@@ -15,7 +35,25 @@ export interface IReport {
   isAnonymous: boolean;
   createdAt: string;
   updatedAt: string;
-  evidence?: Evidence[];
-  statusUpdates?: StatusUpdate[];
   sharesCount?: number;
+  reporterId?: string;
+  locationDescription?: string;
+  latitude?: number;
+  longitude?: number;
+  district?: string;
+  municipality?: string;
+  ward?: string;
+  assignedToOfficerId?: string;
+  dateOccurred?: string | Date;
+  amountInvolved?: number;
+  peopleAffectedCount?: number;
+  resolvedAt?: string | Date;
+  sourceCategories: {
+    type: string;
+    visibility: string;
+    priority: string;
+    status: string;
+  };
+  evidences?: Evidence[];
+  activities?: ReportActivity[];
 }
