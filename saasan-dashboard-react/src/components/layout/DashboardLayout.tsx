@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -10,6 +10,12 @@ import {
   X,
   LogOut,
   User,
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  Tag,
+  CheckCircle,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +23,25 @@ import { useAuth } from "@/contexts/AuthContext";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Politicians", href: "/politicians", icon: Users },
-  { name: "Reports", href: "/reports", icon: FileText },
+  {
+    name: "Reports",
+    href: "/reports",
+    icon: FileText,
+    children: [
+      { name: "Report Types", href: "/reports/types", icon: Tag },
+      { name: "Report Statuses", href: "/reports/statuses", icon: CheckCircle },
+      {
+        name: "Report Priorities",
+        href: "/reports/priorities",
+        icon: AlertTriangle,
+      },
+      {
+        name: "Report Visibilities",
+        href: "/reports/visibilities",
+        icon: Shield,
+      },
+    ],
+  },
   { name: "Historical Events", href: "/historical-events", icon: Calendar },
   // { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
   // { name: "Geographic", href: "/geographic", icon: MapPin },
@@ -27,11 +51,27 @@ const navigation = [
 
 export const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Reports"]);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const currentPath = location.pathname;
+
+  const handleNavigation = (itemName: string, href: string) => {
+    // If clicking on a main menu item (not Reports), close all expanded items
+    if (itemName !== "Reports") {
+      setExpandedItems([]);
+    }
+
+    // If clicking on Reports, expand it
+    if (itemName === "Reports") {
+      setExpandedItems(["Reports"]);
+    }
+
+    navigate(href);
+    setSidebarOpen(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -65,19 +105,49 @@ export const DashboardLayout: React.FC = () => {
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item) => {
               const isActive = currentPath === item.href;
+              const hasChildren = item.children && item.children.length > 0;
+              const isChildActive = item.children?.some(
+                (child) => currentPath === child.href,
+              );
+              const isExpanded = expandedItems.includes(item.name);
+
               return (
-                <Button
-                  key={item.name}
-                  variant={isActive ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate(item.href);
-                    setSidebarOpen(false);
-                  }}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Button>
+                <div key={item.name}>
+                  <Button
+                    variant={isActive || isChildActive ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      handleNavigation(item.name, item.href);
+                    }}
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                    {hasChildren && <ChevronDown className="ml-2 h-4 w-4" />}
+                  </Button>
+
+                  {/* Submenu */}
+                  {hasChildren && isExpanded && (
+                    <div className="ml-8 mt-1 space-y-1">
+                      {item.children.map((child) => {
+                        const childIsActive = currentPath === child.href;
+                        return (
+                          <Button
+                            key={child.name}
+                            variant={childIsActive ? "default" : "ghost"}
+                            className="w-full justify-start pl-2"
+                            onClick={() => {
+                              navigate(child.href);
+                              setSidebarOpen(false);
+                            }}
+                          >
+                            <ChevronRight className="mr-2 h-4 w-4" />
+                            {child.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -107,23 +177,54 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
+        <div className="flex flex-col grow bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-4 bg-saasan-red">
             <h1 className="text-xl font-bold text-white">Saasan Admin</h1>
           </div>
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item) => {
               const isActive = currentPath === item.href;
+              const hasChildren = item.children && item.children.length > 0;
+              const isChildActive = item.children?.some(
+                (child) => currentPath === child.href,
+              );
+              const isExpanded = expandedItems.includes(item.name);
+
               return (
-                <Button
-                  key={item.name}
-                  variant={isActive ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => navigate(item.href)}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Button>
+                <div key={item.name}>
+                  <Button
+                    variant={isActive || isChildActive ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      handleNavigation(item.name, item.href);
+                    }}
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Button>
+
+                  {/* Submenu */}
+                  {hasChildren && isExpanded && (
+                    <div className="ml-8 mt-1 space-y-1">
+                      {item.children.map((child) => {
+                        const childIsActive = currentPath === child.href;
+                        return (
+                          <Button
+                            key={child.name}
+                            variant={childIsActive ? "default" : "ghost"}
+                            className="w-full justify-start pl-2"
+                            onClick={() => {
+                              navigate(child.href);
+                            }}
+                          >
+                            <child.icon className="mr-3 h-5 w-5" />
+                            {child.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
