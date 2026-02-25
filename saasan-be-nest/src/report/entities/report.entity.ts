@@ -39,9 +39,6 @@ export class ReportEntity {
   @Prop({ type: Types.ObjectId, ref: ReportStatusEntity.name })
   statusId: Types.ObjectId;
 
-  @Prop({ type: String })
-  comment?: string;
-
   @Prop({ type: Types.ObjectId, ref: UserEntity.name, required: true })
   reporterId: Types.ObjectId;
 

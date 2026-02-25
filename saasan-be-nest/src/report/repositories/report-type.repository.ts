@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ReportTypeEntity, ReportTypeEntitySchema } from '../entities/report-type.entity';
+import {
+  ReportTypeEntity,
+  ReportTypeEntitySchema,
+} from '../entities/report-type.entity';
 
 @Injectable()
 export class ReportTypeRepository {
@@ -20,7 +23,7 @@ export class ReportTypeRepository {
   }
 
   async findById(id: string) {
-    return await this.reportTypeModel.findById(id).exec();
+    return await this.reportTypeModel.findById(id);
   }
 
   async update(id: string, updateData: any) {

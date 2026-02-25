@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ReportPriorityEntity, ReportPriorityEntitySchema } from '../entities/report-priority.entity';
+import {
+  ReportPriorityEntity,
+  ReportPriorityEntitySchema,
+} from '../entities/report-priority.entity';
 
 @Injectable()
 export class ReportPriorityRepository {
@@ -11,7 +14,9 @@ export class ReportPriorityRepository {
   ) {}
 
   async create(createReportPriorityDto: any) {
-    const reportPriority = new this.reportPriorityModel(createReportPriorityDto);
+    const reportPriority = new this.reportPriorityModel(
+      createReportPriorityDto,
+    );
     return await reportPriority.save();
   }
 
@@ -20,7 +25,7 @@ export class ReportPriorityRepository {
   }
 
   async findById(id: string) {
-    return await this.reportPriorityModel.findById(id).exec();
+    return await this.reportPriorityModel.findById(id);
   }
 
   async update(id: string, updateData: any) {

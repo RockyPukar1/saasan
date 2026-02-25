@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ReportVisibilityEntity, ReportVisibilityEntitySchema } from '../entities/report-visibility.entity';
+import {
+  ReportVisibilityEntity,
+  ReportVisibilityEntitySchema,
+} from '../entities/report-visibility.entity';
 
 @Injectable()
 export class ReportVisibilityRepository {
@@ -11,7 +14,9 @@ export class ReportVisibilityRepository {
   ) {}
 
   async create(createReportVisibilityDto: any) {
-    const reportVisibility = new this.reportVisibilityModel(createReportVisibilityDto);
+    const reportVisibility = new this.reportVisibilityModel(
+      createReportVisibilityDto,
+    );
     return await reportVisibility.save();
   }
 
@@ -20,7 +25,7 @@ export class ReportVisibilityRepository {
   }
 
   async findById(id: string) {
-    return await this.reportVisibilityModel.findById(id).exec();
+    return await this.reportVisibilityModel.findById(id);
   }
 
   async update(id: string, updateData: any) {

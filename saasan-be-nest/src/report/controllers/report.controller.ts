@@ -91,25 +91,6 @@ export class ReportController {
   @Put(':reportId/vote')
   async vote() {}
 
-  @Get(':reportId/activities')
-  async getReportActivities(
-    @Param() param: ReportIdDto,
-    @Query() query: GetReportActivitiesDto,
-  ) {
-    return await this.reportService.getReportActivities(
-      param.reportId,
-      query.page,
-      query.limit,
-    );
-  }
-
-  @Get('activities/recent')
-  async getRecentActivities(@Query('limit') limit?: string) {
-    return await this.reportService.getRecentActivities(
-      limit ? parseInt(limit) : undefined,
-    );
-  }
-
   @HttpCode(204)
   @Post(':reportId/approve')
   async approve() {}

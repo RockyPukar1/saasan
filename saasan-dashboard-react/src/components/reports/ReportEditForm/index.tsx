@@ -28,7 +28,7 @@ import {
   reportVisibilitiesApi,
   reportTypesApi,
 } from "@/services/api";
-import { Save, X, AlertTriangle, Flag, Eye, FileText } from "lucide-react";
+import { Save, X, Flag, Eye, FileText } from "lucide-react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IReport } from "@/types/reports";
 
@@ -53,7 +53,6 @@ export default function ReportEditForm({
 }: IReportEditForm) {
   const { confirm } = useConfirmDialog();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
 
   // Fetch filter options from backend
   const { data: statusesData } = useQuery({
@@ -79,7 +78,6 @@ export default function ReportEditForm({
   const {
     register,
     handleSubmit,
-    watch,
     control,
     formState: { errors },
   } = useForm<ReportFormData>({
@@ -92,34 +90,6 @@ export default function ReportEditForm({
     },
     resolver: zodResolver(reportSchema),
   });
-
-  // useEffect(() => {
-  //   if (
-  //     editingReport &&
-  //     statusesData &&
-  //     prioritiesData &&
-  //     visibilitiesData &&
-  //     typesData
-  //   )
-  //     return;
-
-  //   reset({
-  //     statusId: editingReport?.statusId ?? "",
-  //     priorityId: editingReport?.priorityId ?? "",
-  //     visibilityId: editingReport?.visibilityId ?? "",
-  //     typeId: editingReport?.typeId ?? "",
-  //     comment: "",
-  //   });
-  // }, [
-  //   editingReport,
-  //   reset,
-  //   statusesData,
-  //   prioritiesData,
-  //   visibilitiesData,
-  //   typesData,
-  // ]);
-
-  console.log(watch());
 
   const queryClient = useQueryClient();
 
@@ -154,7 +124,7 @@ export default function ReportEditForm({
       toast.success("Report updated successfully!");
       setEditingReport(null);
       setHasUnsavedChanges(false);
-      setChangedFields(new Set());
+      new Set();
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to update report");
@@ -162,15 +132,6 @@ export default function ReportEditForm({
   });
 
   const onSubmit = async (data: ReportFormData) => {
-    console.log("Form submitted with data:", data);
-    console.log("Form errors:", errors);
-    console.log("Changed fields:", changedFields);
-
-    if (changedFields.size === 0) {
-      toast("No changes to save");
-      return;
-    }
-
     updateReportMutation.mutate(data);
   };
 
@@ -184,7 +145,7 @@ export default function ReportEditForm({
         onConfirm: () => {
           setEditingReport(null);
           setHasUnsavedChanges(false);
-          setChangedFields(new Set());
+          new Set();
         },
       });
     } else {
@@ -532,19 +493,6 @@ export default function ReportEditForm({
                         </div>
                       </div>
                     </div>
-
-                    {/* Changed Fields Indicator */}
-                    {changedFields.size > 0 && (
-                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-center text-sm text-blue-800">
-                          <AlertTriangle className="h-4 w-4 mr-2" />
-                          <span className="font-medium">
-                            Changes detected:{" "}
-                            {Array.from(changedFields).join(", ")}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                     <div className="flex justify-between mt-4">
                       <Button
                         variant="outline"
@@ -555,10 +503,7 @@ export default function ReportEditForm({
                       </Button>
                       <Button
                         type="submit"
-                        disabled={
-                          updateReportMutation.isPending ||
-                          changedFields.size === 0
-                        }
+                        disabled={updateReportMutation.isPending}
                       >
                         {updateReportMutation.isPending ? (
                           <div className="flex items-center">
@@ -573,6 +518,68 @@ export default function ReportEditForm({
                         )}
                       </Button>
                     </div>
+
+                    {/* Activity Logs */}
+                    {editingReport.activities &&
+                      editingReport.activities.length > 0 && (
+                        <div className="mt-6">
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-lg">
+                                Activity Logs
+                              </CardTitle>
+                              <CardDescription>
+                                Track all changes made to this report
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                {editingReport.activities.map(
+                                  (activity, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+                                    >
+                                      <div className="shrink-0">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-900">
+                                          <span className="font-medium">
+                                            {activity.modifiedBy?.fullName ||
+                                              "Unknown User"}
+                                          </span>{" "}
+                                          changed{" "}
+                                          <span className="font-medium capitalize">
+                                            {activity.category}
+                                          </span>{" "}
+                                          from{" "}
+                                          <span className="font-medium text-red-600">
+                                            {activity.oldValue || "N/A"}
+                                          </span>{" "}
+                                          to{" "}
+                                          <span className="font-medium text-green-600">
+                                            {activity.newValue}
+                                          </span>
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          {new Date(
+                                            activity.modifiedAt,
+                                          ).toLocaleDateString()}{" "}
+                                          at{" "}
+                                          {new Date(
+                                            activity.modifiedAt,
+                                          ).toLocaleTimeString()}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
                   </CardContent>
                 </div>
               </form>

@@ -46,14 +46,18 @@ export class ReportSerializer {
   @Expose()
   @Transform(
     ({ obj }) =>
-      obj.statusUpdates?.map((s: any) => ({
-        ...s,
-        createdAt: s.createdAt
-          ? new Date(s.createdAt).toISOString()
-          : new Date().toISOString(),
+      obj.activities?.map((a: any) => ({
+        category: a.category,
+        modifiedBy: {
+          id: a.modifiedBy.id.toString(),
+          fullName: a.modifiedBy.fullName,
+        },
+        oldValue: a?.oldValue,
+        newValue: a.newValue,
+        modifiedAt: new Date(a.modifiedAt).toISOString(),
       })) || [],
   )
-  statusUpdates: any[];
+  activities?: any[];
   @Expose() sharesCount: number;
   @Expose()
   @Type(() => SourceCategories)

@@ -17,7 +17,6 @@ import {
   ReportActivityEntity,
   ReportActivityEntitySchema,
 } from './entities/report-activity.entity';
-import { ReportActivityService } from './services/report-activity.service';
 import { ReportActivityRepository } from './repositories/report-activity.repository';
 import { ReportTypeRepository } from './repositories/report-type.repository';
 import {
@@ -40,6 +39,7 @@ import {
   ReportVisibilityEntitySchema,
 } from './entities/report-visibility.entity';
 import { AdminReportController } from './controllers/admin-report.controller';
+import { UserModule } from 'src/user/user.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -56,6 +56,7 @@ import { AdminReportController } from './controllers/admin-report.controller';
     ]),
     CloudinaryModule,
     TransactionModule,
+    UserModule,
   ],
   controllers: [
     ReportController,
@@ -65,7 +66,6 @@ import { AdminReportController } from './controllers/admin-report.controller';
   providers: [
     ReportService,
     EvidenceService,
-    ReportActivityService,
     ReportRepository,
     EvidenceRepository,
     ReportActivityRepository,

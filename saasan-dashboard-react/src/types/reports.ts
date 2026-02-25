@@ -1,5 +1,22 @@
-import type { Evidence, StatusUpdate } from "./index";
+export interface Evidence {
+  id: string;
+  originalName: string;
+  filePath: string;
+  fileType: "image" | "document" | "video" | "audio";
+  uploadedAt: string;
+  cloudinaryPublicId: string;
+}
 
+export interface ReportActivity {
+  category: string;
+  modifiedBy: {
+    id: string;
+    fullName: string;
+  };
+  oldValue?: string;
+  newValue: string;
+  modifiedAt: string;
+}
 export interface IReport {
   id: string;
   title: string;
@@ -18,8 +35,6 @@ export interface IReport {
   isAnonymous: boolean;
   createdAt: string;
   updatedAt: string;
-  evidences?: Evidence[];
-  statusUpdates?: StatusUpdate[];
   sharesCount?: number;
   reporterId?: string;
   locationDescription?: string;
@@ -39,6 +54,8 @@ export interface IReport {
     priority: string;
     status: string;
   };
+  evidences?: Evidence[];
+  activities?: ReportActivity[];
 }
 
 export interface IReportPriority {

@@ -43,13 +43,23 @@ export class ReportRepository {
             },
           },
           {
+            $lookup: {
+              from: 'report_activities',
+              localField: '_id',
+              foreignField: 'reportId',
+              as: 'activityData',
+            },
+          },
+          {
             $addFields: {
               evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
+              activities: { $arrayElemAt: ['$activityData.activities', 0] },
             },
           },
           {
             $project: {
               evidenceData: 0,
+              activityData: 0,
             },
           },
         ])
@@ -297,7 +307,6 @@ export class ReportRepository {
     }));
     const updateData = Object.assign({}, ...arr);
 
-    console.log(updateData, reportId);
     return await this.model.findByIdAndUpdate(reportId, {
       $set: {
         ...updateData,

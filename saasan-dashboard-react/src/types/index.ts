@@ -140,44 +140,6 @@ export interface Ward {
   municipalityId: string;
   name?: string;
 }
-
-// Report types
-export interface Evidence {
-  id: string;
-  originalName: string;
-  filePath: string;
-  fileType: "image" | "document" | "video" | "audio";
-  uploadedAt: string;
-  cloudinaryPublicId: string;
-}
-
-export interface StatusUpdate {
-  id: string;
-  status: string;
-  comment: string;
-  createdAt: string;
-}
-
-export interface CorruptionReport {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  upvotesCount: number;
-  downvotesCount: number;
-  viewsCount: number;
-  referenceNumber: string;
-  tags: string[];
-  userVote?: string;
-  isAnonymous: boolean;
-  createdAt: string;
-  updatedAt: string;
-  evidence?: Evidence[];
-  statusUpdates?: StatusUpdate[];
-  sharesCount?: number;
-}
-
 // Historical events types
 export interface HistoricalEvent {
   id: string;

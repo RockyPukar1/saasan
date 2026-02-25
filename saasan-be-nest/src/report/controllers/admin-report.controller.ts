@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ReportService } from '../services/report.service';
@@ -20,6 +21,7 @@ import { CreateReportStatusDto } from '../dtos/create-report-status.dto';
 import { CreateReportPriorityDto } from '../dtos/create-report-priority.dto';
 import { CreateReportVisibilityDto } from '../dtos/create-report-visibility.dto';
 import { ReportFilterDto } from '../dtos/report-filter.dto';
+import type { Request } from 'express';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('admin/report')
@@ -36,8 +38,9 @@ export class AdminReportController {
   async adminUpdateReport(
     @Param() param: ReportIdDto,
     @Body() updateData: AdminUpdateReportDto,
+    @Req() req: Request,
   ) {
-    await this.reportService.adminUpdateReport(param, updateData);
+    await this.reportService.adminUpdateReport(param, req.user.id, updateData);
   }
 
   // @Get(':reportId/activities')

@@ -4,13 +4,7 @@ import { Types, Schema as MongooseSchema } from 'mongoose';
 import { ReportEntity } from './report.entity';
 import { UserEntity } from 'src/user/entities/user.entity';
 
-enum ActivityTypeEnum {
-  CREATED = 'created',
-  UPDATED = 'updated',
-  DELETED = 'deleted',
-}
-
-enum ActivityCategoryEnum {
+export enum ReportActivityCategoryEnum {
   PRIORITY = 'priority',
   TYPE = 'type',
   STATUS = 'status',
@@ -30,23 +24,34 @@ export class ReportActivityEntity {
   @Prop({
     type: [
       {
-        type: { type: String, enum: ActivityTypeEnum, required: true },
-        category: { type: String, enum: ActivityCategoryEnum, required: true },
-        modifiedById: {
-          type: Types.ObjectId,
-          ref: UserEntity.name,
-          required: true,
+        category: { type: String, ReportActivityCategoryEnum, required: true },
+        modifiedBy: {
+          id: {
+            type: Types.ObjectId,
+            ref: UserEntity.name,
+            required: true,
+          },
+          fullName: {
+            type: String,
+            required: true,
+          },
         },
-        modifiedAt: { type: Date, required: true },
+        oldValue: { type: String, required: true },
+        newValue: { type: String, required: true },
+        modifiedAt: { type: Date, required: true, default: Date.now },
         comment: { type: String, required: true },
       },
     ],
     default: [],
   })
   activities: {
-    type: ActivityTypeEnum;
-    category: ActivityCategoryEnum;
-    modifiedById: Types.ObjectId;
+    category: ReportActivityCategoryEnum;
+    modifiedBy: {
+      id: string;
+      fullName: string;
+    };
+    oldValue: string;
+    newValue: string;
     modifiedAt: Date;
     comment: string;
   }[];

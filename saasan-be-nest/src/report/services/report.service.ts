@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { ReportRepository } from '../repositories/report.repository';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
@@ -9,7 +9,6 @@ import { EvidenceRepository } from '../repositories/evidence.repository';
 import { getFileType } from 'src/common/helpers/file-type.helper';
 import { TransactionRunner } from 'src/common/transaction/runners/transaction.runner';
 import { ClientSession, Types } from 'mongoose';
-import { ReportActivityService } from './report-activity.service';
 import { AdminUpdateReportDto } from '../dtos/admin-update-report.dto';
 import { CreateReportTypeDto } from '../dtos/create-report-type.dto';
 import { CreateReportStatusDto } from '../dtos/create-report-status.dto';
@@ -24,6 +23,11 @@ import { ReportStatusSerializer } from '../serializers/report-status.serializer'
 import { ReportPrioritySerializer } from '../serializers/report-priority.serializer';
 import { ReportVisibilitySerializer } from '../serializers/report-visibility.serializer';
 import { CreateReportVisibilityDto } from '../dtos/create-report-visibility.dto';
+import { ReportActivityRepository } from '../repositories/report-activity.repository';
+import { ReportActivityCategoryEnum } from '../entities/report-activity.entity';
+import { UserIdDto } from 'src/user/dtos/user-id.dto';
+import { UserRepository } from 'src/user/repositories/user.repository';
+import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 
 @Injectable()
 export class ReportService {
@@ -32,7 +36,8 @@ export class ReportService {
     private cloudinaryService: CloudinaryService,
     private evidenceRepo: EvidenceRepository,
     private tx: TransactionRunner,
-    private readonly activityService: ReportActivityService,
+    private readonly userRepo: UserRepository,
+    private readonly reportActivityRepo: ReportActivityRepository,
     private readonly reportTypeRepo: ReportTypeRepository,
     private readonly reportStatusRepo: ReportStatusRepository,
     private readonly reportPriorityRepo: ReportPriorityRepository,
@@ -150,25 +155,7 @@ export class ReportService {
   }
 
   async updateReport(param: ReportIdDto, updateData: Partial<CreateReportDto>) {
-    const report = await this.reportRepo.updateReport(param, updateData);
-    if (!report) {
-      throw new Error('Report not found');
-    }
-
-    // Get evidence for the updated report
-    const evidenceData = await this.evidenceRepo.findByReportId(param);
-
-    // Combine report data with evidence
-    const reportData = Array.isArray(report) ? report[0] : report;
-    reportData.evidence = evidenceData?.evidences || [];
-    reportData.statusUpdates = reportData.statusUpdates || [];
-    reportData.sharesCount = reportData.sharesCount || 0;
-
-    return ResponseHelper.response(
-      ReportSerializer,
-      reportData,
-      'Report updated successfully',
-    );
+    await this.reportRepo.updateReport(param, updateData);
   }
 
   async vote() {}
@@ -179,28 +166,79 @@ export class ReportService {
 
   async resolve() {}
 
-  async getReportActivities(reportId: string, page?: number, limit?: number) {
-    return await this.activityService.getReportActivities(
-      reportId,
-      page,
-      limit,
-    );
-  }
-
-  async getRecentActivities(limit?: number) {
-    return await this.activityService.getRecentActivities(limit);
-  }
-
   // Admin
   async adminUpdateReport(
     param: ReportIdDto,
+    modifiedById: string,
     updateData: AdminUpdateReportDto,
   ) {
     const report = await this.reportRepo.findById(param);
-    if (!report) {
-      throw new Error('Report not found');
+    if (!report)
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+
+    const user = await this.userRepo.findById({ userId: modifiedById });
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+
+    let category: Record<string, Record<string, string>> = {};
+    if (updateData?.typeId) {
+      const oldValue = await this.reportTypeRepo.findById(report.typeId);
+      const newValue = await this.reportTypeRepo.findById(updateData.typeId);
+      category.type = {
+        oldValue: oldValue?.title ?? '',
+        newValue: newValue?.title ?? '',
+      };
     }
+    if (updateData?.priorityId) {
+      const oldValue = await this.reportPriorityRepo.findById(
+        report.priorityId,
+      );
+      const newValue = await this.reportPriorityRepo.findById(
+        updateData.priorityId,
+      );
+      category.priority = {
+        oldValue: oldValue?.title ?? '',
+        newValue: newValue?.title ?? '',
+      };
+    }
+    if (updateData?.statusId) {
+      const oldValue = await this.reportStatusRepo.findById(report.statusId);
+      const newValue = await this.reportStatusRepo.findById(
+        updateData.statusId,
+      );
+      category.status = {
+        oldValue: oldValue?.title ?? '',
+        newValue: newValue?.title ?? '',
+      };
+    }
+    if (updateData?.visibilityId) {
+      const oldValue = await this.reportVisibilityRepo.findById(
+        report.visibilityId,
+      );
+      const newValue = await this.reportVisibilityRepo.findById(
+        updateData.visibilityId,
+      );
+      category.visibility = {
+        oldValue: oldValue?.title ?? '',
+        newValue: newValue?.title ?? '',
+      };
+    }
+
     await this.reportRepo.adminUpdateReport(param, updateData);
+    await Promise.all(
+      Object.entries(category).map(([key, value]) =>
+        this.reportActivityRepo.create({
+          reportId: param.reportId,
+          category: key,
+          comment: updateData.comment,
+          modifiedBy: {
+            id: modifiedById,
+            fullName: user.fullName,
+          },
+          oldValue: value.oldValue,
+          newValue: value.newValue,
+        }),
+      ),
+    );
   }
 
   // Report Types CRUD
