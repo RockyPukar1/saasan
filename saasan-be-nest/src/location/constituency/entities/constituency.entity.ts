@@ -10,10 +10,10 @@ export class ConstituencyEntity {
   createdAt: Date;
   updatedAt: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'ProvinceEntity' })
+  @Prop({ type: Types.ObjectId, ref: ProvinceEntity.name, required: true })
   provinceId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'DistrictEntity' })
+  @Prop({ type: Types.ObjectId, ref: DistrictEntity.name, required: true })
   districtId: Types.ObjectId;
 
   @Prop({ type: Number, required: true })

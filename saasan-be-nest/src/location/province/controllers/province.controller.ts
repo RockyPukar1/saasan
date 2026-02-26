@@ -1,40 +1,21 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
-import { CreateProvinceDto } from '../dtos/create-province.dto';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ProvinceService } from '../services/province.service';
+import { ProvinceIdDto } from '../dtos/province-id.dto';
 
 @Controller('province')
 export class ProvinceController {
   constructor(private readonly provinceService: ProvinceService) {}
 
   @Get()
-  async getAllProvinces() {
-    return await this.provinceService.getAllProvinces()
+  async getProvinces(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return await this.provinceService.getProvinces({ page, limit });
   }
 
-  @Get('provinceId')
-  async getProvinceById() {}
-
-  @UseGuards(HttpAccessTokenGuard)
-  @HttpCode(201)
-  @Post()
-  async createProvince(@Body() provinceData: CreateProvinceDto) {
-    return this.provinceService.createProvince(provinceData);
+  @Get(':provinceId')
+  async getProvinceById(@Param() provinceIdDto: ProvinceIdDto) {
+    return await this.provinceService.getProvinceById(provinceIdDto);
   }
-
-  @Get(':provinceId/constituency')
-  async getConstituenciesByProvince() {}
-
-  @Get(':provinceId/municipality')
-  async getMunicipalitiesByProvince() {}
-
-  @Get(':provinceId/ward')
-  async getWardsByProvince() {}
 }

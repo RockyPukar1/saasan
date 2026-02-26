@@ -4,6 +4,7 @@ import { ProvinceRepository } from '../repositories/province.repository';
 import { CreateProvinceDto } from '../dtos/create-province.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { ProvinceSerializer } from '../serializers/province.serializer';
+import { ProvinceIdDto } from '../dtos/province-id.dto';
 
 @Injectable()
 export class ProvinceService {
@@ -13,7 +14,7 @@ export class ProvinceService {
     const doesProvinceExists = await this.doesProvinceExists({
       name: provinceData.name,
       provinceNumber: provinceData.provinceNumber,
-    })
+    });
     if (doesProvinceExists) {
       throw new GlobalHttpException(
         'provinceAlreadyExistsWithNameOrProvinceNumber',
@@ -24,9 +25,24 @@ export class ProvinceService {
     this.provinceRepo.create(provinceData);
   }
 
-  async getAllProvinces() {
-    const provinces = await this.provinceRepo.find();
-    return ResponseHelper.response(ProvinceSerializer, provinces, "Provinces fetched successfully")
+  async getProvinces({ page, limit }) {
+    const data = await this.provinceRepo.find({ page, limit });
+    return ResponseHelper.response(
+      ProvinceSerializer,
+      data,
+      'Provinces fetched successfully',
+    );
+  }
+
+  async getProvinceById(provinceIdDto: ProvinceIdDto) {
+    const province = await this.provinceRepo.findById(provinceIdDto.provinceId);
+    if (!province)
+      throw new GlobalHttpException('province404', HttpStatus.NOT_FOUND);
+    return ResponseHelper.response(
+      ProvinceSerializer,
+      province,
+      'Province fetched successfully',
+    );
   }
 
   private doesProvinceExists(filter: any) {

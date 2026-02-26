@@ -6,6 +6,10 @@ export const HttpErrorCodeMessage = {
   report404: 'Report does not exist',
   politician404: 'Politician does not exist',
   ward404: 'Ward does not exist',
+  province404: 'Province does not exist',
+  district404: 'District does not exist',
+  municipality404: 'Municipality does not exist',
+  constituency404: 'Constituency does not exist',
   invalidCredentials: 'Invalid credentials',
   userAlreadyExistsWithEmail: 'User already exists with this phone number',
   provinceAlreadyExistsWithNameOrProvinceNumber:
