@@ -16,6 +16,7 @@ import {
   Tag,
   CheckCircle,
   Shield,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,7 +45,7 @@ const navigation = [
   },
   { name: "Historical Events", href: "/historical-events", icon: Calendar },
   // { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
-  // { name: "Geographic", href: "/geographic", icon: MapPin },
+  { name: "Geography", href: "/geography", icon: MapPin },
   { name: "Polling", href: "/polling", icon: BarChart3 },
   // { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
 ];

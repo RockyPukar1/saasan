@@ -20,6 +20,10 @@ import ReportTypesScreen from "./screens/ReportsScreen/ReportTypeScreen";
 import ReportStatusesScreen from "./screens/ReportsScreen/ReportStatusScreen";
 import ReportPrioritiesScreen from "./screens/ReportsScreen/ReportPrioritiesScreen";
 import ReportVisibilitiesScreen from "./screens/ReportsScreen/ReportVisibilityScreen";
+import GeographyScreen from "./screens/GeographyScreen";
+import ProvinceScreen from "./screens/GeographyScreen/ProvinceScreen";
+import DistrictScreen from "./screens/GeographyScreen/DistrictScreen";
+import MunicipalityScreen from "./screens/GeographyScreen/MunicipalityScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,8 +71,19 @@ function App() {
                   path="historical-events"
                   element={<HistoricalEventsPage />}
                 />
-                {/* <Route path="major-cases" element={<MajorCasesPage />} />
-                <Route path="geographic" element={<GeographicPage />} /> */}
+                <Route path="geography" element={<GeographyScreen />} />
+                <Route
+                  path="geography/province/:provinceId"
+                  element={<ProvinceScreen />}
+                />
+                <Route
+                  path="geography/district/:districtId"
+                  element={<DistrictScreen />}
+                />
+                <Route
+                  path="geography/municipality/:municipalityId"
+                  element={<MunicipalityScreen />}
+                />
                 <Route path="polling" element={<PollingPage />} />
                 {/* <Route
                   path="viral-management"

@@ -1,10 +1,16 @@
 import { Expose, Transform, Type } from 'class-transformer';
+import { DistrictSerializer } from 'src/location/district/serializers/district.serializer';
+import { ProvinceSerializer } from 'src/location/province/serializers/province.serializer';
 
 export class MunicipalitySerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
   @Expose() name: string;
-  @Expose() provinceId: string;
-  @Expose() districtId: string;
+  @Expose({ name: 'provinceId' })
+  @Type(() => ProvinceSerializer)
+  province: ProvinceSerializer;
+  @Expose({ name: 'districtId' })
+  @Type(() => DistrictSerializer)
+  district: DistrictSerializer;
 
   @Expose() createdAt: string;
   @Expose() updatedAt: string;

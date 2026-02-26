@@ -1,4 +1,12 @@
 // Core types and enums
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const UserRole = {
   CITIZEN: "citizen",
   ADMIN: "admin",
