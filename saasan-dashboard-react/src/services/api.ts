@@ -5,9 +5,6 @@ import type { CorruptionReport } from "../../../shared/types/reports";
 import type {
   HistoricalEvent,
   MajorCase,
-  District,
-  Municipality,
-  Ward,
   DashboardStats,
   ServiceStatus,
   PollOption,
@@ -40,6 +37,13 @@ import type {
   IReportVisibility,
   IReportStatus,
 } from "@/types/reports";
+import type {
+  IProvince,
+  IDistrict,
+  IMunicipality,
+  IWard,
+  IConstituency,
+} from "@/types/location";
 
 // Utility function to transform snake_case to camelCase
 const transformPolitician = (politician: IPolitician) => ({
@@ -388,120 +392,226 @@ export const politicsApi = {
 // Geographic API
 export const geographicApi = {
   // Provinces
-  getProvinces: async (): Promise<ApiResponse<any[]>> => {
-    const response = await api.get("/locations/provinces");
+  getProvinces: async (
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IProvince>> => {
+    const url =
+      page && limit ? `/province?page=${page}&limit=${limit}` : `/province`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getProvince: async (provinceId: string): Promise<{ data: IProvince }> => {
+    const response = await api.get(`/province/${provinceId}`);
     return response.data;
   },
 
-  createProvince: async (provinceData: any): Promise<ApiResponse<any>> => {
-    const response = await api.post("/locations/provinces", provinceData);
+  getProvinceById: async (provinceId: string): Promise<{ data: IProvince }> => {
+    const response = await api.get(`/province/${provinceId}`);
+    return response.data.data;
+  },
+
+  createProvince: async (provinceData: any): Promise<{ data: IProvince }> => {
+    const response = await api.post("/province", provinceData);
     return response.data;
   },
 
   // Districts
   getDistricts: async (
-    provinceId?: string,
-  ): Promise<ApiResponse<District[]>> => {
-    const url = provinceId
-      ? `/locations/provinces/${provinceId}/districts`
-      : "/locations/districts";
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IDistrict>> => {
+    const url =
+      page && limit ? `/district?page=${page}&limit=${limit}` : `/district`;
     const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getDistrictsByProvinceId: async (
+    provinceId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IDistrict>> => {
+    const url =
+      page && limit
+        ? `/district/province/${provinceId}?page=${page}&limit=${limit}`
+        : `/district/province/${provinceId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getDistrictById: async (districtId: string): Promise<{ data: IDistrict }> => {
+    const response = await api.get(`/district/${districtId}`);
     return response.data;
   },
 
-  createDistrict: async (
-    districtData: Partial<District>,
-  ): Promise<ApiResponse<District>> => {
-    const response = await api.post("/locations/districts", districtData);
+  createDistrict: async (districtData: any): Promise<{ data: IDistrict }> => {
+    const response = await api.post("/district", districtData);
     return response.data;
   },
 
   // Municipalities
   getMunicipalities: async (
-    districtId: string,
-  ): Promise<ApiResponse<Municipality[]>> => {
-    const response = await api.get(
-      `/locations/districts/${districtId}/municipalities`,
-    );
-    return response.data;
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IMunicipality>> => {
+    const url =
+      page && limit
+        ? `/municipality?page=${page}&limit=${limit}`
+        : `/municipality`;
+    const response = await api.get(url);
+    return response.data.data;
   },
 
-  createMunicipality: async (
-    municipalityData: Partial<Municipality>,
-  ): Promise<ApiResponse<Municipality>> => {
-    const response = await api.post(
-      "/locations/municipalities",
-      municipalityData,
-    );
-    return response.data;
+  getMunicipalitiesByProvinceId: async (
+    provinceId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IMunicipality>> => {
+    const url =
+      page && limit
+        ? `/municipality/province/${provinceId}?page=${page}&limit=${limit}`
+        : `/municipality/province/${provinceId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getMunicipalitiesByDistrictId: async (
+    districtId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IMunicipality>> => {
+    const url =
+      page && limit
+        ? `/municipality/district/${districtId}?page=${page}&limit=${limit}`
+        : `/municipality/district/${districtId}`;
+    const response = await api.get(url);
+    return response.data.data;
   },
 
   // Wards
   getWards: async (
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IWard>> => {
+    const url = page && limit ? `/ward?page=${page}&limit=${limit}` : `/ward`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getWardsByProvinceId: async (
+    provinceId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IWard>> => {
+    const url =
+      page && limit
+        ? `/ward/province/${provinceId}?page=${page}&limit=${limit}`
+        : `/ward/province/${provinceId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getWardsByDistrictId: async (
     districtId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IWard>> => {
+    const url =
+      page && limit
+        ? `/ward/district/${districtId}?page=${page}&limit=${limit}`
+        : `/ward/district/${districtId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getWardsByMunicipalityId: async (
     municipalityId: string,
-  ): Promise<ApiResponse<Ward[]>> => {
-    const response = await api.get(
-      `/locations/districts/${districtId}/municipalities/${municipalityId}/wards`,
-    );
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IWard>> => {
+    const url =
+      page && limit
+        ? `/ward/municipality/${municipalityId}?page=${page}&limit=${limit}`
+        : `/ward/municipality/${municipalityId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getWardById: async (wardId: string): Promise<{ data: IWard }> => {
+    const response = await api.get(`/ward/${wardId}`);
     return response.data;
   },
 
-  createWard: async (wardData: Partial<Ward>): Promise<ApiResponse<Ward>> => {
-    const response = await api.post("/locations/wards", wardData);
+  createWard: async (wardData: any): Promise<{ data: IWard }> => {
+    const response = await api.post("/ward", wardData);
     return response.data;
   },
 
   // Constituencies
   getConstituencies: async (
-    districtId?: string,
-  ): Promise<ApiResponse<any[]>> => {
-    const url = districtId
-      ? `/locations/districts/${districtId}/constituencies`
-      : "/locations/constituencies";
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IConstituency>> => {
+    const url =
+      page && limit
+        ? `/constituency?page=${page}&limit=${limit}`
+        : `/constituency`;
     const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getConstituenciesByProvinceId: async (
+    provinceId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IConstituency>> => {
+    const url =
+      page && limit
+        ? `/constituency/province/${provinceId}?page=${page}&limit=${limit}`
+        : `/constituency/province/${provinceId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getConstituenciesByDistrictId: async (
+    districtId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IConstituency>> => {
+    const url =
+      page && limit
+        ? `/constituency/district/${districtId}?page=${page}&limit=${limit}`
+        : `/constituency/district/${districtId}`;
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getConstituencyById: async (
+    constituencyId: string,
+  ): Promise<{ data: IConstituency }> => {
+    const response = await api.get(`/constituency/${constituencyId}`);
     return response.data;
+  },
+
+  getConstituenciesByDistrict: async (
+    districtId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IConstituency>> => {
+    const url =
+      page && limit
+        ? `/district/${districtId}/constituency?page=${page}&limit=${limit}`
+        : `/district/${districtId}/constituency`;
+    const response = await api.get(url);
+    return response.data.data;
   },
 
   createConstituency: async (
     constituencyData: any,
-  ): Promise<ApiResponse<any>> => {
-    const response = await api.post(
-      "/locations/constituencies",
-      constituencyData,
-    );
-    return response.data;
-  },
-
-  // Bulk uploads
-  bulkUploadDistricts: async (
-    file: File,
-  ): Promise<ApiResponse<UploadResult>> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post(
-      "/locations/districts/bulk-upload",
-      formData,
-    );
-    return response.data;
-  },
-
-  bulkUploadMunicipalities: async (
-    file: File,
-  ): Promise<ApiResponse<UploadResult>> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post(
-      "/locations/municipalities/bulk-upload",
-      formData,
-    );
-    return response.data;
-  },
-
-  bulkUploadWards: async (file: File): Promise<ApiResponse<UploadResult>> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post("/locations/wards/bulk-upload", formData);
+  ): Promise<{ data: IConstituency }> => {
+    const response = await api.post("/constituency", constituencyData);
     return response.data;
   },
 };

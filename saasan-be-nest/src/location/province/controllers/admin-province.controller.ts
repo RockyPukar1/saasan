@@ -14,6 +14,7 @@ import { ProvinceService } from '../services/province.service';
 @Controller('admin/province')
 export class AdminProvinceController {
   constructor(private readonly provinceService: ProvinceService) {}
+
   @HttpCode(201)
   @Post()
   async createProvince(@Body() provinceData: CreateProvinceDto) {

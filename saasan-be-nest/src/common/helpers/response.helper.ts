@@ -29,13 +29,36 @@ export class ResponseHelper {
     plain: unknown,
     message?: string,
   ) {
-    return this.success(
-      plainToInstance(cls, plain, {
+    if (plain && typeof plain === 'object' && 'data' in plain) {
+      const paginatedData = plain as {
+        data: unknown[];
+        total: number;
+        page: number;
+        limit: number;
+      };
+      const serializedItems = plainToInstance(cls, paginatedData.data, {
         strategy: 'excludeAll',
         exposeUnsetFields: false,
         excludeExtraneousValues: true,
-      }),
-      message,
-    );
+      });
+
+      return this.success(
+        {
+          data: serializedItems,
+          total: paginatedData.total,
+          page: paginatedData.page,
+          limit: paginatedData.limit,
+        },
+        message,
+      );
+    }
+
+    const serializedData = plainToInstance(cls, plain, {
+      strategy: 'excludeAll',
+      exposeUnsetFields: false,
+      excludeExtraneousValues: true,
+    });
+
+    return this.success(serializedData, message);
   }
 }

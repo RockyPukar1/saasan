@@ -13,14 +13,36 @@ export class DistrictRepository {
     private readonly model: Model<DistrictEntityDocument>,
   ) {}
 
+  async find({ page = 1, limit = 10 }) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.model.find().skip(skip).limit(limit).populate('provinceId'),
+      this.model.countDocuments(),
+    ]);
+    return { data, total, page, limit };
+  }
+
   findOne(filter: any) {
     return this.model.findOne(filter);
   }
 
-  async findByProvinceId({ provinceId }: ProvinceIdDto) {
-    return await this.model.find({
-      provinceId: new Types.ObjectId(provinceId)
-    });
+  async findById(districtId: string) {
+    return this.model.findById(districtId);
+  }
+
+  async findByProvinceId(
+    { provinceId }: ProvinceIdDto,
+    { page = 1, limit = 10 },
+  ) {
+    const skip = (page - 1) * limit;
+    const filter = {
+      provinceId: new Types.ObjectId(provinceId),
+    };
+    const [data, total] = await Promise.all([
+      this.model.find(filter).skip(skip).limit(limit),
+      this.model.countDocuments(filter),
+    ]);
+    return { data, total, page, limit };
   }
 
   async create(districtData: CreateDistrictDto) {

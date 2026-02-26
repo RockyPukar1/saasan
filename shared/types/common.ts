@@ -10,7 +10,6 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   limit: number;
-  totalPages: number;
 }
 
 // Dashboard stats types
@@ -28,7 +27,7 @@ export interface DashboardStats {
     resolutionRate: number;
   };
   categoryBreakdown: CategoryStat[];
-  recentActivity: import('./reports').MajorCase[];
+  recentActivity: import("./reports").MajorCase[];
 }
 
 // Service types
@@ -54,8 +53,8 @@ export interface HistoricalEvent {
   title: string;
   description: string;
   year: number;
-  category: 'corruption' | 'political' | 'social' | 'economic';
-  significance: 'high' | 'medium' | 'low';
+  category: "corruption" | "political" | "social" | "economic";
+  significance: "high" | "medium" | "low";
   createdAt: string;
   updatedAt: string;
 }

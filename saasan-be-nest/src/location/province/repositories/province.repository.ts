@@ -16,8 +16,17 @@ export class ProvinceRepository {
     return this.model.findOne(filter);
   }
 
-  async find() {
-    return this.model.find();
+  async find({ page = 1, limit = 10 }) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.model.find().skip(skip).limit(limit),
+      this.model.countDocuments(),
+    ]);
+    return { data, total, page, limit };
+  }
+
+  async findById(provinceId: string) {
+    return this.model.findById(provinceId);
   }
 
   async create(provinceData: CreateProvinceDto) {
