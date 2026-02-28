@@ -44,6 +44,7 @@ import type {
   IWard,
   IConstituency,
 } from "@/types/location";
+import type { IPermission, IRole } from "@/types/rbac";
 
 // Utility function to transform snake_case to camelCase
 const transformPolitician = (politician: IPolitician) => ({
@@ -1055,6 +1056,78 @@ export const pollingApi = {
   createType: async (data: { name: string; name_nepali?: string }) => {
     const response = await api.post("/poll/types", data);
     return response.data;
+  },
+};
+
+// RBAC API
+export const rbacApi = {
+  getRoles: async (): Promise<IRole[]> => {
+    const response = await api.get("/rbac/role");
+    return response.data.data;
+  },
+  getRole: async (id: string): Promise<IRole> => {
+    const response = await api.get(`/rbac/role/${id}`);
+    return response.data.data;
+  },
+  createRole: async (data: any): Promise<IRole[]> => {
+    const response = await api.post("/rbac/role", data);
+    return response.data.data;
+  },
+  updateRole: async (id: string, data: any): Promise<IRole[]> => {
+    const response = await api.put(`/rbac/role/${id}`, data);
+    return response.data.data;
+  },
+  deleteRole: async (id: string): Promise<IRole[]> => {
+    const response = await api.delete(`/rbac/role/${id}`);
+    return response.data.data;
+  },
+
+  getPermissions: async (): Promise<IPermission[]> => {
+    const response = await api.get("/rbac/permission");
+    return response.data.data;
+  },
+  getUserPermissions: async (): Promise<IPermission[]> => {
+    const response = await api.get("/rbac/user/permission");
+    return response.data.data;
+  },
+  getPermission: async (id: string): Promise<IPermission[]> => {
+    const response = await api.get(`/rbac/permission/${id}`);
+    return response.data.data;
+  },
+  createPermission: async (data: any): Promise<IPermission[]> => {
+    const response = await api.post("/rbac/permission", data);
+    return response.data.data;
+  },
+  updatePermission: async (id: string, data: any): Promise<IPermission[]> => {
+    const response = await api.put(`/rbac/permission/${id}`, data);
+    return response.data.data;
+  },
+  deletePermission: async (id: string): Promise<IPermission[]> => {
+    const response = await api.delete(`/rbac/permission/${id}`);
+    return response.data.data;
+  },
+
+  getRolePermissions: async (roleId: string): Promise<IPermission[]> => {
+    const response = await api.get(`/rbac/role/${roleId}/permission`);
+    return response.data.data;
+  },
+  assignPermission: async (
+    roleId: string,
+    permissionId: string,
+  ): Promise<IPermission[]> => {
+    const response = await api.put(
+      `/rbac/role/${roleId}/permission/${permissionId}`,
+    );
+    return response.data.data;
+  },
+  removePermission: async (
+    roleId: string,
+    permissionId: string,
+  ): Promise<IPermission[]> => {
+    const response = await api.delete(
+      `/rbac/role/${roleId}/permission/${permissionId}`,
+    );
+    return response.data.data;
   },
 };
 

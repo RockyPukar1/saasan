@@ -1,8 +1,9 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { RegisterUserDto } from 'src/auth/dtos/register.dto';
 import { UserEntity, UserEntityDocument } from '../entities/user.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UserIdDto } from '../dtos/user-id.dto';
+import { AdminRoleIdDto } from 'src/rbac/dtos/admin-role-id.dto';
 
 export class UserRepository {
   constructor(
@@ -28,5 +29,11 @@ export class UserRepository {
 
   async create(userData: RegisterUserDto) {
     return await this.model.create(userData);
+  }
+
+  async findByAdminRoleId({ adminRoleId }: AdminRoleIdDto) {
+    return await this.model.find({
+      adminRoleId: new Types.ObjectId(adminRoleId),
+    });
   }
 }

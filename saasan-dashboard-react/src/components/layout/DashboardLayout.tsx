@@ -47,6 +47,7 @@ const navigation = [
   // { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
   { name: "Geography", href: "/geography", icon: MapPin },
   { name: "Polling", href: "/polling", icon: BarChart3 },
+  { name: "Roles", href: "/roles", icon: Shield },
   // { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
 ];
 

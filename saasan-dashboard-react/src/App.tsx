@@ -16,6 +16,7 @@ import PollingPage from "@/screens/PollingPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import "./index.css";
 import ReportsScreen from "./screens/ReportsScreen";
+import RoleManagementPage from "./screens/RoleManagementPage";
 import ReportTypesScreen from "./screens/ReportsScreen/ReportTypeScreen";
 import ReportStatusesScreen from "./screens/ReportsScreen/ReportStatusScreen";
 import ReportPrioritiesScreen from "./screens/ReportsScreen/ReportPrioritiesScreen";
@@ -85,6 +86,7 @@ function App() {
                   element={<MunicipalityScreen />}
                 />
                 <Route path="polling" element={<PollingPage />} />
+                <Route path="roles" element={<RoleManagementPage />} />
                 {/* <Route
                   path="viral-management"
                   element={<ViralManagementPage />}

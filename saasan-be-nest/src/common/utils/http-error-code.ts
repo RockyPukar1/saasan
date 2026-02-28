@@ -10,6 +10,10 @@ export const HttpErrorCodeMessage = {
   district404: 'District does not exist',
   municipality404: 'Municipality does not exist',
   constituency404: 'Constituency does not exist',
+  role404: 'Role does not exist',
+  permission404: 'Permission does not exist',
+  roleInUse: 'Role is in use',
+  permissionInUse: 'Permission is in use',
   invalidCredentials: 'Invalid credentials',
   userAlreadyExistsWithEmail: 'User already exists with this phone number',
   provinceAlreadyExistsWithNameOrProvinceNumber:
