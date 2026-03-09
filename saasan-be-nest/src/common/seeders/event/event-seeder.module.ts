@@ -1,10 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventSeeder } from './event.seeder';
-import {
-  EventEntity,
-  EventEntitySchema,
-} from 'src/event/entities/event.entity';
+import { EventEntity, EventEntitySchema } from '@/event/entities/event.entity';
 
 @Module({
   imports: [

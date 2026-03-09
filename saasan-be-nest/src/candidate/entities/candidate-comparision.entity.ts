@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { CandidateComparisionCriteriaEntity } from 'src/candidate/entities/candidate-comparision-criteria.entity';
-import { ElectionCandidateEntity } from 'src/candidate/entities/election-candidate.entity';
-import { UserEntity } from 'src/user/entities/user.entity';
+import { CandidateComparisionCriteriaEntity } from '@/candidate/entities/candidate-comparision-criteria.entity';
+import { ElectionCandidateEntity } from '@/candidate/entities/election-candidate.entity';
+import { UserEntity } from '@/user/entities/user.entity';
 
 @Schema({ timestamps: true, collection: CandidateComparisionEntity.collection })
 export class CandidateComparisionEntity {

@@ -3,11 +3,11 @@ import { Injectable } from '@nestjs/common';
 import pollData from './data/poll.json';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { PollEntity, PollEntityDocument } from 'src/poll/entities/poll.entity';
+import { PollEntity, PollEntityDocument } from '@/poll/entities/poll.entity';
 import {
   PollOptionEntity,
   PollOptionEntityDocument,
-} from 'src/poll/entities/poll-option.entity';
+} from '@/poll/entities/poll-option.entity';
 
 @Injectable()
 export class PollSeeder {

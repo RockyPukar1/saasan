@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
-import { WardEntity } from 'src/location/ward/entities/ward.entity';
-import { UserEntity } from 'src/user/entities/user.entity';
+import { ConstituencyEntity } from '@/location/constituency/entities/constituency.entity';
+import { WardEntity } from '@/location/ward/entities/ward.entity';
+import { UserEntity } from '@/user/entities/user.entity';
 
 enum VerificationStatus {
   PENDING = 'pending',

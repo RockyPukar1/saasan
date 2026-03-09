@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventRepository } from '../repositories/event.repository';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 
 @Injectable()
 export class EventService {

@@ -1,12 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
-import { UserRepository } from 'src/user/repositories/user.repository';
+import { UserRepository } from '@/user/repositories/user.repository';
 import { RegisterUserDto } from '../dtos/register.dto';
-import { PASSWORD_SALT } from 'src/user/entities/user.entity';
+import { PASSWORD_SALT } from '@/user/entities/user.entity';
 import { LoginUserDto } from '../dtos/login.dto';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { AuthHelper } from 'src/common/helpers/auth.helper';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { AuthHelper } from '@/common/helpers/auth.helper';
 import { Types } from 'mongoose';
 
 @Injectable()
@@ -73,15 +73,14 @@ export class AuthService {
   }
 
   async getProfile(userId: string) {
-    const user = await this.doesUserExists({ _id: new Types.ObjectId(userId)}).lean();
+    const user = await this.doesUserExists({
+      _id: new Types.ObjectId(userId),
+    }).lean();
     if (!user) {
       throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
     }
 
-    return ResponseHelper.success(
-      user,
-      'User Profile fetched successfully',
-    );
+    return ResponseHelper.success(user, 'User Profile fetched successfully');
   }
 
   private doesUserExists(filter: any) {

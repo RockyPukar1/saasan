@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { VoteDto } from '../dtos/vote.dto';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
 import { PollRepository } from '../repositories/poll.repository';
 import { PollVoteRepository } from '../repositories/poll-vote.repository';
 import { PollOptionRepository } from '../repositories/poll-option.repository';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollSerializer } from '../serializers/poll.serializer';
-import { PollIdDto } from 'src/viral/dtos/poll-id.dto';
+import { PollIdDto } from '@/viral/dtos/poll-id.dto';
 
 @Injectable()
 export class PollService {

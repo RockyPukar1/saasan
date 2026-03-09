@@ -2,9 +2,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { WardEntity, WardEntityDocument } from '../entities/ward.entity';
 import { CreateWardDto } from '../dtos/create-ward.dto';
-import { MunicipalityIdDto } from 'src/location/municipality/dtos/municipality-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { MunicipalityIdDto } from '@/location/municipality/dtos/municipality-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 
 export class WardRepository {
   constructor(

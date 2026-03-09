@@ -19,7 +19,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { EvidenceService } from '../services/evidence.service';
 import { ReportIdDto } from '../dtos/report-id.dto';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { type Request } from 'express';
 
 @UseGuards(HttpAccessTokenGuard)

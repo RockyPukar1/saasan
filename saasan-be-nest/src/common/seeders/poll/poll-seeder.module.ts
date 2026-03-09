@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PollSeeder } from './poll.seeder';
-import { PollEntity, PollEntitySchema } from 'src/poll/entities/poll.entity';
+import { PollEntity, PollEntitySchema } from '@/poll/entities/poll.entity';
 import {
   PollOptionEntity,
   PollOptionEntitySchema,
-} from 'src/poll/entities/poll-option.entity';
+} from '@/poll/entities/poll-option.entity';
 
 @Module({
   imports: [

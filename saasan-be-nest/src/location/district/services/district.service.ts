@@ -1,10 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
 import { DistrictRepository } from '../repositories/district.repository';
 import { CreateDistrictDto } from '../dtos/create-district.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
 import { DistrictIdDto } from '../dtos/district-id.dto';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { DistrictSerializer } from '../serializers/district.serializer';
 
 @Injectable()

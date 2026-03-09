@@ -14,7 +14,7 @@ import { PoliticianIdDto } from '../dtos/politician-id.dto';
 import { PoliticianService } from '../services/politician.service';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
-import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
+import { LevelNameDto } from '@/politics/level/dtos/level-name.dto';
 
 @Controller('politician')
 export class PoliticianController {

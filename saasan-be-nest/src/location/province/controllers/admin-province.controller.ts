@@ -6,7 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { CreateProvinceDto } from '../dtos/create-province.dto';
 import { ProvinceService } from '../services/province.service';
 

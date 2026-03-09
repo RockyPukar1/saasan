@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { MunicipalityService } from '../services/municipality.service';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 import { MunicipalityIdDto } from '../dtos/municipality-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
 
 @Controller('municipality')
 export class MunicipalityController {

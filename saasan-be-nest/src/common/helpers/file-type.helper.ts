@@ -1,4 +1,4 @@
-import { FileTypeEnum } from 'src/report/entities/evidence.entity';
+import { FileTypeEnum } from '@/report/entities/evidence.entity';
 
 export function getFileType(mimeType: string): FileTypeEnum {
   if (mimeType.startsWith('image')) return FileTypeEnum.IMAGE;

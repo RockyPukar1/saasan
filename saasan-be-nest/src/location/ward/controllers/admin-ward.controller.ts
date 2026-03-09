@@ -6,7 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { WardService } from '../services/ward.service';
 import { CreateWardDto } from '../dtos/create-ward.dto';
 

@@ -1,6 +1,6 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { DashboardService } from '../services/dashboard.service';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('dashboard')

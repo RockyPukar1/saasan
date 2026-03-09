@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import { ConstituencyService } from '../services/constituency.service';
 import { CreateConstituencyDto } from '../dtos/create-constituency.dto';
-import { WardIdDto } from 'src/location/ward/dtos/ward-id.dto';
+import { WardIdDto } from '@/location/ward/dtos/ward-id.dto';
 import { ConstituencyIdDto } from '../dtos/constituency-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 
 @Controller('constituency')
 export class ConstituencyController {

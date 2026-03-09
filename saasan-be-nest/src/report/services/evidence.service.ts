@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 import { EvidenceRepository } from '../repositories/evidence.repository';
-import { CloudinaryService } from 'src/common/cloudinary/services/cloudinary.service';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { getFileType } from 'src/common/helpers/file-type.helper';
+import { CloudinaryService } from '@/common/cloudinary/services/cloudinary.service';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { getFileType } from '@/common/helpers/file-type.helper';
 import { ClientSession, Types } from 'mongoose';
-import { TransactionRunner } from 'src/common/transaction/runners/transaction.runner';
+import { TransactionRunner } from '@/common/transaction/runners/transaction.runner';
 
 @Injectable()
 export class EvidenceService {

@@ -5,7 +5,7 @@ import {
   DistrictEntityDocument,
 } from '../entities/district.entity';
 import { CreateDistrictDto } from '../dtos/create-district.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
 
 export class DistrictRepository {
   constructor(

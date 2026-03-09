@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ReportRepository } from '../repositories/report.repository';
 import { CreateReportDto } from '../dtos/create-report.dto';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { ReportSerializer } from '../serializers/report.serializer';
 import { ReportIdDto } from '../dtos/report-id.dto';
-import { CloudinaryService } from 'src/common/cloudinary/services/cloudinary.service';
+import { CloudinaryService } from '@/common/cloudinary/services/cloudinary.service';
 import { EvidenceRepository } from '../repositories/evidence.repository';
-import { getFileType } from 'src/common/helpers/file-type.helper';
-import { TransactionRunner } from 'src/common/transaction/runners/transaction.runner';
+import { getFileType } from '@/common/helpers/file-type.helper';
+import { TransactionRunner } from '@/common/transaction/runners/transaction.runner';
 import { ClientSession, Types } from 'mongoose';
 import { AdminUpdateReportDto } from '../dtos/admin-update-report.dto';
 import { CreateReportTypeDto } from '../dtos/create-report-type.dto';
@@ -25,9 +25,9 @@ import { ReportVisibilitySerializer } from '../serializers/report-visibility.ser
 import { CreateReportVisibilityDto } from '../dtos/create-report-visibility.dto';
 import { ReportActivityRepository } from '../repositories/report-activity.repository';
 import { ReportActivityCategoryEnum } from '../entities/report-activity.entity';
-import { UserIdDto } from 'src/user/dtos/user-id.dto';
-import { UserRepository } from 'src/user/repositories/user.repository';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { UserIdDto } from '@/user/dtos/user-id.dto';
+import { UserRepository } from '@/user/repositories/user.repository';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
 
 @Injectable()
 export class ReportService {

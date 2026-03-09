@@ -1,9 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import {
-  CaseEntity,
-  CaseEntitySchema,
-} from 'src/case/entities/case.entity';
+import { CaseEntity, CaseEntitySchema } from '@/case/entities/case.entity';
 import { CaseSeeder } from './case.seeder';
 
 @Module({
@@ -12,7 +9,7 @@ import { CaseSeeder } from './case.seeder';
       { name: CaseEntity.name, schema: CaseEntitySchema },
     ]),
   ],
-  providers: [ CaseSeeder],
+  providers: [CaseSeeder],
   exports: [CaseSeeder],
 })
 export class CaseSeederModule {}

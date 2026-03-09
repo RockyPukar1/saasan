@@ -1,8 +1,8 @@
 import { Expose, Transform, Type } from 'class-transformer';
-import { ProvinceSerializer } from 'src/location/province/serializers/province.serializer';
-import { DistrictSerializer } from 'src/location/district/serializers/district.serializer';
-import { MunicipalitySerializer } from 'src/location/municipality/serializers/municipality.serializer';
-import { ConstituencySerializer } from 'src/location/constituency/serializers/constituency.serializer';
+import { ProvinceSerializer } from '@/location/province/serializers/province.serializer';
+import { DistrictSerializer } from '@/location/district/serializers/district.serializer';
+import { MunicipalitySerializer } from '@/location/municipality/serializers/municipality.serializer';
+import { ConstituencySerializer } from '@/location/constituency/serializers/constituency.serializer';
 
 export class WardSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;

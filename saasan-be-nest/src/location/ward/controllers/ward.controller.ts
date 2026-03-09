@@ -1,9 +1,9 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { WardService } from '../services/ward.service';
-import { MunicipalityIdDto } from 'src/location/municipality/dtos/municipality-id.dto';
+import { MunicipalityIdDto } from '@/location/municipality/dtos/municipality-id.dto';
 import { WardIdDto } from '../dtos/ward-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 @Controller('ward')
 export class WardController {
   constructor(private readonly wardService: WardService) {}

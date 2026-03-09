@@ -5,8 +5,8 @@ import {
   MunicipalityEntityDocument,
 } from '../entities/municipality.entity';
 import { CreateMunicipalityDto } from '../dtos/create-municipality.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
 
 export class MunicipalityRepository {
   constructor(

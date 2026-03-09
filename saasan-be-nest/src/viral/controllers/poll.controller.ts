@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { PollService } from '../services/poll.service';
 import { VoteDto } from '../dtos/vote.dto';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { type Request } from 'express';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollIdDto } from '../dtos/poll-id.dto';

@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateMunicipalityDto } from '../dtos/create-municipality.dto';
 import { MunicipalityRepository } from '../repositories/municipality.repository';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 import { MunicipalityIdDto } from '../dtos/municipality-id.dto';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { MunicipalitySerializer } from '../serializers/municipality.serializer';
-import { WardRepository } from 'src/location/ward/repositories/ward.repository';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { WardRepository } from '@/location/ward/repositories/ward.repository';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
 
 @Injectable()
 export class MunicipalityService {

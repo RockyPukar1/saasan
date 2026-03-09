@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, Schema as MongooseSchema } from 'mongoose';
 
 import { ReportEntity } from './report.entity';
-import { UserEntity } from 'src/user/entities/user.entity';
+import { UserEntity } from '@/user/entities/user.entity';
 
 export enum ReportActivityCategoryEnum {
   PRIORITY = 'priority',

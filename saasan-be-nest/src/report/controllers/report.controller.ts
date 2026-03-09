@@ -21,7 +21,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ReportService } from '../services/report.service';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { type Request } from 'express';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { GetReportActivitiesDto } from '../dtos/get-report-activities.dto';
 import { ReportFilterDto } from '../dtos/report-filter.dto';

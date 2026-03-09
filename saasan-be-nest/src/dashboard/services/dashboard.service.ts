@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { CaseRepository } from 'src/case/repositories/case.repository';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { EventRepository } from 'src/event/repositories/event.repository';
-import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
-import { ReportRepository } from 'src/report/repositories/report.repository';
+import { CaseRepository } from '@/case/repositories/case.repository';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { EventRepository } from '@/event/repositories/event.repository';
+import { PoliticianRepository } from '@/politics/politician/repositories/politician.repository';
+import { ReportRepository } from '@/report/repositories/report.repository';
 
 @Injectable()
 export class DashboardService {

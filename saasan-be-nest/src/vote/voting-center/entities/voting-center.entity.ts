@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
-import { WardEntity } from 'src/location/ward/entities/ward.entity';
+import { ConstituencyEntity } from '@/location/constituency/entities/constituency.entity';
+import { WardEntity } from '@/location/ward/entities/ward.entity';
 
 @Schema({ timestamps: true, collection: VotingCenterEntity.collection })
 export class VotingCenterEntity {

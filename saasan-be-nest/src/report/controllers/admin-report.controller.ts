@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ReportService } from '../services/report.service';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { AdminUpdateReportDto } from '../dtos/admin-update-report.dto';
 import { CreateReportTypeDto } from '../dtos/create-report-type.dto';

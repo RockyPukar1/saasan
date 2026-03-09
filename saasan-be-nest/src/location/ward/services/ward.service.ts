@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateWardDto } from '../dtos/create-ward.dto';
 import { WardRepository } from '../repositories/ward.repository';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { MunicipalityIdDto } from 'src/location/municipality/dtos/municipality-id.dto';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { MunicipalityIdDto } from '@/location/municipality/dtos/municipality-id.dto';
 import { WardIdDto } from '../dtos/ward-id.dto';
 import { WardSerializer } from '../serializers/ward.serializer';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 
 @Injectable()
 export class WardService {

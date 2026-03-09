@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, Schema as MongooseSchema } from 'mongoose';
-import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
-import { PartyEntity } from 'src/politics/party/entities/party.entity';
-import { PositionEntity } from 'src/politics/position/entities/position.entity';
+import { ConstituencyEntity } from '@/location/constituency/entities/constituency.entity';
+import { PartyEntity } from '@/politics/party/entities/party.entity';
+import { PositionEntity } from '@/politics/position/entities/position.entity';
 
 interface IExperience {
   category: string;

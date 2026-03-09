@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { PositionRepository } from '../repositories/position.repository';
 import { PositionSerializer } from '../serializers/positions.serializer';
 

@@ -1,14 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConstituencyRepository } from '../repositories/constituency.repository';
 import { CreateConstituencyDto } from '../dtos/create-constituency.dto';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
-import { WardIdDto } from 'src/location/ward/dtos/ward-id.dto';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { WardRepository } from 'src/location/ward/repositories/ward.repository';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
+import { WardIdDto } from '@/location/ward/dtos/ward-id.dto';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { WardRepository } from '@/location/ward/repositories/ward.repository';
 import { ConstituencySerializer } from '../serializers/constituency.serializer';
 import { ConstituencyIdDto } from '../dtos/constituency-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 
 @Injectable()
 export class ConstituencyService {

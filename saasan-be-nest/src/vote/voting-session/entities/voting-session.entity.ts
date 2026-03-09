@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
+import { ConstituencyEntity } from '@/location/constituency/entities/constituency.entity';
 
 enum ElectionType {
   FEDERAL = 'federal',

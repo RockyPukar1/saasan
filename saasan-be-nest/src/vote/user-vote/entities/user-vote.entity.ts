@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ElectionCandidateEntity } from 'src/candidate/entities/election-candidate.entity';
-import { UserEntity } from 'src/user/entities/user.entity';
-import { VotingSessionEntity } from 'src/vote/voting-session/entities/voting-session.entity';
+import { ElectionCandidateEntity } from '@/candidate/entities/election-candidate.entity';
+import { UserEntity } from '@/user/entities/user.entity';
+import { VotingSessionEntity } from '@/vote/voting-session/entities/voting-session.entity';
 
 @Schema({ timestamps: true, collection: UserVoteEntity.collection })
 export class UserVoteEntity {

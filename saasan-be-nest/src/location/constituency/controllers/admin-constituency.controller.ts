@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConstituencyService } from '../services/constituency.service';
-import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { HttpAccessTokenGuard } from '@/common/guards/http-access-token.guard';
 import { CreateConstituencyDto } from '../dtos/create-constituency.dto';
 
 @UseGuards(HttpAccessTokenGuard)

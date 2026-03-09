@@ -3,23 +3,23 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   ConstituencyEntity,
   ConstituencyEntitySchema,
-} from 'src/location/constituency/entities/constituency.entity';
+} from '@/location/constituency/entities/constituency.entity';
 import {
   DistrictEntity,
   DistrictEntitySchema,
-} from 'src/location/district/entities/district.entity';
+} from '@/location/district/entities/district.entity';
 import {
   MunicipalityEntity,
   MunicipalityEntitySchema,
-} from 'src/location/municipality/entities/municipality.entity';
+} from '@/location/municipality/entities/municipality.entity';
 import {
   ProvinceEntity,
   ProvinceEntitySchema,
-} from 'src/location/province/entities/province.entity';
+} from '@/location/province/entities/province.entity';
 import {
   WardEntity,
   WardEntitySchema,
-} from 'src/location/ward/entities/ward.entity';
+} from '@/location/ward/entities/ward.entity';
 import { LocationSeeder } from './location.seeder';
 
 @Module({

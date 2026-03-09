@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
-import { DistrictEntity } from 'src/location/district/entities/district.entity';
-import { MunicipalityEntity } from 'src/location/municipality/entities/municipality.entity';
-import { ProvinceEntity } from 'src/location/province/entities/province.entity';
-import { WardEntity } from 'src/location/ward/entities/ward.entity';
-import { UserEntity } from 'src/user/entities/user.entity';
+import { ConstituencyEntity } from '@/location/constituency/entities/constituency.entity';
+import { DistrictEntity } from '@/location/district/entities/district.entity';
+import { MunicipalityEntity } from '@/location/municipality/entities/municipality.entity';
+import { ProvinceEntity } from '@/location/province/entities/province.entity';
+import { WardEntity } from '@/location/ward/entities/ward.entity';
+import { UserEntity } from '@/user/entities/user.entity';
 import { ReportTypeEntity } from './report-type.entity';
 import { ReportVisibilityEntity } from './report-visibility.entity';
 import { ReportPriorityEntity } from './report-priority.entity';

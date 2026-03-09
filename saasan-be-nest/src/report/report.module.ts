@@ -4,7 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ReportController } from './controllers/report.controller';
 import { ReportService } from './services/report.service';
 import { ReportRepository } from './repositories/report.repository';
-import { CloudinaryModule } from 'src/common/cloudinary/cloudinary.module';
+import { CloudinaryModule } from '@/common/cloudinary/cloudinary.module';
 import {
   EvidenceEntity,
   EvidenceEntitySchema,
@@ -12,7 +12,7 @@ import {
 import { ReportEvidenceController } from './controllers/evidence.controller';
 import { EvidenceService } from './services/evidence.service';
 import { EvidenceRepository } from './repositories/evidence.repository';
-import { TransactionModule } from 'src/common/transaction/transaction.module';
+import { TransactionModule } from '@/common/transaction/transaction.module';
 import {
   ReportActivityEntity,
   ReportActivityEntitySchema,
@@ -39,7 +39,7 @@ import {
   ReportVisibilityEntitySchema,
 } from './entities/report-visibility.entity';
 import { AdminReportController } from './controllers/admin-report.controller';
-import { UserModule } from 'src/user/user.module';
+import { UserModule } from '@/user/user.module';
 @Module({
   imports: [
     MongooseModule.forFeature([

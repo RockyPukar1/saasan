@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PartyRepository } from '../repositories/party.repository';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { PartySerializer } from '../serializers/party.serializer';
 
 @Injectable()

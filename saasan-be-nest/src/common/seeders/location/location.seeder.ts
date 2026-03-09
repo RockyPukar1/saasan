@@ -5,24 +5,24 @@ import { InjectModel } from '@nestjs/mongoose';
 import {
   ProvinceEntity,
   ProvinceEntityDocument,
-} from 'src/location/province/entities/province.entity';
+} from '@/location/province/entities/province.entity';
 import { Model } from 'mongoose';
 import {
   DistrictEntity,
   DistrictEntityDocument,
-} from 'src/location/district/entities/district.entity';
+} from '@/location/district/entities/district.entity';
 import {
   ConstituencyEntity,
   ConstituencyEntityDocument,
-} from 'src/location/constituency/entities/constituency.entity';
+} from '@/location/constituency/entities/constituency.entity';
 import {
   MunicipalityEntity,
   MunicipalityEntityDocument,
-} from 'src/location/municipality/entities/municipality.entity';
+} from '@/location/municipality/entities/municipality.entity';
 import {
   WardEntity,
   WardEntityDocument,
-} from 'src/location/ward/entities/ward.entity';
+} from '@/location/ward/entities/ward.entity';
 
 @Injectable()
 export class LocationSeeder {
@@ -71,7 +71,7 @@ export class LocationSeeder {
         );
 
         if (!district?.constituencies?.length) continue;
-        
+
         const districtId = districtDoc._id;
         const constituencies = district.constituencies;
 
@@ -94,16 +94,16 @@ export class LocationSeeder {
             { upsert: true, new: true },
           );
 
-          if (!constituency?.municipalities?.length) continue
-          
+          if (!constituency?.municipalities?.length) continue;
+
           const constituencyId = constituencyDoc._id;
           const municipalities = constituency.municipalities;
 
           for (const municipality of municipalities) {
-            let municipalityDoc = municipalitySet.get(municipality.name)
-            
+            let municipalityDoc = municipalitySet.get(municipality.name);
+
             if (!municipalityDoc) {
-              municipalityDoc = await this.municipalityModel.findOneAndUpdate(
+              municipalityDoc = (await this.municipalityModel.findOneAndUpdate(
                 { name: municipality.name, provinceId, districtId },
                 {
                   $set: {
@@ -113,11 +113,11 @@ export class LocationSeeder {
                   },
                 },
                 { upsert: true, new: true },
-              ) as MunicipalityEntityDocument;
+              )) as MunicipalityEntityDocument;
               municipalitySet.set(municipality.name, municipalityDoc);
             }
 
-            if (!municipality?.wards?.length) continue
+            if (!municipality?.wards?.length) continue;
 
             const municipalityId = municipalityDoc._id;
             const wards = municipality.wards;

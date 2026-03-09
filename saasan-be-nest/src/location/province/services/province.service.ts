@@ -1,8 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
 import { ProvinceRepository } from '../repositories/province.repository';
 import { CreateProvinceDto } from '../dtos/create-province.dto';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { ProvinceSerializer } from '../serializers/province.serializer';
 import { ProvinceIdDto } from '../dtos/province-id.dto';
 

@@ -3,28 +3,28 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   PoliticianEntity,
   PoliticianEntitySchema,
-} from 'src/politics/politician/entities/politician.entity';
+} from '@/politics/politician/entities/politician.entity';
 import { PoliticsSeeder } from './politics.seeder';
 import {
   PartyEntity,
   PartyEntitySchema,
-} from 'src/politics/party/entities/party.entity';
+} from '@/politics/party/entities/party.entity';
 import {
   LevelEntity,
   LevelEntitySchema,
-} from 'src/politics/level/entities/level.entity';
+} from '@/politics/level/entities/level.entity';
 import {
   PositionEntity,
   PositionEntitySchema,
-} from 'src/politics/position/entities/position.entity';
+} from '@/politics/position/entities/position.entity';
 import {
   PoliticianPromiseEntity,
   PoliticianPromiseEntitySchema,
-} from 'src/politics/politician/entities/politician-promise.entity';
+} from '@/politics/politician/entities/politician-promise.entity';
 import {
   PoliticianAchievementEntity,
   PoliticianAchievementSchema,
-} from 'src/politics/politician/entities/politician-achievement.entity';
+} from '@/politics/politician/entities/politician-achievement.entity';
 
 @Module({
   imports: [

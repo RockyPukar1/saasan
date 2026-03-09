@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import reportData from './data/case.json';
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  CaseEntity,
-  CaseEntityDocument,
-} from 'src/case/entities/case.entity';
+import { CaseEntity, CaseEntityDocument } from '@/case/entities/case.entity';
 import { Model } from 'mongoose';
 
 @Injectable()

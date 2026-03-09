@@ -9,27 +9,27 @@ import { Model, Types } from 'mongoose';
 import {
   PoliticianEntity,
   PoliticianEntityDocument,
-} from 'src/politics/politician/entities/politician.entity';
+} from '@/politics/politician/entities/politician.entity';
 import {
   LevelEntity,
   LevelEntityDocument,
-} from 'src/politics/level/entities/level.entity';
+} from '@/politics/level/entities/level.entity';
 import {
   PositionEntity,
   PositionEntityDocument,
-} from 'src/politics/position/entities/position.entity';
+} from '@/politics/position/entities/position.entity';
 import {
   PartyEntity,
   PartyEntityDocument,
-} from 'src/politics/party/entities/party.entity';
+} from '@/politics/party/entities/party.entity';
 import {
   PoliticianPromiseEntity,
   PoliticianPromiseEntityDocument,
-} from 'src/politics/politician/entities/politician-promise.entity';
+} from '@/politics/politician/entities/politician-promise.entity';
 import {
   PoliticianAchievementEntity,
   PoliticianAchievementEntityDocument,
-} from 'src/politics/politician/entities/politician-achievement.entity';
+} from '@/politics/politician/entities/politician-achievement.entity';
 
 @Injectable()
 export class PoliticsSeeder {

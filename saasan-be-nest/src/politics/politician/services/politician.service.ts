@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { GlobalHttpException } from '@/common/exceptions/global-http.exception';
 import { Types } from 'mongoose';
 import { PoliticianRepository } from '../repositories/politician.repository';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
 import { PoliticianSerializer } from '../serializers/politician.serializer';
 import { PoliticianIdDto } from '../dtos/politician-id.dto';
-import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
+import { LevelNameDto } from '@/politics/level/dtos/level-name.dto';
 
 @Injectable()
 export class PoliticianService {

@@ -5,9 +5,9 @@ import {
   ConstituencyEntityDocument,
 } from '../entities/constituency.entity';
 import { CreateConstituencyDto } from '../dtos/create-constituency.dto';
-import { WardIdDto } from 'src/location/ward/dtos/ward-id.dto';
-import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
-import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { WardIdDto } from '@/location/ward/dtos/ward-id.dto';
+import { ProvinceIdDto } from '@/location/province/dtos/province-id.dto';
+import { DistrictIdDto } from '@/location/district/dtos/district-id.dto';
 
 export class ConstituencyRepository {
   constructor(

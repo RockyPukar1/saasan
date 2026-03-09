@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import {
   EventEntity,
   EventEntityDocument,
-} from 'src/event/entities/event.entity';
+} from '@/event/entities/event.entity';
 import { Model } from 'mongoose';
 
 @Injectable()
