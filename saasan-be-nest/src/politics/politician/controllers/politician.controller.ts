@@ -53,4 +53,9 @@ export class PoliticianController {
   async getByLevel(@Param() param: LevelNameDto) {
     return await this.politicianService.getByLevel(param);
   }
+
+  @Get()
+  async getByPartyId(@Query('partyId') partyId: string) {
+    return await this.politicianService.getByPartyId(partyId);
+  }
 }
