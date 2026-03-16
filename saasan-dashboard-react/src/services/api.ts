@@ -18,7 +18,7 @@ import type {
   PollAnalytics,
   PollComparison,
 } from "../../../shared/types/polling";
-import type { IPoliticianFilter } from "@/screens/PoliticiansPage";
+import type { IPoliticianFilter } from "@/screens/PoliticiansScreen";
 import type {
   IGovernmentLevel,
   IParty,
@@ -386,6 +386,52 @@ export const politicsApi = {
       ...response.data,
       data: transformPolitician(response.data.data),
     };
+  },
+};
+
+// Party API
+export const partyApi = {
+  getAll: async (): Promise<IParty[]> => {
+    const response = await api.get("/party");
+    return response.data.data;
+  },
+
+  getById: async (id: string): Promise<ApiResponse<IParty>> => {
+    const response = await api.get(`/party/${id}`);
+    return response.data;
+  },
+
+  create: async (partyData: any): Promise<ApiResponse<IParty>> => {
+    const response = await api.post("/party", partyData);
+    return response.data;
+  },
+
+  update: async (id: string, partyData: any): Promise<ApiResponse<IParty>> => {
+    const response = await api.put(`/party/${id}`, partyData);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/party/${id}`);
+    return response.data;
+  },
+
+  getPoliticiansByParty: async (
+    partyId: string,
+  ): Promise<ApiResponse<IPolitician[]>> => {
+    const response = await api.get(`/politician?partyId=${partyId}`);
+    const transformedData = response.data.data?.map(transformPolitician) || [];
+    return {
+      ...response.data,
+      data: transformedData,
+    };
+  },
+
+  bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post("/parties/bulk-upload", formData);
+    return response.data;
   },
 };
 

@@ -40,7 +40,7 @@ const initialFilter: IPoliticianFilter = {
   party: [],
 };
 
-export const PoliticiansPage: React.FC = () => {
+export default function PoliticiansScreen() {
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
@@ -476,4 +476,4 @@ export const PoliticiansPage: React.FC = () => {
       <ConfirmDialog />
     </div>
   );
-};
+}

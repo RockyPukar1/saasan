@@ -10,7 +10,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { LoginPage } from "@/screens/LoginPage";
 import { DashboardPage } from "@/screens/DashboardPage";
-import { PoliticiansPage } from "@/screens/PoliticiansPage";
 import { HistoricalEventsPage } from "@/screens/HistoricalEventsPage";
 import PollingPage from "@/screens/PollingPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -24,6 +23,8 @@ import GeographyScreen from "./screens/GeographyScreen";
 import ProvinceScreen from "./screens/GeographyScreen/ProvinceScreen";
 import DistrictScreen from "./screens/GeographyScreen/DistrictScreen";
 import MunicipalityScreen from "./screens/GeographyScreen/MunicipalityScreen";
+import PoliticiansScreen from "./screens/PoliticiansScreen";
+import PartyScreen from "./screens/PartyScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,7 +53,8 @@ function App() {
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="politicians" element={<PoliticiansPage />} />
+                <Route path="politicians" element={<PoliticiansScreen />} />
+                <Route path="parties" element={<PartyScreen />} />
                 <Route path="reports" element={<ReportsScreen />} />
                 <Route path="reports/types" element={<ReportTypesScreen />} />
                 <Route

@@ -350,6 +350,88 @@ export class PoliticianRepository {
     ]);
   }
 
+  async getByPartyId(partyId: string) {
+    return await this.model.aggregate([
+      {
+        $match: {
+          partyId: new Types.ObjectId(partyId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'positions',
+          localField: 'positionIds',
+          foreignField: '_id',
+          as: 'positions',
+        },
+      },
+      {
+        $unwind: '$positions',
+      },
+      {
+        $lookup: {
+          from: 'levels',
+          localField: 'positions.levelId',
+          foreignField: '_id',
+          as: 'level',
+        },
+      },
+      {
+        $unwind: '$level',
+      },
+      {
+        $lookup: {
+          from: 'parties',
+          localField: 'partyId',
+          foreignField: '_id',
+          as: 'party',
+        },
+      },
+      {
+        $unwind: {
+          path: '$party',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'constituencies',
+          localField: 'constituencyId',
+          foreignField: '_id',
+          as: 'constituency',
+        },
+      },
+      {
+        $unwind: {
+          path: '$constituency',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          fullName: { $first: '$fullName' },
+          partyName: { $first: '$party.abbreviation' },
+          constituencyNumber: { $first: '$constituency.constituencyNumber' },
+          posts: {
+            $push: {
+              level: '$level.name',
+              position: '$positions.name',
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          posts: 1,
+          partyName: 1,
+          constituencyNumber: 1,
+        },
+      },
+    ]);
+  }
+
   private async countDocuments(filter?: any) {
     return await this.model.countDocuments(filter);
   }

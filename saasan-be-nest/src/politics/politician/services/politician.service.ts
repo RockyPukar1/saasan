@@ -63,6 +63,11 @@ export class PoliticianService {
     return ResponseHelper.success(politicians);
   }
 
+  async getByPartyId(partyId: string) {
+    const politicians = await this.politicianRepo.getByPartyId(partyId);
+    return ResponseHelper.success(politicians);
+  }
+
   async getPromises() {}
 
   async getAchievements() {}

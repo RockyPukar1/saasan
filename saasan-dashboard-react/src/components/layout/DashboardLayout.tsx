@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Shield,
   MapPin,
+  Building,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Politicians", href: "/politicians", icon: Users },
+  { name: "Parties", href: "/parties", icon: Building },
   {
     name: "Reports",
     href: "/reports",
