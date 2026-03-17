@@ -1,21 +1,20 @@
 import { useState, useRef, useEffect } from "react";
-import type { Dispatch, SetStateAction } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface ITabSelector<TSetActiveTab> {
+interface ITabSelector {
   activeTab: string;
-  setActiveTab: Dispatch<SetStateAction<TSetActiveTab>>;
+  setActiveTab: (tab: string) => void;
   tabs: {
     label: string;
     value: string;
   }[];
 }
 
-export default function TabSelector<TSetActiveTab>({
+export default function TabSelector({
   activeTab,
   setActiveTab,
   tabs,
-}: ITabSelector<TSetActiveTab>) {
+}: ITabSelector) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -104,7 +103,7 @@ export default function TabSelector<TSetActiveTab>({
             {tabs.map((tab) => (
               <div
                 key={tab.value}
-                onClick={() => setActiveTab(tab.value as TSetActiveTab)}
+                onClick={() => setActiveTab(tab.value)}
                 className={`bg-white px-4 py-3 flex items-center justify-center border-b-2 whitespace-nowrap cursor-pointer transition-colors ${
                   activeTab === tab.value
                     ? "border-red-600"

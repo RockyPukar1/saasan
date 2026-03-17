@@ -1,10 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
-import {
-  Home,
-  Users,
-  FileText,
-  Vote,
-} from "lucide-react";
+import { Home, Users, FileText, Vote } from "lucide-react";
 
 const Tabs = () => {
   const location = useLocation();
@@ -23,10 +18,10 @@ const Tabs = () => {
     //   path: "/viral",
     // },
     {
-      name: "politicians",
-      title: "Leaders",
+      name: "Politics",
+      title: "Politics",
       icon: Users,
-      path: "/politicians",
+      path: "/politics",
     },
     {
       name: "reports",
@@ -50,14 +45,12 @@ const Tabs = () => {
   };
 
   return (
-    <div
-      className="fixed bottom-1 left-1 right-1 bg-white border-t border-gray-200 z-50 rounded-2xl h-18 shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
-    >
+    <div className="fixed bottom-1 left-1 right-1 bg-white border-t border-gray-200 z-50 rounded-2xl h-18 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
       <div className="flex justify-around items-center h-full px-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = isActiveTab(tab.path);
-          
+
           return (
             <Link
               key={tab.name}

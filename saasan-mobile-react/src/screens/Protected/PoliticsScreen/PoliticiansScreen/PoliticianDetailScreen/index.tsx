@@ -30,9 +30,7 @@ export default function PoliticianDetailScreen() {
   const { politicianId } = useParams();
 
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "promises" | "achievements" | "contact"
-  >("overview");
+  const [activeTab, setActiveTab] = useState("overview");
   const [politician, setPolitician] = useState<IPolitician | null>(null);
 
   const { loading, fetchPoliticianById } = usePoliticians();

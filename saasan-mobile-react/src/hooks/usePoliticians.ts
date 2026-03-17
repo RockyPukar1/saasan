@@ -36,6 +36,58 @@ export const usePoliticians = () => {
     return data;
   };
 
+  const fetchPoliticiansByParty = useCallback(async (partyId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await apiService.getPoliticiansByParty(partyId);
+
+      if (response.success && response.data) {
+        // Transform backend data to frontend format
+        const transformedPoliticians = response.data.map(
+          (politician: IPolitician) => ({
+            id: politician.id,
+            fullName: politician.fullName,
+            biography: politician.biography,
+            contact: politician.contact,
+            socialMedia: politician.socialMedia,
+            education: politician.education,
+            experienceYears: politician.experienceYears,
+            profession: politician.profession,
+            party: politician.isIndependent
+              ? "Independent"
+              : politician.sourceCategories?.party || "",
+            rating: politician.rating || 0,
+            totalVotes: politician.totalVotes,
+            totalReports: politician.totalReports,
+            verifiedReports: politician.verifiedReports,
+            isIndependent: politician.isIndependent,
+            sourceCategories: politician.sourceCategories,
+            promises: politician.promises || [],
+            achievements: politician.achievements || [],
+            createdAt: politician.createdAt,
+            updatedAt: politician.updatedAt,
+          }),
+        );
+
+        return transformedPoliticians;
+      } else {
+        return [];
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch politicians by party",
+      );
+      console.error("Error fetching politicians by party:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const fetchPoliticians = async (filter: IPoliticianFilter) => {
     try {
       setLoading(true);
@@ -173,5 +225,6 @@ export const usePoliticians = () => {
     error,
     refresh: fetchPoliticians,
     fetchPoliticianById,
+    fetchPoliticiansByParty,
   };
 };
