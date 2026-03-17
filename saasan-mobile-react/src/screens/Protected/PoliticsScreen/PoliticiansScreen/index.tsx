@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Star, Users, X, Filter } from "lucide-react";
+import { Search, Star, Users, X, Filter, ArrowLeft } from "lucide-react";
 import { usePoliticians } from "@/hooks/usePoliticians";
 import Loading from "@/components/Loading";
 import Error from "@/components/Error";
@@ -22,6 +22,7 @@ const initialFilter: PoliticianFilter = {
 };
 
 export default function PoliticiansScreen() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<PoliticianFilter>(initialFilter);
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
@@ -174,6 +175,20 @@ export default function PoliticiansScreen() {
 
   return (
     <div className="flex-1 bg-gray-50">
+      {/* Header with Back Button */}
+      <div className="px-4 py-3 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate(-1)}
+            variant="ghost"
+            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="text-gray-600" size={20} />
+          </Button>
+          <h1 className="text-xl font-bold text-gray-900">Politicians</h1>
+        </div>
+      </div>
+
       {/* Search Bar */}
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
         <div className="flex items-stretch gap-3">
@@ -346,7 +361,7 @@ const PoliticianCard = ({ politician }: { politician: IPolitician }) => {
   return (
     <div
       className="mb-3"
-      onClick={() => navigate(`/politicians/${politician.id}`)}
+      onClick={() => navigate(`/politics/politician/${politician.id}`)}
     >
       <Card className="overflow-hidden">
         <CardContent className="p-3">

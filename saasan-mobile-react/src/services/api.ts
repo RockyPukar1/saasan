@@ -241,6 +241,20 @@ class ApiService {
     return this.request<IPolitician>("GET", `/politician/${id}`);
   }
 
+  async getPoliticiansByParty(
+    partyId: string,
+  ): Promise<ApiResponse<IPolitician[]>> {
+    try {
+      return this.request<IPolitician[]>(
+        "GET",
+        `/politician?partyId=${partyId}`,
+      );
+    } catch (error) {
+      console.error("Error fetching politicians by party:", error);
+      throw error;
+    }
+  }
+
   async getGovernmentLevels(): Promise<ApiResponse<IGovernmentLevel[]>> {
     return this.request<IGovernmentLevel[]>("GET", "/level");
   }
