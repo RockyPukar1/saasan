@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,24 +19,18 @@ import type { IPolitician } from "@/types/politics";
 import { useParties } from "@/hooks/useParties";
 import { usePoliticians } from "@/hooks/usePoliticians";
 
+const partyTabs = [
+  { label: "Overview", value: "overview" },
+  { label: "Politicians", value: "politicians" },
+  { label: "Budget", value: "budget" },
+  { label: "History", value: "history" },
+];
+
 export default function PartyDetailsScreen() {
   const { partyId } = useParams<{ partyId: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Get tab from URL query parameter, default to 'politicians' if not present
-  const getActiveTabFromUrl = () => {
-    const tabParam = searchParams.get("tab");
-    if (
-      tabParam &&
-      ["overview", "politicians", "budget", "history"].includes(tabParam)
-    ) {
-      return tabParam;
-    }
-    return "politicians"; // Default to politicians tab
-  };
-
-  const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
+  const [activeTab, setActiveTab] = useState(partyTabs[0].value);
 
   const { parties, loading, error, refresh } = useParties();
   const { fetchPoliticiansByParty } = usePoliticians();
@@ -44,13 +38,6 @@ export default function PartyDetailsScreen() {
   const [politiciansLoading, setPoliticiansLoading] = useState(true);
   const [politiciansError, setPoliticiansError] = useState<string | null>(null);
   const party = parties?.find((p: IParty) => p.id === partyId);
-
-  const partyTabs = [
-    { label: "Overview", value: "overview" },
-    { label: "Politicians", value: "politicians" },
-    { label: "Budget", value: "budget" },
-    { label: "History", value: "history" },
-  ];
 
   useEffect(() => {
     const loadPoliticians = async () => {
@@ -74,20 +61,6 @@ export default function PartyDetailsScreen() {
   const handlePoliticianPress = (politician: IPolitician) => {
     navigate(`/politics/politician/${politician.id}?tab=${activeTab}`);
   };
-
-  // Function to handle tab changes and update URL
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    setSearchParams({ tab });
-  };
-
-  // Sync URL with active tab when component mounts or URL changes
-  useEffect(() => {
-    const tabFromUrl = getActiveTabFromUrl();
-    if (tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [searchParams]);
 
   if (loading) {
     return <Loading />;
@@ -373,7 +346,7 @@ export default function PartyDetailsScreen() {
       {/* Tab Navigation */}
       <TabSelector
         activeTab={activeTab}
-        setActiveTab={handleTabChange}
+        setActiveTab={setActiveTab}
         tabs={partyTabs}
       />
 
