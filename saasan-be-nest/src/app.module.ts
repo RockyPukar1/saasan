@@ -11,13 +11,6 @@ import { ReportModule } from './report/report.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventModule } from './event/event.module';
 import { CaseModule } from './case/case.module';
-import { ViralModule } from './viral/viral.module';
-import { ServiceModule } from './service/service.module';
-import { VoterRegistrationModule } from './vote/voter-registration/voter-registration.module';
-import { VoterIntentSurveyModule } from './vote/voter-intent-survey/voter-intent-survey.module';
-import { VotingSessionModule } from './vote/voting-session/voting-session.module';
-import { VotingCenterModule } from './vote/voting-center/voting-center.module';
-import { UserVoteModule } from './vote/user-vote/user-vote.module';
 import { CaseSeederModule } from './common/seeders/case/case-seeder.module';
 import { PoliticsModule } from './politics/politics.module';
 import { PoliticsSeederModule } from './common/seeders/politics/politics-seeder.module';
@@ -52,14 +45,7 @@ import { ReportSeederModule } from './common/seeders/report/report-seeder.module
     DashboardModule,
     EventModule,
     CaseModule,
-    ViralModule,
-    ServiceModule,
     PoliticsModule,
-    VoterRegistrationModule,
-    VoterIntentSurveyModule,
-    VotingSessionModule,
-    VotingCenterModule,
-    UserVoteModule,
   ],
   controllers: [AppController],
 })

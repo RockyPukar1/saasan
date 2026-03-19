@@ -6,7 +6,7 @@ import {
   PollVoteEntityDocument,
 } from '../entities/poll-vote.entity';
 import { VoteDto } from '../dtos/vote.dto';
-import { PollIdDto } from 'src/viral/dtos/poll-id.dto';
+import { PollIdDto } from '../dtos/poll-id.dto';
 
 @Injectable()
 export class PollVoteRepository {

@@ -7,7 +7,6 @@ import { PollOptionRepository } from '../repositories/poll-option.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollSerializer } from '../serializers/poll.serializer';
-import { PollIdDto } from 'src/viral/dtos/poll-id.dto';
 
 @Injectable()
 export class PollService {
