@@ -34,14 +34,14 @@ import {
 } from "@/components/ui/select";
 import { majorCasesApi } from "@/services/api";
 import { majorCaseSchema, type MajorCaseFormData } from "@/lib/validations";
-import type { MajorCase } from "../../../shared/types/reports";
+import type { IMajorCase } from "@/types/case";
 
 export const MajorCasesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [showForm, setShowForm] = useState(false);
-  const [editingCase, setEditingCase] = useState<MajorCase | null>(null);
+  const [editingCase, setEditingCase] = useState<IMajorCase | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const queryClient = useQueryClient();
@@ -92,7 +92,7 @@ export const MajorCasesPage: React.FC = () => {
 
   // Update case mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<MajorCase> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<IMajorCase> }) =>
       majorCasesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["major-cases"] });
@@ -145,7 +145,7 @@ export const MajorCasesPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (case_: MajorCase) => {
+  const handleEdit = (case_: IMajorCase) => {
     setEditingCase(case_);
     reset({
       ...case_,

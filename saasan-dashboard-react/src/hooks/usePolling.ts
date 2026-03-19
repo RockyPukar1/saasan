@@ -1,24 +1,18 @@
 import { useState, useCallback } from "react";
 import { pollingApi } from "../services/api";
-import type {
-  Poll,
-  PollFilters,
-  CreatePollData,
-  UpdatePollData,
-  PollAnalytics,
-} from "../../../shared/types/polling";
+import type { ICreatePollData, IPoll, IPollAnalytics, IPollFilters, IUpdatePollData } from "@/types/poll";
 
 export function usePolling() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [currentPoll, setCurrentPoll] = useState<Poll | null>(null);
-  const [analytics, setAnalytics] = useState<PollAnalytics | null>(null);
+  const [polls, setPolls] = useState<IPoll[]>([]);
+  const [currentPoll, setCurrentPoll] = useState<IPoll | null>(null);
+  const [analytics, setAnalytics] = useState<IPollAnalytics | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
 
-  const loadPolls = useCallback(async (filters?: PollFilters) => {
+  const loadPolls = useCallback(async (filters?: IPollFilters) => {
     setLoading(true);
     setError(null);
     try {
@@ -44,7 +38,7 @@ export function usePolling() {
     }
   }, []);
 
-  const createPoll = useCallback(async (data: CreatePollData) => {
+  const createPoll = useCallback(async (data: ICreatePollData) => {
     setLoading(true);
     setError(null);
     try {
@@ -59,7 +53,7 @@ export function usePolling() {
     }
   }, []);
 
-  const updatePoll = useCallback(async (id: string, data: UpdatePollData) => {
+  const updatePoll = useCallback(async (id: string, data: IUpdatePollData) => {
     setLoading(true);
     setError(null);
     try {

@@ -1,26 +1,23 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import type { Poll } from "../../../../shared/types/polling";
 import { PollResultsChart } from "./PollResultsChart";
 import {
   X,
   Calendar,
   Users,
-  MapPin,
-  Eye,
-  EyeOff,
   Shield,
   BarChart3,
   PieChart,
   TrendingUp,
 } from "lucide-react";
+import type { IPoll } from "@/types/poll";
 
 interface PollDetailsModalProps {
-  poll: Poll;
+  poll: IPoll;
   isOpen: boolean;
   onClose: () => void;
-  onEdit: (poll: Poll) => void;
+  onEdit: (poll: IPoll) => void;
 }
 
 export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
@@ -32,7 +29,7 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
   const [chartType, setChartType] = useState<"bar" | "pie" | "line">("bar");
 
   const totalVotes = poll.options.reduce(
-    (sum, option) => sum + option.votes_count,
+    (sum, option) => sum + option.voteCount,
     0
   );
 
@@ -101,7 +98,7 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
                       End Date
                     </p>
                     <p className="text-sm text-gray-900">
-                      {new Date(poll.end_date).toLocaleDateString()}
+                      {new Date(poll.endDate ?? "").toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -168,7 +165,7 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   {poll.is_anonymous ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
                   ) : (
@@ -177,18 +174,18 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
                   <span className="text-sm text-gray-600">
                     {poll.is_anonymous ? "Anonymous voting" : "Public voting"}
                   </span>
-                </div>
+                </div> */}
 
                 <div className="flex items-center space-x-2">
                   <Shield className="h-4 w-4 text-gray-500" />
                   <span className="text-sm text-gray-600">
-                    {poll.requires_verification
+                    {poll.requiresVerification
                       ? "Verification required"
                       : "No verification required"}
                   </span>
                 </div>
 
-                {poll.district && (
+                {/* {poll.district && (
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-500" />
                     <span className="text-sm text-gray-600">
@@ -196,7 +193,7 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
                       {poll.municipality ? `, ${poll.municipality}` : ""}
                     </span>
                   </div>
-                )}
+                )} */}
               </div>
             </CardContent>
           </Card>
@@ -211,7 +208,7 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
                 {poll.options.map((option) => {
                   const percentage =
                     totalVotes > 0
-                      ? Math.round((option.votes_count / totalVotes) * 100)
+                      ? Math.round((option.voteCount / totalVotes) * 100)
                       : 0;
 
                   return (
@@ -224,7 +221,7 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
                           {option.text}
                         </span>
                         <span className="text-sm text-gray-600">
-                          {option.votes_count} votes ({percentage}%)
+                          {option.voteCount} votes ({percentage}%)
                         </span>
                       </div>
 

@@ -11,23 +11,22 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import type {
-  Poll,
-  CreatePollData,
-  UpdatePollData,
-} from "../../../../shared/types/polling";
+  IPoll,
+  ICreatePollData,
+  IUpdatePollData,
+} from "../../types/poll";
 import { X, Plus, Trash2 } from "lucide-react";
-import { InlineCreateSelect } from "./InlineCreateSelect";
 
 interface PollModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreatePollData | UpdatePollData) => void;
-  poll?: Poll | null; // If provided, it's edit mode
+  onSubmit: (data: ICreatePollData | IUpdatePollData) => void;
+  poll?: IPoll | null; // If provided, it's edit mode
   categories: string[];
   statuses: string[];
   types: string[];
-  createCategory: (name: string, name_nepali?: string) => Promise<string>;
-  createType: (name: string, name_nepali?: string) => Promise<string>;
+  createCategory: (name: string) => Promise<string>;
+  createType: (name: string) => Promise<string>;
   onBackToView?: () => void; // Only for edit mode
 }
 
@@ -36,28 +35,18 @@ export const PollModal: React.FC<PollModalProps> = ({
   onClose,
   onSubmit,
   poll,
-  categories,
   statuses,
-  types,
-  createCategory,
-  createType,
   onBackToView,
 }) => {
   const isEditMode = !!poll;
 
-  const [formData, setFormData] = useState<CreatePollData | UpdatePollData>({
+  const [formData, setFormData] = useState({
     title: "",
-    title_nepali: "",
     description: "",
-    description_nepali: "",
     status: "ACTIVE",
-    status_nepali: "",
     type: "SINGLE_CHOICE",
-    type_nepali: "",
     options: ["Option 1", "Option 2"],
-    options_nepali: ["विकल्प १", "विकल्प २"],
     category: "GENERAL",
-    category_nepali: "",
     end_date: "",
     is_anonymous: false,
     requires_verification: false,
@@ -70,38 +59,25 @@ export const PollModal: React.FC<PollModalProps> = ({
     if (isEditMode && poll) {
       setFormData({
         title: poll.title,
-        title_nepali: poll.title_nepali || "",
         description: poll.description,
-        description_nepali: poll.description_nepali || "",
         status: poll.status,
-        status_nepali: poll.status_nepali || "",
         type: poll.type,
-        type_nepali: poll.type_nepali || "",
         category: poll.category,
-        category_nepali: poll.category_nepali || "",
-        end_date: poll.end_date || "",
-        is_anonymous: poll.is_anonymous,
-        requires_verification: poll.requires_verification,
+        end_date: "",
+        is_anonymous: false,
+        requires_verification: poll.requiresVerification,
         // Include options in edit mode - convert from PollOption[] to string[]
         options: poll.options?.map((option) => option.text) || [],
-        options_nepali:
-          poll.options?.map((option) => option.text_nepali || "") || [],
       });
     } else {
       // Reset to default values for create mode
       setFormData({
         title: "",
-        title_nepali: "",
         description: "",
-        description_nepali: "",
         status: "ACTIVE",
-        status_nepali: "",
         type: "SINGLE_CHOICE",
-        type_nepali: "",
         options: ["Option 1", "Option 2"],
-        options_nepali: ["विकल्प १", "विकल्प २"],
         category: "GENERAL",
-        category_nepali: "",
         end_date: "",
         is_anonymous: false,
         requires_verification: false,
@@ -110,7 +86,7 @@ export const PollModal: React.FC<PollModalProps> = ({
   }, [isEditMode, poll]);
 
   const handleInputChange = (
-    field: keyof (CreatePollData | UpdatePollData),
+    field: keyof (ICreatePollData | IUpdatePollData),
     value: string | boolean
   ) => {
     setFormData((prev) => ({
@@ -130,23 +106,13 @@ export const PollModal: React.FC<PollModalProps> = ({
   const handleOptionChange = (
     index: number,
     value: string,
-    isNepali = false
   ) => {
-    if (isNepali) {
-      const newOptionsNepali = [...(formData.options_nepali || [])] as string[];
-      newOptionsNepali[index] = value;
-      setFormData((prev) => ({
-        ...prev,
-        options_nepali: newOptionsNepali,
-      }));
-    } else {
-      const newOptions = [...(formData.options || [])] as string[];
+    const newOptions = [...(formData.options || [])] as string[];
       newOptions[index] = value;
       setFormData((prev) => ({
         ...prev,
         options: newOptions,
       }));
-    }
   };
 
   const addOption = () => {
@@ -156,23 +122,15 @@ export const PollModal: React.FC<PollModalProps> = ({
         ...(prev.options || []),
         "Option " + ((prev.options?.length || 0) + 1),
       ],
-      options_nepali: [
-        ...(prev.options_nepali || []),
-        "विकल्प " + ((prev.options?.length || 0) + 1),
-      ],
     }));
   };
 
   const removeOption = (index: number) => {
     if ((formData.options?.length || 0) > 2) {
       const newOptions = (formData.options || []).filter((_, i) => i !== index);
-      const newOptionsNepali = (formData.options_nepali || []).filter(
-        (_, i) => i !== index
-      );
       setFormData((prev) => ({
         ...prev,
         options: newOptions,
-        options_nepali: newOptionsNepali,
       }));
     }
   };
@@ -231,17 +189,11 @@ export const PollModal: React.FC<PollModalProps> = ({
       if (!isEditMode) {
         setFormData({
           title: "",
-          title_nepali: "",
           description: "",
-          description_nepali: "",
           status: "ACTIVE",
-          status_nepali: "",
           type: "SINGLE_CHOICE",
-          type_nepali: "",
           options: ["Option 1", "Option 2"],
-          options_nepali: ["विकल्प १", "विकल्प २"],
           category: "GENERAL",
-          category_nepali: "",
           end_date: "",
           is_anonymous: false,
           requires_verification: false,
@@ -258,7 +210,7 @@ export const PollModal: React.FC<PollModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
-            {isEditMode ? `Edit Poll: ${poll?.title}` : "Create New Poll"}
+            {isEditMode ? `Edit IPoll: ${poll?.title}` : "Create New IPoll"}
           </h2>
           <Button
             variant="ghost"
@@ -274,7 +226,7 @@ export const PollModal: React.FC<PollModalProps> = ({
           {/* Title */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="title">Poll Title *</Label>
+              <Label htmlFor="title">IPoll Title *</Label>
               <Input
                 id="title"
                 value={formData.title || ""}
@@ -286,17 +238,7 @@ export const PollModal: React.FC<PollModalProps> = ({
                 <p className="text-red-500 text-sm mt-1">{errors.title}</p>
               )}
             </div>
-            <div>
-              <Label htmlFor="title_nepali">Poll Title (Nepali)</Label>
-              <Input
-                id="title_nepali"
-                value={formData.title_nepali || ""}
-                onChange={(e) =>
-                  handleInputChange("title_nepali", e.target.value)
-                }
-                placeholder="शीर्षक नेपालीमा लेख्नुहोस्"
-              />
-            </div>
+            
           </div>
 
           {/* Description */}
@@ -319,18 +261,7 @@ export const PollModal: React.FC<PollModalProps> = ({
                 </p>
               )}
             </div>
-            <div>
-              <Label htmlFor="description_nepali">Description (Nepali)</Label>
-              <Textarea
-                id="description_nepali"
-                value={formData.description_nepali || ""}
-                onChange={(e) =>
-                  handleInputChange("description_nepali", e.target.value)
-                }
-                placeholder="विवरण नेपालीमा लेख्नुहोस्"
-                rows={3}
-              />
-            </div>
+            
           </div>
 
           {/* Status, Type, and Category */}
@@ -362,74 +293,8 @@ export const PollModal: React.FC<PollModalProps> = ({
                   <p className="text-red-500 text-sm mt-1">{errors.status}</p>
                 )}
               </div>
-
-              <div>
-                <Label htmlFor="status_nepali">Status (Nepali)</Label>
-                <Input
-                  id="status_nepali"
-                  value={formData.status_nepali || ""}
-                  onChange={(e) =>
-                    handleInputChange("status_nepali", e.target.value)
-                  }
-                  placeholder="स्थिति नेपालीमा लेख्नुहोस्"
-                />
-              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InlineCreateSelect
-                label="Poll Type *"
-                placeholder="Select poll type"
-                value={formData.type || ""}
-                options={types || []}
-                onValueChange={(value) => handleInputChange("type", value)}
-                onCreateNew={createType}
-                nepaliLabel="Poll Type (Nepali)"
-                nepaliPlaceholder="प्रकार नेपालीमा लेख्नुहोस्"
-                error={errors.type}
-              />
-
-              <div>
-                <Label htmlFor="type_nepali">Poll Type (Nepali)</Label>
-                <Input
-                  id="type_nepali"
-                  value={formData.type_nepali || ""}
-                  onChange={(e) =>
-                    handleInputChange("type_nepali", e.target.value)
-                  }
-                  placeholder="प्रकार नेपालीमा लेख्नुहोस्"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InlineCreateSelect
-                label="Category *"
-                placeholder="Select category"
-                value={formData.category || ""}
-                options={categories}
-                onValueChange={(value) => handleInputChange("category", value)}
-                onCreateNew={createCategory}
-                nepaliLabel="Category (Nepali)"
-                nepaliPlaceholder="श्रेणी नेपालीमा लेख्नुहोस्"
-                error={errors.category}
-                defaultOption={
-                  categories.includes("General") ? undefined : "General"
-                }
-              />
-
-              <div>
-                <Label htmlFor="category_nepali">Category (Nepali)</Label>
-                <Input
-                  id="category_nepali"
-                  value={formData.category_nepali || ""}
-                  onChange={(e) =>
-                    handleInputChange("category_nepali", e.target.value)
-                  }
-                  placeholder="श्रेणी नेपालीमा लेख्नुहोस्"
-                />
-              </div>
-            </div>
           </div>
 
           {/* End Date */}
@@ -449,7 +314,7 @@ export const PollModal: React.FC<PollModalProps> = ({
 
           {/* Options */}
           <div>
-            <Label>Poll Options *</Label>
+            <Label>IPoll Options *</Label>
             <div className="space-y-3 mt-2">
               {(formData.options || []).map((option, index) => (
                 <div key={index} className="space-y-2">
@@ -457,19 +322,12 @@ export const PollModal: React.FC<PollModalProps> = ({
                     <Input
                       value={option}
                       onChange={(e) =>
-                        handleOptionChange(index, e.target.value, false)
+                        handleOptionChange(index, e.target.value)
                       }
                       placeholder={`Option ${index + 1}`}
                       className="flex-1"
                     />
-                    <Input
-                      value={formData.options_nepali?.[index] || ""}
-                      onChange={(e) =>
-                        handleOptionChange(index, e.target.value, true)
-                      }
-                      placeholder={`विकल्प ${index + 1}`}
-                      className="flex-1"
-                    />
+                    
                   </div>
                   {(formData.options?.length || 0) > 2 && (
                     <div className="flex justify-end">
@@ -504,7 +362,7 @@ export const PollModal: React.FC<PollModalProps> = ({
 
           {/* Settings */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-700">Poll Settings</h4>
+            <h4 className="text-sm font-medium text-gray-700">IPoll Settings</h4>
 
             <div className="flex items-center space-x-2">
               <input
@@ -554,7 +412,7 @@ export const PollModal: React.FC<PollModalProps> = ({
                 Cancel
               </Button>
               <Button type="submit">
-                {isEditMode ? "Update Poll" : "Create Poll"}
+                {isEditMode ? "Update IPoll" : "Create IPoll"}
               </Button>
             </div>
           </div>

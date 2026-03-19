@@ -182,7 +182,7 @@ export interface IProvinceStats {
 // Search and pagination interfaces
 export interface ILocationSearch {
   query: string;
-  type?: "province" | "district" | "municipality" | "ward" | "constituency";
+  type?: string
   provinceId?: string;
   districtId?: string;
   municipalityId?: string;
@@ -210,7 +210,7 @@ export interface ILocationValidationErrors {
 // Bulk upload interfaces
 export interface ILocationBulkUpload {
   file: File;
-  type: "district" | "municipality" | "ward" | "constituency";
+  type: string;
 }
 
 export interface ILocationBulkUploadResult {

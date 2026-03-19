@@ -18,7 +18,7 @@ interface PollResultsChartProps {
   data: Array<{
     id: string;
     text: string;
-    votes_count: number;
+    voteCount: number;
     percentage: number;
   }>;
   type?: "bar" | "pie" | "line";
@@ -46,7 +46,7 @@ export const PollResultsChart: React.FC<PollResultsChartProps> = ({
       option.text.length > 20
         ? option.text.substring(0, 20) + "..."
         : option.text,
-    votes: option.votes_count,
+    votes: option.voteCount,
     percentage: option.percentage,
     fullName: option.text,
   }));

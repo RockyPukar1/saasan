@@ -30,7 +30,7 @@ import {
 } from "@/services/api";
 import { Save, X, Flag, Eye, FileText } from "lucide-react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { IReport } from "@/types/reports";
+import type { IReport } from "@/types/report";
 
 interface IReportEditForm {
   editingReport: IReport | null;
