@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
   Plus,
   Search,
-  Upload,
   Edit,
   Trash2,
   Users,
@@ -104,21 +103,6 @@ export default function PoliticiansScreen() {
     },
   });
 
-  // Bulk upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: politicsApi.bulkUpload,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["politicians"] });
-      toast.success(
-        `Successfully imported ${response.data.imported} politicians`,
-      );
-      setShowUploadModal(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to upload file");
-    },
-  });
-
   const handleEdit = async (politician: IPolitician) => {
     try {
       // Fetch complete politician data before opening form
@@ -144,13 +128,6 @@ export default function PoliticiansScreen() {
     });
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
-    }
-  };
-
   const politicians = politiciansData?.data || [];
   const total = politiciansData?.total || 0;
 
@@ -165,14 +142,14 @@ export default function PoliticiansScreen() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
+          {/* <Button
             variant="outline"
             onClick={() => setShowUploadModal(true)}
             disabled={uploadMutation.isPending}
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload CSV
-          </Button>
+          </Button> */}
           <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Politician
@@ -431,7 +408,7 @@ export default function PoliticiansScreen() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
+                {/* <div>
                   <Label htmlFor="csvFile">CSV File</Label>
                   <Input
                     id="csvFile"
@@ -440,7 +417,7 @@ export default function PoliticiansScreen() {
                     onChange={handleFileUpload}
                     disabled={uploadMutation.isPending}
                   />
-                </div>
+                </div> */}
                 <div className="text-sm text-gray-500">
                   <p>CSV should include columns:</p>
                   <ul className="list-disc list-inside mt-1">
@@ -459,7 +436,7 @@ export default function PoliticiansScreen() {
                     <li>termEndDate</li>
                   </ul>
                 </div>
-                <div className="flex justify-end space-x-2">
+                {/* <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
                     onClick={() => setShowUploadModal(false)}
@@ -467,7 +444,7 @@ export default function PoliticiansScreen() {
                   >
                     Cancel
                   </Button>
-                </div>
+                </div> */}
               </div>
             </CardContent>
           </Card>

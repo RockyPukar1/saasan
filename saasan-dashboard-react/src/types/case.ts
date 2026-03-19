@@ -1,0 +1,30 @@
+export interface IMajorCase {
+  id: string;
+  referenceNumber: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  amountInvolved: number;
+  upvotesCount: number;
+  createdAt: string;
+  category_id?: number;
+  reporter_id?: string;
+  is_anonymous?: boolean;
+  location_description?: string;
+  latitude?: string;
+  longitude?: string;
+  district?: string;
+  municipality?: string;
+  ward?: string;
+  assigned_to_officer_id?: string | null;
+  date_occurred?: string;
+  people_affected_count?: number;
+  public_visibility?: string;
+  downvotes_count?: number;
+  views_count?: number;
+  shares_count?: number;
+  resolved_at?: string | null;
+  updated_at?: string;
+  is_public?: boolean;
+}

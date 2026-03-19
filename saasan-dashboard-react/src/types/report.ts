@@ -1,13 +1,13 @@
-export interface Evidence {
+export interface IEvidence {
   id: string;
   originalName: string;
   filePath: string;
-  fileType: "image" | "document" | "video" | "audio";
+  fileType: string;
   uploadedAt: string;
   cloudinaryPublicId: string;
 }
 
-export interface ReportActivity {
+export interface IReportActivity {
   category: string;
   modifiedBy: {
     id: string;
@@ -54,8 +54,8 @@ export interface IReport {
     priority: string;
     status: string;
   };
-  evidences?: Evidence[];
-  activities?: ReportActivity[];
+  evidences?: IEvidence[];
+  activities?: IReportActivity[];
 }
 
 export interface IReportPriority {

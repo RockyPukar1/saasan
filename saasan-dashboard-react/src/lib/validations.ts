@@ -107,7 +107,7 @@ export const politicianSchema = z.object({
   partyId: z.string().optional(),
   positionIds: z.array(z.string()).optional(),
   constituencyId: z.string().optional(),
-  status: z.enum(["active", "inactive", "deceased"]).optional(),
+  status: z.string().optional(),
   contact: z
     .object({
       email: z.string().email().optional(),
@@ -150,13 +150,7 @@ export const politicianSchema = z.object({
       z.object({
         title: z.string(),
         description: z.string(),
-        status: z.enum([
-          "ongoing",
-          "fulfilled",
-          "broken",
-          "not-started",
-          "in-progress",
-        ]),
+        status: z.string(),
         dueDate: z.string(),
         progress: z.number().min(0).max(100),
       }),
@@ -167,13 +161,7 @@ export const politicianSchema = z.object({
       z.object({
         title: z.string(),
         description: z.string(),
-        category: z.enum([
-          "policy",
-          "development",
-          "social",
-          "economic",
-          "economy",
-        ]),
+        category: z.string(),
         date: z.date(),
       }),
     )
@@ -202,12 +190,7 @@ export const municipalitySchema = z.object({
   name: z.string().min(2, "Municipality name is required"),
   name_nepali: z.string().min(2, "Municipality name in Nepali is required"),
   districtId: z.string().min(1, "District is required"),
-  type: z.enum([
-    "metropolitan",
-    "sub_metropolitan",
-    "municipality",
-    "rural_municipality",
-  ]),
+  type: z.string(),
   coordinates: z.array(z.number()).length(2).optional(),
 });
 
@@ -223,7 +206,7 @@ export const constituencySchema = z.object({
   name: z.string().min(2, "Constituency name is required"),
   name_nepali: z.string().min(2, "Constituency name in Nepali is required"),
   districtId: z.string().min(1, "District is required"),
-  type: z.enum(["federal", "provincial"]).optional(),
+  type: z.string().optional(),
   coordinates: z.array(z.number()).length(2).optional(),
 });
 
@@ -236,13 +219,7 @@ export type ConstituencyFormData = z.infer<typeof constituencySchema>;
 
 // Report schemas
 export const reportStatusUpdateSchema = z.object({
-  status: z.enum([
-    "submitted",
-    "under_review",
-    "verified",
-    "resolved",
-    "dismissed",
-  ]),
+  status: z.string(),
   comment: z.string().optional(),
 });
 
@@ -252,8 +229,8 @@ export const historicalEventSchema = z.object({
   title: z.string().min(2, "Title is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   year: z.number().min(1900, "Year must be after 1900"),
-  category: z.enum(["corruption", "political", "social", "economic"]),
-  significance: z.enum(["high", "medium", "low"]),
+  category: z.string(),
+  significance: z.string(),
 });
 
 export const historicalEventUpdateSchema = historicalEventSchema.partial();
@@ -263,8 +240,8 @@ export const majorCaseSchema = z.object({
   referenceNumber: z.string().min(1, "Reference number is required"),
   title: z.string().min(2, "Title is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  status: z.enum(["unsolved", "ongoing", "solved"]),
-  priority: z.enum(["urgent", "high", "medium", "low"]),
+  status: z.string(),
+  priority: z.string(),
   amountInvolved: z.number().min(0, "Amount involved must be non-negative"),
   upvotesCount: z.number().min(0, "Upvotes count must be non-negative"),
   category_id: z.number().optional(),
@@ -297,7 +274,7 @@ export const fileUploadSchema = z.object({
 // Search and filter schemas
 export const searchSchema = z.object({
   query: z.string().min(1, "Search query is required"),
-  type: z.enum(["politicians", "reports", "events", "cases"]).optional(),
+  type: z.string().optional(),
 });
 
 export const filterSchema = z.object({

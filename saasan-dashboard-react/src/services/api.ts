@@ -1,42 +1,11 @@
 import axios from "axios";
-import type { User } from "../../../shared/types/user";
-import type { Politician } from "../../../shared/types/politician";
-import type { CorruptionReport } from "../../../shared/types/reports";
-import type {
-  HistoricalEvent,
-  MajorCase,
-  DashboardStats,
-  ServiceStatus,
-  PollOption,
-  PollVote,
-} from "../../../shared/types";
-import type {
-  Poll,
-  PollFilters,
-  CreatePollData,
-  UpdatePollData,
-  PollAnalytics,
-  PollComparison,
-} from "../../../shared/types/polling";
-import type { IPoliticianFilter } from "@/screens/PoliticiansScreen";
-import type {
-  IGovernmentLevel,
-  IParty,
-  IPolitician,
-  IPosition,
-} from "@/types/politics";
-import type {
-  ApiResponse,
-  PaginatedResponse,
-  UploadResult,
-} from "../../../shared/types/common";
 import type {
   IReport,
   IReportPriority,
   IReportType,
   IReportVisibility,
   IReportStatus,
-} from "@/types/reports";
+} from "@/types/report";
 import type {
   IProvince,
   IDistrict,
@@ -44,6 +13,13 @@ import type {
   IWard,
   IConstituency,
 } from "@/types/location";
+import type { IGovernmentLevel, IParty, IPolitician, IPosition } from "@/types/politics";
+import type { ApiResponse, IDashboardStats, IServiceStatus, PaginatedResponse } from "@/types";
+import type { ICreatePollData, IPoll, IPollAnalytics, IPollComparison, IPollFilters, IPollOption, IPollVote, IUpdatePollData } from "@/types/poll";
+import type { IUser } from "@/types/user";
+import type { IPoliticianFilter } from "@/screens/PoliticiansScreen";
+import type { IMajorCase } from "@/types/case";
+import type { IHistoricalEvent } from "@/types/event";
 
 // Utility function to transform snake_case to camelCase
 const transformPolitician = (politician: IPolitician) => ({
@@ -85,7 +61,7 @@ const transformPolitician = (politician: IPolitician) => ({
 });
 
 // Utility function to transform camelCase to snake_case for API requests
-const transformPoliticianForApi = (data: Partial<Politician> | any) => {
+const transformPoliticianForApi = (data: Partial<IPolitician> | any) => {
   const transformed: any = {
     full_name: data.fullName,
     position_id: data.positionId,
@@ -220,7 +196,7 @@ export const authApi = {
     email: string,
     password: string,
   ): Promise<
-    ApiResponse<{ accessToken: string; refreshToken: string; user: User }>
+    ApiResponse<{ accessToken: string; refreshToken: string; user: IUser }>
   > => {
     const response = await api.post("/auth/login", { email, password });
     return response.data;
@@ -235,13 +211,13 @@ export const authApi = {
     municipality?: string;
     wardNumber?: number;
   }): Promise<
-    ApiResponse<{ accessToken: string; refreshToken: string; user: User }>
+    ApiResponse<{ accessToken: string; refreshToken: string; user: IUser }>
   > => {
     const response = await api.post("/auth/register", userData);
     return response.data;
   },
 
-  getProfile: async (): Promise<ApiResponse<User>> => {
+  getProfile: async (): Promise<ApiResponse<IUser>> => {
     const response = await api.get("/auth/profile");
     return response.data;
   },
@@ -253,17 +229,17 @@ export const authApi = {
 
 // Dashboard API
 export const dashboardApi = {
-  getStats: async (): Promise<ApiResponse<DashboardStats>> => {
+  getStats: async (): Promise<ApiResponse<IDashboardStats>> => {
     const response = await api.get("/dashboard/stats");
     return response.data;
   },
 
-  getMajorCases: async (): Promise<ApiResponse<MajorCase[]>> => {
+  getMajorCases: async (): Promise<ApiResponse<IMajorCase[]>> => {
     const response = await api.get("/dashboard/major-cases");
     return response.data;
   },
 
-  getLiveServices: async (): Promise<ApiResponse<ServiceStatus[]>> => {
+  getLiveServices: async (): Promise<ApiResponse<IServiceStatus[]>> => {
     const response = await api.get("/dashboard/live-services");
     return response.data;
   },
@@ -282,7 +258,7 @@ export const politicsApi = {
     };
   },
 
-  getById: async (id: string): Promise<ApiResponse<Politician>> => {
+  getById: async (id: string): Promise<ApiResponse<IPolitician>> => {
     const response = await api.get(`/politician/${id}`);
     return {
       ...response.data,
@@ -292,8 +268,8 @@ export const politicsApi = {
 
   getByLevel: async (
     level: string,
-    params?: Partial<Politician>,
-  ): Promise<PaginatedResponse<Politician>> => {
+    params?: Partial<IPolitician>,
+  ): Promise<PaginatedResponse<IPolitician>> => {
     const response = await api.get(`/politicians/level/${level}`, { params });
     const transformedData = response.data.data?.map(transformPolitician) || [];
     return {
@@ -317,7 +293,7 @@ export const politicsApi = {
     return response.data.data;
   },
 
-  create: async (politicianData: any): Promise<ApiResponse<Politician>> => {
+  create: async (politicianData: any): Promise<ApiResponse<IPolitician>> => {
     const transformedData = transformPoliticianForApi(politicianData);
     const response = await api.post("/politician", transformedData);
     return {
@@ -329,7 +305,7 @@ export const politicsApi = {
   update: async (
     id: string,
     politicianData: any,
-  ): Promise<ApiResponse<Politician>> => {
+  ): Promise<ApiResponse<IPolitician>> => {
     const transformedData = transformPoliticianForApi(politicianData);
     const response = await api.put(`/politician/${id}`, transformedData);
     return {
@@ -343,18 +319,11 @@ export const politicsApi = {
     return response.data;
   },
 
-  bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post("/politicians/bulk-upload", formData);
-    return response.data;
-  },
-
   // Update individual sections
   updatePromises: async (
     id: string,
     promises: any[],
-  ): Promise<ApiResponse<Politician>> => {
+  ): Promise<ApiResponse<IPolitician>> => {
     const response = await api.put(`/politician/${id}/promises`, { promises });
     return {
       ...response.data,
@@ -365,7 +334,7 @@ export const politicsApi = {
   updateAchievements: async (
     id: string,
     achievements: any[],
-  ): Promise<ApiResponse<Politician>> => {
+  ): Promise<ApiResponse<IPolitician>> => {
     const response = await api.put(`/politician/${id}/achievements`, {
       achievements,
     });
@@ -378,7 +347,7 @@ export const politicsApi = {
   updateExperiences: async (
     id: string,
     experiences: any[],
-  ): Promise<ApiResponse<Politician>> => {
+  ): Promise<ApiResponse<IPolitician>> => {
     const response = await api.put(`/politician/${id}/experiences`, {
       experiences,
     });
@@ -425,13 +394,6 @@ export const partyApi = {
       ...response.data,
       data: transformedData,
     };
-  },
-
-  bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post("/parties/bulk-upload", formData);
-    return response.data;
   },
 };
 
@@ -698,7 +660,7 @@ export const reportsApi = {
     id: string,
     status: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     const response = await api.put(`/reports/${id}/status`, {
       status,
       comment,
@@ -712,21 +674,21 @@ export const reportsApi = {
   approve: async (
     id: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     return reportsApi.updateStatus(id, "verified", comment);
   },
 
   reject: async (
     id: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     return reportsApi.updateStatus(id, "dismissed", comment);
   },
 
   resolve: async (
     id: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     return reportsApi.updateStatus(id, "resolved", comment);
   },
 
@@ -757,7 +719,7 @@ export const reportsApi = {
     id: string,
     priority: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     const response = await api.put(`/reports/${id}/priority`, {
       priority,
       comment,
@@ -772,7 +734,7 @@ export const reportsApi = {
     id: string,
     publicVisibility: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     const response = await api.put(`/reports/${id}/visibility`, {
       publicVisibility,
       comment,
@@ -787,7 +749,7 @@ export const reportsApi = {
     id: string,
     reportType: string,
     comment?: string,
-  ): Promise<ApiResponse<CorruptionReport>> => {
+  ): Promise<ApiResponse<IReport>> => {
     const response = await api.put(`/reports/${id}/type`, {
       reportType,
       comment,
@@ -922,40 +884,33 @@ export const historicalEventsApi = {
     category?: string;
     page?: number;
     limit?: number;
-  }): Promise<PaginatedResponse<HistoricalEvent>> => {
+  }): Promise<PaginatedResponse<IHistoricalEvent>> => {
     const response = await api.get("/event", { params });
     return response.data;
   },
 
-  getById: async (id: string): Promise<ApiResponse<HistoricalEvent>> => {
+  getById: async (id: string): Promise<ApiResponse<IHistoricalEvent>> => {
     const response = await api.get(`/event/${id}`);
     return response.data;
   },
 
   create: async (
-    eventData: Partial<HistoricalEvent>,
-  ): Promise<ApiResponse<HistoricalEvent>> => {
+    eventData: Partial<IHistoricalEvent>,
+  ): Promise<ApiResponse<IHistoricalEvent>> => {
     const response = await api.post("/event", eventData);
     return response.data;
   },
 
   update: async (
     id: string,
-    eventData: Partial<HistoricalEvent>,
-  ): Promise<ApiResponse<HistoricalEvent>> => {
+    eventData: Partial<IHistoricalEvent>,
+  ): Promise<ApiResponse<IHistoricalEvent>> => {
     const response = await api.put(`/event/${id}`, eventData);
     return response.data;
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
     const response = await api.delete(`/event/${id}`);
-    return response.data;
-  },
-
-  bulkUpload: async (file: File): Promise<ApiResponse<UploadResult>> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post("/event/bulk-upload", formData);
     return response.data;
   },
 };
@@ -967,27 +922,27 @@ export const majorCasesApi = {
     priority?: string;
     page?: number;
     limit?: number;
-  }): Promise<PaginatedResponse<MajorCase>> => {
+  }): Promise<PaginatedResponse<IMajorCase>> => {
     const response = await api.get("/major-cases", { params });
     return response.data;
   },
 
-  getById: async (id: string): Promise<ApiResponse<MajorCase>> => {
+  getById: async (id: string): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.get(`/major-cases/${id}`);
     return response.data;
   },
 
   create: async (
-    caseData: Partial<MajorCase>,
-  ): Promise<ApiResponse<MajorCase>> => {
+    caseData: Partial<IMajorCase>,
+  ): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.post("/major-cases", caseData);
     return response.data;
   },
 
   update: async (
     id: string,
-    caseData: Partial<MajorCase>,
-  ): Promise<ApiResponse<MajorCase>> => {
+    caseData: Partial<IMajorCase>,
+  ): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.put(`/major-cases/${id}`, caseData);
     return response.data;
   },
@@ -1000,7 +955,7 @@ export const majorCasesApi = {
   updateStatus: async (
     id: string,
     status: string,
-  ): Promise<ApiResponse<MajorCase>> => {
+  ): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.put(`/major-cases/${id}/status`, { status });
     return response.data;
   },
@@ -1008,30 +963,30 @@ export const majorCasesApi = {
 
 // Polling API
 export const pollingApi = {
-  getAll: async (filters?: PollFilters): Promise<PaginatedResponse<Poll>> => {
+  getAll: async (filters?: IPollFilters): Promise<PaginatedResponse<IPoll>> => {
     const response = await api.get("/poll", { params: filters });
     return response.data;
   },
 
-  getById: async (id: string): Promise<ApiResponse<Poll>> => {
+  getById: async (id: string): Promise<ApiResponse<IPoll>> => {
     const response = await api.get(`/poll/${id}`);
     return response.data;
   },
 
-  getStats: async (id: string): Promise<ApiResponse<PollAnalytics>> => {
+  getStats: async (id: string): Promise<ApiResponse<IPollAnalytics>> => {
     const response = await api.get(`/poll/${id}/stats`);
     return response.data;
   },
 
-  create: async (pollData: CreatePollData): Promise<ApiResponse<Poll>> => {
+  create: async (pollData: ICreatePollData): Promise<ApiResponse<IPoll>> => {
     const response = await api.post("/poll", pollData);
     return response.data;
   },
 
   update: async (
     id: string,
-    pollData: UpdatePollData,
-  ): Promise<ApiResponse<Poll>> => {
+    pollData: IUpdatePollData,
+  ): Promise<ApiResponse<IPoll>> => {
     const response = await api.put(`/poll/${id}`, pollData);
     return response.data;
   },
@@ -1044,7 +999,7 @@ export const pollingApi = {
   addOption: async (
     id: string,
     option: { option: string },
-  ): Promise<ApiResponse<PollOption>> => {
+  ): Promise<ApiResponse<IPollOption>> => {
     const response = await api.post(`/poll/${id}/options`, option);
     return response.data;
   },
@@ -1052,19 +1007,19 @@ export const pollingApi = {
   vote: async (
     pollId: string,
     optionId: string,
-  ): Promise<ApiResponse<PollVote>> => {
+  ): Promise<ApiResponse<IPollVote>> => {
     const response = await api.post(`/poll/${pollId}/vote/${optionId}`);
     return response.data;
   },
 
-  getAnalytics: async (): Promise<ApiResponse<PollAnalytics>> => {
+  getAnalytics: async (): Promise<ApiResponse<IPollAnalytics>> => {
     const response = await api.get("/poll/analytics");
     return response.data;
   },
 
   getPoliticianComparison: async (
     politicianId: string,
-  ): Promise<ApiResponse<PollComparison[]>> => {
+  ): Promise<ApiResponse<IPollComparison[]>> => {
     const response = await api.get(
       `/poll/politician/${politicianId}/comparison`,
     );
@@ -1073,7 +1028,7 @@ export const pollingApi = {
 
   getPartyComparison: async (
     partyId: string,
-  ): Promise<ApiResponse<PollComparison[]>> => {
+  ): Promise<ApiResponse<IPollComparison[]>> => {
     const response = await api.get(`/poll/party/${partyId}/comparison`);
     return response.data;
   },

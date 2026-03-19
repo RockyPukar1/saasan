@@ -6,7 +6,6 @@ import { toast } from "react-hot-toast";
 import {
   Plus,
   Search,
-  Upload,
   Edit,
   Trash2,
   Calendar,
@@ -35,14 +34,14 @@ import {
   historicalEventSchema,
   type HistoricalEventFormData,
 } from "@/lib/validations";
-import type { HistoricalEvent } from "../../../shared/types/common";
+import type { IHistoricalEvent } from "@/types/event";
 
 export const HistoricalEventsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
   const [showForm, setShowForm] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<HistoricalEvent | null>(
+  const [editingEvent, setEditingEvent] = useState<IHistoricalEvent | null>(
     null
   );
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -100,7 +99,7 @@ export const HistoricalEventsPage: React.FC = () => {
       data,
     }: {
       id: string;
-      data: Partial<HistoricalEvent>;
+      data: Partial<IHistoricalEvent>;
     }) => historicalEventsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["historical-events"] });
@@ -130,21 +129,6 @@ export const HistoricalEventsPage: React.FC = () => {
     },
   });
 
-  // Bulk upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: historicalEventsApi.bulkUpload,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["historical-events"] });
-      toast.success(
-        `Successfully imported ${response.data.imported} historical events`
-      );
-      setShowUploadModal(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to upload file");
-    },
-  });
-
   const handleFormSubmit = (data: HistoricalEventFormData) => {
     if (editingEvent) {
       updateMutation.mutate({ id: editingEvent.id, data });
@@ -153,7 +137,7 @@ export const HistoricalEventsPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (event: HistoricalEvent) => {
+  const handleEdit = (event: IHistoricalEvent) => {
     setEditingEvent(event);
     reset(event);
     setShowForm(true);
@@ -164,13 +148,6 @@ export const HistoricalEventsPage: React.FC = () => {
       window.confirm("Are you sure you want to delete this historical event?")
     ) {
       deleteMutation.mutate(id);
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
     }
   };
 
@@ -222,14 +199,14 @@ export const HistoricalEventsPage: React.FC = () => {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
+          {/* <Button
             variant="outline"
             onClick={() => setShowUploadModal(true)}
             disabled={uploadMutation.isPending}
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload CSV
-          </Button>
+          </Button> */}
           <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Event
@@ -603,7 +580,7 @@ export const HistoricalEventsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
+                {/* <div>
                   <Label htmlFor="csvFile">CSV File</Label>
                   <Input
                     id="csvFile"
@@ -612,7 +589,7 @@ export const HistoricalEventsPage: React.FC = () => {
                     onChange={handleFileUpload}
                     disabled={uploadMutation.isPending}
                   />
-                </div>
+                </div> */}
                 <div className="text-sm text-gray-500">
                   <p>CSV should include columns:</p>
                   <ul className="list-disc list-inside mt-1">
@@ -625,13 +602,13 @@ export const HistoricalEventsPage: React.FC = () => {
                   </ul>
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button
+                  {/* <Button
                     variant="outline"
                     onClick={() => setShowUploadModal(false)}
                     disabled={uploadMutation.isPending}
                   >
                     Cancel
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
             </CardContent>

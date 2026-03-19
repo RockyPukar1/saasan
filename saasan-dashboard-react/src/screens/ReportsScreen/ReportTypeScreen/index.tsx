@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportTypesApi } from "@/services/api";
-import type { IReportType } from "@/types/reports";
+import type { IReportType } from "@/types/report";
 
 export default function ReportTypeScreen() {
   const [searchQuery, setSearchQuery] = useState("");

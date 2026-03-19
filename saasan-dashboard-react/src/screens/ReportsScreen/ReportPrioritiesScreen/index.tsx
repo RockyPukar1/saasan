@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportPrioritiesApi } from "@/services/api";
-import type { IReportPriority } from "@/types/reports";
+import type { IReportPriority } from "@/types/report";
 
 export default function ReportPrioritiesScreen() {
   const [searchQuery, setSearchQuery] = useState("");

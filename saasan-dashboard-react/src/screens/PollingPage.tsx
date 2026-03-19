@@ -22,18 +22,16 @@ import {
 } from "../components/ui/tabs";
 import { usePolling } from "../hooks/usePolling";
 import type {
-  Poll,
-  CreatePollData,
-  UpdatePollData,
-} from "../../../shared/types/polling";
+  IPoll,
+  ICreatePollData,
+  IUpdatePollData,
+} from "../types/poll";
 import {
   BarChart3,
   Plus,
   Search,
   TrendingUp,
   Users,
-  Calendar,
-  MapPin,
   Eye,
   Trash2,
   Vote,
@@ -69,7 +67,7 @@ const PollingPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showPollModal, setShowPollModal] = useState(false);
-  const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
+  const [selectedPoll, setSelectedPoll] = useState<IPoll | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -93,9 +91,9 @@ const PollingPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const handleCreatePoll = async (data: CreatePollData | UpdatePollData) => {
+  const handleCreatePoll = async (data: ICreatePollData | IUpdatePollData) => {
     try {
-      await createPoll(data as CreatePollData);
+      await createPoll(data as ICreatePollData);
       setShowPollModal(false);
       setIsEditMode(false);
       await loadPolls();
@@ -114,12 +112,12 @@ const PollingPage: React.FC = () => {
     }
   };
 
-  const handleViewDetails = (poll: Poll) => {
+  const handleViewDetails = (poll: IPoll) => {
     setSelectedPoll(poll);
     setShowDetailsModal(true);
   };
 
-  const handleEditPoll = (poll: Poll) => {
+  const handleEditPoll = (poll: IPoll) => {
     setSelectedPoll(poll);
     setShowDetailsModal(false);
     setIsEditMode(true);
@@ -132,7 +130,7 @@ const PollingPage: React.FC = () => {
     setShowDetailsModal(true);
   };
 
-  const handleUpdatePoll = async (data: UpdatePollData) => {
+  const handleUpdatePoll = async (data: IUpdatePollData) => {
     if (!selectedPoll) return;
     try {
       await updatePoll(selectedPoll.id, data);
@@ -232,7 +230,7 @@ const PollingPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-purple-600" />
@@ -241,12 +239,12 @@ const PollingPage: React.FC = () => {
                     Total Votes
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {analytics.total_votes}
+                    {analytics.totalVotes}
                   </p>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card>
             <CardContent className="p-6">
@@ -397,17 +395,17 @@ const PollingPage: React.FC = () => {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center text-sm text-gray-500">
+                    {/* <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="h-4 w-4 mr-2" />
                       <span>
                         Ends: {new Date(poll.end_date).toLocaleDateString()}
                       </span>
-                    </div>
+                    </div> */}
                     <div className="flex items-center text-sm text-gray-500">
                       <Users className="h-4 w-4 mr-2" />
-                      <span>{poll.total_votes} votes</span>
+                      <span>{poll.totalVotes} votes</span>
                     </div>
-                    {poll.district && (
+                    {/* {poll.district && (
                       <div className="flex items-center text-sm text-gray-500">
                         <MapPin className="h-4 w-4 mr-2" />
                         <span>
@@ -415,7 +413,7 @@ const PollingPage: React.FC = () => {
                           {poll.municipality ? `, ${poll.municipality}` : ""}
                         </span>
                       </div>
-                    )}
+                    )} */}
                     <div className="flex justify-between items-center pt-2">
                       <Button
                         variant="outline"

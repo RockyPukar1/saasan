@@ -35,7 +35,7 @@ import {
   reportTypesApi,
   reportVisibilitiesApi,
 } from "@/services/api";
-import type { IReport } from "@/types/reports";
+import type { IReport } from "@/types/report";
 import ReportEditForm from "@/components/reports/ReportEditForm";
 
 export interface IReportFilter {

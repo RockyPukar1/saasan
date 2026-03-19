@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportVisibilitiesApi } from "@/services/api";
-import type { IReportVisibility } from "@/types/reports";
+import type { IReportVisibility } from "@/types/report";
 
 const visibilityColors = {
   public: "bg-green-100 text-green-800",

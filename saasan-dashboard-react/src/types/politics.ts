@@ -48,7 +48,7 @@ export interface IPolitician {
   partyId?: string;
   positionId?: string;
   constituencyId?: string;
-  status?: "active" | "inactive" | "deceased";
+  status?: string;
   contact?: {
     email?: string;
     phone?: string;
@@ -78,14 +78,14 @@ export interface IPolitician {
   promises?: {
     title: string;
     description: string;
-    status: "ongoing" | "fulfilled" | "broken" | "not-started" | "in-progress";
+    status: string;
     dueDate: string;
     progress: number;
   }[];
   achievements?: {
     title: string;
     description: string;
-    category: "policy" | "development" | "social" | "economic" | "economy";
+    category: string;
     date: Date;
   }[];
 }

@@ -5,11 +5,11 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
-import type { User } from "../../../shared/types/user";
 import { authApi } from "@/services/api";
+import type { IUser } from "@/types/user";
 
 interface AuthContextType {
-  user: User | null;
+  user: IUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -31,7 +31,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

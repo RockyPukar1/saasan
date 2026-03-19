@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { reportStatusesApi } from "@/services/api";
-import type { IReportStatus } from "@/types/reports";
+import type { IReportStatus } from "@/types/report";
 
 export default function ReportStatusScreen() {
   const [searchQuery, setSearchQuery] = useState("");
