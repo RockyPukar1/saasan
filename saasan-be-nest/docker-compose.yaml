@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./
+    container_name: saasan-be-nest
+    environment:
+      - SAASAN_DB_URL=mongodb+srv://saasan:saasan@cluster0.zkixe2y.mongodb.net/?appName=Cluster0
+      - SAASAN_JWT_SECRET=SAASAN_JWT_SECRET
+      - SAASAN_JWT_REFRESH_TOKEN=SAASAN_JWT_REFRESH_TOKEN
+      - SAASAN_PORT=7001
+      - SAASAN_CLOUDINARY_CLOUD_NAME=dqddlqwnj
+      - SAASAN_CLOUDINARY_API_KEY=667168913216878
+      - SAASAN_CLOUDINARY_API_SECRET=o1UXn7VC-Z0A98SWriQ5esVMeXM
+    ports:
+      - '7001:7001'
+    networks:
+      - saasan_network
+
+networks:
+  saasan_network:
+    driver: bridge

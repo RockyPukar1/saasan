@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./
+    container_name: saasan-be-nest-prod
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    ports:
+      - '7001:7001'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - saasan_network
+
+networks:
+  saasan_network:
+    driver: bridge
