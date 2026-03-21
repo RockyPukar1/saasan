@@ -1,0 +1,35 @@
+name: Deploy Backend to AWS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'saasan-be-nest/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to EC2
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > deploy_key
+          chmod 600 deploy_key
+          ssh -o StrictHostKeyChecking=no -i deploy_key ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_IP }} << 'EOF'
+            cd ~/saasan
+            git pull origin main
+            cd saasan-be-nest
+            docker-compose -f docker-compose.prod.yaml down
+            docker-compose -f docker-compose.prod.yaml up -d --build
+            docker system prune -f
+          EOF
+          rm deploy_key
+      
+      - name: Health Check
+        run: |
+          sleep 30
+          curl -f http://${{ secrets.EC2_IP }}:7001/ || exit 1
