@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   PoliticianEntity,
@@ -22,6 +22,7 @@ import { PartyService } from './party/services/party.service';
 import { PositionService } from './position/services/position.service';
 import { PartyRepository } from './party/repositories/party.repository';
 import { PositionRepository } from './position/repositories/position.repository';
+import { CacheModule } from 'src/common/cache/cache.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PositionRepository } from './position/repositories/position.repository'
       { name: PartyEntity.name, schema: PartyEntitySchema },
       { name: PositionEntity.name, schema: PositionEntitySchema },
     ]),
+    forwardRef(() => CacheModule)
   ],
   controllers: [
     PoliticianController,
@@ -51,6 +53,11 @@ import { PositionRepository } from './position/repositories/position.repository'
     PartyRepository,
     PositionRepository,
   ],
-  exports: [PoliticianRepository],
+  exports: [
+    PoliticianRepository,
+    LevelRepository,
+    PartyRepository,
+    PositionRepository,
+  ],
 })
 export class PoliticsModule {}

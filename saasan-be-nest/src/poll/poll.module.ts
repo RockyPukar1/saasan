@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { PollController } from './controllers/poll.controller';
 import { PollService } from './services/poll.service';
 import { PollRepository } from './repositories/poll.repository';
@@ -15,6 +15,7 @@ import {
   PollOptionEntitySchema,
 } from './entities/poll-option.entity';
 import { TransactionModule } from 'src/common/transaction/transaction.module';
+import { CacheModule } from 'src/common/cache/cache.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TransactionModule } from 'src/common/transaction/transaction.module';
       { name: PollOptionEntity.name, schema: PollOptionEntitySchema },
     ]),
     TransactionModule,
+    forwardRef(() => CacheModule),
   ],
   controllers: [PollController],
   providers: [
@@ -32,5 +34,6 @@ import { TransactionModule } from 'src/common/transaction/transaction.module';
     PollVoteRepository,
     PollOptionRepository,
   ],
+  exports: [PollRepository]
 })
 export class PollModule {}

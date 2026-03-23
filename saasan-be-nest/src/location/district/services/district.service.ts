@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { DistrictRepository } from '../repositories/district.repository';
 import { CreateDistrictDto } from '../dtos/create-district.dto';
@@ -6,10 +6,16 @@ import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
 import { DistrictIdDto } from '../dtos/district-id.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { DistrictSerializer } from '../serializers/district.serializer';
+import { MemoryCacheService } from 'src/common/cache/memory-cache.service';
 
 @Injectable()
 export class DistrictService {
-  constructor(private readonly districtRepo: DistrictRepository) {}
+  private readonly logger = new Logger(DistrictService.name);
+  
+  constructor(
+    private readonly districtRepo: DistrictRepository,
+    private readonly memoryCache: MemoryCacheService
+  ) {}
 
   async createDistrict(districtData: CreateDistrictDto) {
     const doesDistrictExists = await this.doesDistrictExists({
@@ -22,11 +28,27 @@ export class DistrictService {
       );
     }
 
-    this.districtRepo.create(districtData);
+    await this.districtRepo.create(districtData);
+
+    this.memoryCache.delete('location:districts');
   }
 
   async getDistricts({ page, limit }) {
+    const cacheKey = `location:districts:${page}:${limit}`;
+
+    const cached = await this.memoryCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        DistrictSerializer,
+        cached,
+        'Districts fetched successfully',
+      );
+    }
+    
     const data = await this.districtRepo.find({ page, limit });
+
+    this.memoryCache.set(cacheKey, data, 300);
+    
     return ResponseHelper.response(
       DistrictSerializer,
       data,
