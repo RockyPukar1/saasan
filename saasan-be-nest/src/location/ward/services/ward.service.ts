@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CreateWardDto } from '../dtos/create-ward.dto';
 import { WardRepository } from '../repositories/ward.repository';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
@@ -8,10 +8,16 @@ import { WardIdDto } from '../dtos/ward-id.dto';
 import { WardSerializer } from '../serializers/ward.serializer';
 import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
 import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class WardService {
-  constructor(private readonly wardRepo: WardRepository) {}
+  private readonly logger = new Logger(WardService.name);
+
+  constructor(
+    private readonly wardRepo: WardRepository,
+    private readonly redisCache: RedisCacheService,
+  ) {}
 
   async createWard(wardData: CreateWardDto) {
     const doesWardExists = await this.doesWardExists({
@@ -25,11 +31,27 @@ export class WardService {
       );
     }
 
-    this.wardRepo.create(wardData);
+    await this.wardRepo.create(wardData);
+
+    await this.redisCache.del('location:wards');
   }
 
   async getWards({ page = 1, limit = 10 }) {
+    const cacheKey = `location:wards:${page}:${limit}`;
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        WardSerializer,
+        cached,
+        'Wards fetched successfully',
+      );
+    }
+
     const data = await this.wardRepo.find({ page, limit });
+
+    await this.redisCache.set(cacheKey, data);
+
     return ResponseHelper.response(
       WardSerializer,
       data,

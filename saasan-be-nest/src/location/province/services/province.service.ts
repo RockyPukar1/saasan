@@ -1,14 +1,20 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { ProvinceRepository } from '../repositories/province.repository';
 import { CreateProvinceDto } from '../dtos/create-province.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { ProvinceSerializer } from '../serializers/province.serializer';
 import { ProvinceIdDto } from '../dtos/province-id.dto';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class ProvinceService {
-  constructor(private readonly provinceRepo: ProvinceRepository) {}
+  private readonly logger = new Logger(ProvinceService.name);
+
+  constructor(
+    private readonly provinceRepo: ProvinceRepository,
+    private readonly redisCache: RedisCacheService,
+  ) {}
 
   async createProvince(provinceData: CreateProvinceDto) {
     const doesProvinceExists = await this.doesProvinceExists({
@@ -22,11 +28,27 @@ export class ProvinceService {
       );
     }
 
-    this.provinceRepo.create(provinceData);
+    await this.provinceRepo.create(provinceData);
+
+    await this.redisCache.del('location:provinces');
   }
 
   async getProvinces({ page, limit }) {
+    const cacheKey = `location:provinces:${page}:${limit}`;
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        ProvinceSerializer,
+        cached,
+        'Provinces fetched successfully',
+      );
+    }
+
     const data = await this.provinceRepo.find({ page, limit });
+
+    await this.redisCache.set(cacheKey, data);
+
     return ResponseHelper.response(
       ProvinceSerializer,
       data,

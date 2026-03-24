@@ -7,11 +7,15 @@ import { LoginUserDto } from '../dtos/login.dto';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { AuthHelper } from 'src/common/helpers/auth.helper';
-import { Types } from 'mongoose';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly userRepo: UserRepository) {}
+  constructor(
+    private readonly userRepo: UserRepository,
+    private readonly redisCache: RedisCacheService,
+  ) {}
+
   async register(userData: RegisterUserDto) {
     const doesUserExists = await this.doesUserExists({
       email: userData.email,
@@ -32,6 +36,8 @@ export class AuthService {
 
     const accessToken = AuthHelper.generateToken(user);
     const refreshToken = AuthHelper.generateRefreshToken(user._id.toString());
+
+    await this.redisCache.del('users:*');
 
     return ResponseHelper.success(
       {
@@ -69,18 +75,6 @@ export class AuthService {
         refreshToken,
       },
       'User logged in successfully',
-    );
-  }
-
-  async getProfile(userId: string) {
-    const user = await this.doesUserExists({ _id: new Types.ObjectId(userId)}).lean();
-    if (!user) {
-      throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
-    }
-
-    return ResponseHelper.success(
-      user,
-      'User Profile fetched successfully',
     );
   }
 

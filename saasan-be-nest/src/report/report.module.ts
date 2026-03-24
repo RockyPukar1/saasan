@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ReportEntity, ReportEntitySchema } from './entities/report.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ReportController } from './controllers/report.controller';
@@ -40,6 +40,8 @@ import {
 } from './entities/report-visibility.entity';
 import { AdminReportController } from './controllers/admin-report.controller';
 import { UserModule } from 'src/user/user.module';
+import { CacheModule } from 'src/common/cache/cache.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -57,6 +59,7 @@ import { UserModule } from 'src/user/user.module';
     CloudinaryModule,
     TransactionModule,
     UserModule,
+    forwardRef(() => CacheModule),
   ],
   controllers: [
     ReportController,
@@ -74,6 +77,12 @@ import { UserModule } from 'src/user/user.module';
     ReportPriorityRepository,
     ReportVisibilityRepository,
   ],
-  exports: [ReportRepository],
+  exports: [
+    ReportRepository,
+    ReportTypeRepository,
+    ReportStatusRepository,
+    ReportPriorityRepository,
+    ReportVisibilityRepository,
+  ],
 })
 export class ReportModule {}

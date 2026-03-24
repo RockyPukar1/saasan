@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { VoteDto } from '../dtos/vote.dto';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { PollRepository } from '../repositories/poll.repository';
@@ -7,17 +7,22 @@ import { PollOptionRepository } from '../repositories/poll-option.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollSerializer } from '../serializers/poll.serializer';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class PollService {
+  private readonly logger = new Logger(PollService.name);
+
   constructor(
     private readonly pollRepo: PollRepository,
     private readonly pollVoteRepo: PollVoteRepository,
     private readonly pollOptionRepo: PollOptionRepository,
+    private readonly redisCache: RedisCacheService,
   ) {}
 
   async getAll(userId: string) {
     const data = await this.pollRepo.getAll(userId);
+
     return ResponseHelper.response(
       PollSerializer,
       data,
@@ -82,17 +87,43 @@ export class PollService {
   async getAnalytics() {}
 
   async getCategories() {
+    const cacheKey = 'polls:categories';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.success(cached);
+    }
+
     const categories = await this.pollRepo.getCategories();
+    await this.redisCache.set(cacheKey, categories);
+
     return ResponseHelper.success(categories);
   }
 
   async getStatuses() {
+    const cacheKey = 'polls:statuses';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.success(cached);
+    }
+
     const statuses = await this.pollRepo.getStatuses();
+    await this.redisCache.set(cacheKey, statuses);
     return ResponseHelper.success(statuses);
   }
 
   async getTypes() {
-    const types = await this.pollRepo.getStatuses();
+    const cacheKey = 'polls:types';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.success(cached);
+    }
+
+    const types = await this.pollRepo.getTypes();
+    await this.redisCache.set(cacheKey, types);
+
     return ResponseHelper.success(types);
   }
 }

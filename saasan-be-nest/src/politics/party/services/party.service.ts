@@ -1,16 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PartyRepository } from '../repositories/party.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { PartySerializer } from '../serializers/party.serializer';
 import { CreatePartyDto, UpdatePartyDto } from '../serializers/party.dto';
-import { PartyEntity } from '../entities/party.entity';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class PartyService {
-  constructor(private readonly partyRepo: PartyRepository) {}
+  private readonly logger = new Logger(PartyService.name);
+
+  constructor(
+    private readonly partyRepo: PartyRepository,
+    private readonly redisCache: RedisCacheService,
+  ) {}
 
   async getParties() {
+    const cacheKey = 'politics:parties';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        PartySerializer,
+        cached,
+        'Parties fetched successfully',
+      );
+    }
+
     const parties = await this.partyRepo.getParties();
+
+    await this.redisCache.set(cacheKey, parties);
+
     return ResponseHelper.response(
       PartySerializer,
       parties,
@@ -32,6 +51,9 @@ export class PartyService {
 
   async createParty(createPartyDto: CreatePartyDto) {
     const party = await this.partyRepo.createParty(createPartyDto);
+
+    await this.redisCache.del('politics:parties');
+
     return ResponseHelper.response(
       PartySerializer,
       party,
@@ -44,6 +66,7 @@ export class PartyService {
     if (!party) {
       throw new NotFoundException('Party not found');
     }
+
     return ResponseHelper.response(
       PartySerializer,
       party,
@@ -64,6 +87,9 @@ export class PartyService {
     if (!result) {
       throw new NotFoundException('Party not found');
     }
+
+    await this.redisCache.del('politics:parties');
+
     return { message: 'Party deleted successfully' };
   }
 }

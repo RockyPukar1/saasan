@@ -24,13 +24,15 @@ import { ReportPrioritySerializer } from '../serializers/report-priority.seriali
 import { ReportVisibilitySerializer } from '../serializers/report-visibility.serializer';
 import { CreateReportVisibilityDto } from '../dtos/create-report-visibility.dto';
 import { ReportActivityRepository } from '../repositories/report-activity.repository';
-import { ReportActivityCategoryEnum } from '../entities/report-activity.entity';
-import { UserIdDto } from 'src/user/dtos/user-id.dto';
 import { UserRepository } from 'src/user/repositories/user.repository';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { Logger } from '@nestjs/common';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class ReportService {
+  private readonly logger = new Logger(ReportService.name);
+
   constructor(
     private readonly reportRepo: ReportRepository,
     private cloudinaryService: CloudinaryService,
@@ -42,6 +44,7 @@ export class ReportService {
     private readonly reportStatusRepo: ReportStatusRepository,
     private readonly reportPriorityRepo: ReportPriorityRepository,
     private readonly reportVisibilityRepo: ReportVisibilityRepository,
+    private readonly redisCache: RedisCacheService,
   ) {}
 
   async create(reportData: CreateReportDto, files: Express.Multer.File[]) {
@@ -243,7 +246,21 @@ export class ReportService {
 
   // Report Types CRUD
   async getReportTypes() {
+    const cacheKey = 'report:types';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        ReportTypeSerializer,
+        cached,
+        'Report types fetched successfully',
+      );
+    }
+
     const types = await this.reportTypeRepo.findAll();
+
+    await this.redisCache.set(cacheKey, types);
+
     return ResponseHelper.response(
       ReportTypeSerializer,
       types,
@@ -253,6 +270,9 @@ export class ReportService {
 
   async createReportType(createReportTypeDto: CreateReportTypeDto) {
     const type = await this.reportTypeRepo.create(createReportTypeDto);
+
+    await this.redisCache.del('report:types');
+
     return ResponseHelper.response(
       ReportTypeSerializer,
       type,
@@ -277,12 +297,27 @@ export class ReportService {
         `Cannot delete report type. ${reportsUsingType.length} report(s) are currently assigned to this type.`,
       );
     }
-    return await this.reportTypeRepo.delete(id);
+    await this.reportTypeRepo.delete(id);
+
+    await this.redisCache.del('report:types');
   }
 
   // Report Statuses CRUD
   async getReportStatuses() {
+    const cacheKey = 'report:statuses';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        ReportTypeSerializer,
+        cached,
+        'Report statuses fetched successfully',
+      );
+    }
+
     const statuses = await this.reportStatusRepo.findAll();
+
+    await this.redisCache.set(cacheKey, statuses);
     return ResponseHelper.response(
       ReportStatusSerializer,
       statuses,
@@ -292,6 +327,9 @@ export class ReportService {
 
   async createReportStatus(createReportStatusDto: CreateReportStatusDto) {
     const status = await this.reportStatusRepo.create(createReportStatusDto);
+
+    await this.redisCache.del('report:statuses');
+
     return ResponseHelper.response(
       ReportStatusSerializer,
       status,
@@ -316,12 +354,28 @@ export class ReportService {
         `Cannot delete report status. ${reportsUsingStatus.length} report(s) are currently assigned to this status.`,
       );
     }
-    return await this.reportStatusRepo.delete(id);
+    await this.reportStatusRepo.delete(id);
+
+    await this.redisCache.del('report:statuses');
   }
 
   // Report Priorities CRUD
   async getReportPriorities() {
+    const cacheKey = 'report:priorities';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        ReportPrioritySerializer,
+        cached,
+        'Report priorities fetched successfully',
+      );
+    }
+
     const priorities = await this.reportPriorityRepo.findAll();
+
+    await this.redisCache.set(cacheKey, priorities);
+
     return ResponseHelper.response(
       ReportPrioritySerializer,
       priorities,
@@ -333,6 +387,9 @@ export class ReportService {
     const priority = await this.reportPriorityRepo.create(
       createReportPriorityDto,
     );
+
+    await this.redisCache.del('report:priorities');
+
     return ResponseHelper.response(
       ReportPrioritySerializer,
       priority,
@@ -357,12 +414,28 @@ export class ReportService {
         `Cannot delete report priority. ${reportsUsingPriority.length} report(s) are currently assigned to this priority.`,
       );
     }
-    return await this.reportPriorityRepo.delete(id);
+    await this.reportPriorityRepo.delete(id);
+
+    await this.redisCache.del('report:priorities');
   }
 
   // Report Visibilities CRUD
   async getReportVisibilities() {
+    const cacheKey = 'report:visibilities';
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        ReportVisibilitySerializer,
+        cached,
+        'Report visibilities fetched successfully',
+      );
+    }
+
     const visibilities = await this.reportVisibilityRepo.findAll();
+
+    await this.redisCache.set(cacheKey, visibilities);
+
     return ResponseHelper.response(
       ReportVisibilitySerializer,
       visibilities,
@@ -376,6 +449,9 @@ export class ReportService {
     const visibility = await this.reportVisibilityRepo.create(
       createReportVisibilityDto,
     );
+
+    await this.redisCache.del('report:visibilities');
+
     return ResponseHelper.response(
       ReportVisibilitySerializer,
       visibility,
@@ -388,6 +464,7 @@ export class ReportService {
     updateData: CreateReportVisibilityDto,
   ) {
     const visibility = await this.reportVisibilityRepo.update(id, updateData);
+
     return ResponseHelper.response(
       ReportVisibilitySerializer,
       visibility,
@@ -403,6 +480,8 @@ export class ReportService {
         `Cannot delete report visibility. ${reportsUsingVisibility.length} report(s) are currently assigned to this visibility.`,
       );
     }
-    return await this.reportVisibilityRepo.delete(id);
+    await this.reportVisibilityRepo.delete(id);
+
+    await this.redisCache.del('report:visibilities');
   }
 }

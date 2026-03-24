@@ -1,8 +1,11 @@
+import { Types, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { RegisterUserDto } from 'src/auth/dtos/register.dto';
 import { UserEntity, UserEntityDocument } from '../entities/user.entity';
-import { Model } from 'mongoose';
 import { UserIdDto } from '../dtos/user-id.dto';
+import { UpdateUserDto } from '../dtos/update-user.dto';
+import { ChangeEmailDto } from '../dtos/change-email.dto';
+import { ChangePasswordDto } from '../dtos/change-password.dto';
 
 export class UserRepository {
   constructor(
@@ -18,6 +21,16 @@ export class UserRepository {
     });
   }
 
+  async findAll({ page = 1, limit = 10 }) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.model.find({}, {}, {}).skip(skip).limit(limit),
+      this.model.countDocuments(),
+    ]);
+
+    return { data, total, page, limit };
+  }
+
   findOne(filter: any) {
     return this.model.findOne(filter);
   }
@@ -26,7 +39,20 @@ export class UserRepository {
     return this.model.findById(userId);
   }
 
+  async findByIdAndUpdate(
+    { userId }: UserIdDto,
+    updateData: UpdateUserDto | ChangeEmailDto | ChangePasswordDto,
+  ) {
+    return await this.model.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+  }
+
   async create(userData: RegisterUserDto) {
     return await this.model.create(userData);
+  }
+
+  async deleteOne({ userId }: UserIdDto) {
+    await this.model.deleteOne({ _id: new Types.ObjectId(userId) });
   }
 }

@@ -18,6 +18,7 @@ import { PollSeederModule } from './common/seeders/poll/poll-seeder.module';
 import { EventSeederModule } from './common/seeders/event/event-seeder.module';
 import { AppController } from './app.controller';
 import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
+import { CacheModule } from './common/cache/cache.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ReportSeederModule } from './common/seeders/report/report-seeder.module
     EventModule,
     CaseModule,
     PoliticsModule,
+    CacheModule,
   ],
   controllers: [AppController],
 })

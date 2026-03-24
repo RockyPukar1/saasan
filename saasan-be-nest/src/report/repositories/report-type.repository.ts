@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  ReportTypeEntity,
-  ReportTypeEntitySchema,
-} from '../entities/report-type.entity';
+import { ReportTypeEntity } from '../entities/report-type.entity';
 
 @Injectable()
 export class ReportTypeRepository {

@@ -6,14 +6,17 @@ import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
 import { MunicipalityIdDto } from '../dtos/municipality-id.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { MunicipalitySerializer } from '../serializers/municipality.serializer';
-import { WardRepository } from 'src/location/ward/repositories/ward.repository';
 import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import { Logger } from '@nestjs/common';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 
 @Injectable()
 export class MunicipalityService {
+  private readonly logger = new Logger(MunicipalityService.name);
+
   constructor(
     private readonly municipalityRepo: MunicipalityRepository,
-    private readonly wardRepo: WardRepository,
+    private readonly redisCache: RedisCacheService,
   ) {}
 
   async createMunicipality(municipalityData: CreateMunicipalityDto) {
@@ -29,11 +32,27 @@ export class MunicipalityService {
       );
     }
 
-    this.municipalityRepo.create(municipalityData);
+    await this.municipalityRepo.create(municipalityData);
+
+    await this.redisCache.del('location:municipalities');
   }
 
   async getMunicipalities({ page = 1, limit = 10 }) {
+    const cacheKey = `location:municipalities:${page}:${limit}`;
+
+    const cached = await this.redisCache.get(cacheKey);
+    if (cached) {
+      return ResponseHelper.response(
+        MunicipalitySerializer,
+        cached,
+        'Municipalities fetched successfully',
+      );
+    }
+
     const data = await this.municipalityRepo.find({ page, limit });
+
+    await this.redisCache.set(cacheKey, data);
+
     return ResponseHelper.response(
       MunicipalitySerializer,
       data,

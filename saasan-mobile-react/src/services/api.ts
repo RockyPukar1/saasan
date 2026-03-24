@@ -217,7 +217,7 @@ class ApiService {
   }
 
   async getProfile(): Promise<ApiResponse<UserProfile>> {
-    return this.request<UserProfile>("GET", "/auth/profile");
+    return this.request<UserProfile>("GET", "/user/profile");
   }
 
   // Dashboard APIs

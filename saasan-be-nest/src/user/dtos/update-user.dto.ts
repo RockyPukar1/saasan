@@ -1,29 +1,23 @@
-import { IsEmail, IsMongoId, IsString, MinLength } from 'class-validator';
+import { IsMongoId, IsOptional } from 'class-validator';
 
 export class UpdateUserDto {
-  @IsEmail()
-  @IsString()
-  email: string;
-
-  @IsString()
-  fullName: string;
-
-  @IsString()
-  @MinLength(8)
-  password: string;
-
+  @IsOptional()
   @IsMongoId()
-  provinceId: string;
+  provinceId?: string;
 
+  @IsOptional()
   @IsMongoId()
-  districtId: string;
+  districtId?: string;
 
+  @IsOptional()
   @IsMongoId()
-  municipalityId: string;
+  constituencyId?: string;
 
+  @IsOptional()
   @IsMongoId()
-  wardId: string;
+  municipalityId?: string;
 
+  @IsOptional()
   @IsMongoId()
-  constituencyId: string;
+  wardId?: string;
 }

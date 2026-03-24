@@ -13,9 +13,28 @@ import type {
   IWard,
   IConstituency,
 } from "@/types/location";
-import type { IGovernmentLevel, IParty, IPolitician, IPosition } from "@/types/politics";
-import type { ApiResponse, IDashboardStats, IServiceStatus, PaginatedResponse } from "@/types";
-import type { ICreatePollData, IPoll, IPollAnalytics, IPollComparison, IPollFilters, IPollOption, IPollVote, IUpdatePollData } from "@/types/poll";
+import type {
+  IGovernmentLevel,
+  IParty,
+  IPolitician,
+  IPosition,
+} from "@/types/politics";
+import type {
+  ApiResponse,
+  IDashboardStats,
+  IServiceStatus,
+  PaginatedResponse,
+} from "@/types";
+import type {
+  ICreatePollData,
+  IPoll,
+  IPollAnalytics,
+  IPollComparison,
+  IPollFilters,
+  IPollOption,
+  IPollVote,
+  IUpdatePollData,
+} from "@/types/poll";
 import type { IUser } from "@/types/user";
 import type { IPoliticianFilter } from "@/screens/PoliticiansScreen";
 import type { IMajorCase } from "@/types/case";
@@ -218,7 +237,7 @@ export const authApi = {
   },
 
   getProfile: async (): Promise<ApiResponse<IUser>> => {
-    const response = await api.get("/auth/profile");
+    const response = await api.get("/user/profile");
     return response.data;
   },
 
