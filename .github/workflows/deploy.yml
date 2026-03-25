@@ -4,17 +4,17 @@ on:
   push:
     branches: [main]
     paths:
-      - 'saasan-be-nest/**'
-      - '.github/workflows/deploy.yml'
+      - "saasan-be-nest/**"
+      - ".github/workflows/deploy.yml"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Deploy to EC2
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > deploy_key
@@ -23,12 +23,12 @@ jobs:
             cd ~/saasan
             git pull origin main
             cd saasan-be-nest
-            docker-compose -f docker-compose.prod.yaml down
-            docker-compose -f docker-compose.prod.yaml up -d --build
+            docker compose -f docker-compose.prod.yaml down
+            docker compose -f docker-compose.prod.yaml up -d --build
             docker system prune -f
           EOF
           rm deploy_key
-      
+
       - name: Health Check
         run: |
           sleep 30
