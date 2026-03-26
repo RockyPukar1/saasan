@@ -19,6 +19,28 @@ export class ConstituencyRepository {
     return this.model.findOne(filter);
   }
 
+  async findOneByWardId({ wardId }: WardIdDto) {
+    return (
+      (
+        await this.model.aggregate([
+          {
+            $lookup: {
+              from: 'wards',
+              localField: '_id',
+              foreignField: 'constituencyId',
+              as: 'ward',
+            },
+          },
+          {
+            $match: {
+              'ward._id': new Types.ObjectId(wardId),
+            },
+          },
+        ])
+      )[0] || null
+    );
+  }
+
   async find({ page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([

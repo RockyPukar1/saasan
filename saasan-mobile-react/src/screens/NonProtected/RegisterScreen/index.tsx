@@ -4,11 +4,29 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, User, Lock, Mail, MapPin, Building, Home } from "lucide-react";
+import {
+  UserPlus,
+  User,
+  Lock,
+  Mail,
+  MapPin,
+  Building,
+  Home,
+} from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 
 export default function RegisterScreen() {
-  const { allProvinces: provinces, districtsByProvinceId: districts, fetchDistrictsByProvinceId: fetchDistricts, constituencyByWardId: constituency, fetchConstituencyByWardId: fetchConstituency, municipalitiesByDistrictId: municipalities, fetchMunicipalitiesByDistrictId: fetchMunicipalities, wardsByMunicipalityId: wards, fetchWardsByMunicipalityId: fetchWards } = useLocation()
+  const {
+    allProvinces: provinces,
+    districtsByProvinceId: districts,
+    fetchDistrictsByProvinceId: fetchDistricts,
+    constituencyByWardId: constituency,
+    fetchConstituencyByWardId: fetchConstituency,
+    municipalitiesByDistrictId: municipalities,
+    fetchMunicipalitiesByDistrictId: fetchMunicipalities,
+    wardsByMunicipalityId: wards,
+    fetchWardsByMunicipalityId: fetchWards,
+  } = useLocation();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -18,13 +36,13 @@ export default function RegisterScreen() {
     districtId: "",
     constituencyId: "",
     municipalityId: "",
-    wardId: ""
+    wardId: "",
   });
   const { register, loading } = useAuthContext();
   const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleRegister = async () => {
@@ -37,7 +55,7 @@ export default function RegisterScreen() {
 
       // Validate all fields are filled
       const requiredFields = Object.values(formData);
-      if (requiredFields.some(field => !field.trim())) {
+      if (requiredFields.some((field) => !field.trim())) {
         alert("Please fill in all fields!");
         return;
       }
@@ -46,45 +64,67 @@ export default function RegisterScreen() {
       navigate("/");
     } catch (error) {
       console.error("Registration failed:", error);
-      alert(error instanceof Error ? error.message : "Registration failed. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again.",
+      );
     }
   };
 
   useEffect(() => {
     if (formData.provinceId) {
-      setFormData((prev) => ({ ...prev, districtId: "", constituencyId: "", municipalityId: "", wardId: "" }))
+      setFormData((prev) => ({
+        ...prev,
+        districtId: "",
+        constituencyId: "",
+        municipalityId: "",
+        wardId: "",
+      }));
       fetchDistricts(formData.provinceId);
     }
   }, [formData.provinceId]);
 
   useEffect(() => {
     if (formData.districtId) {
-      setFormData((prev) => ({ ...prev, constituencyId: "", wardId: "", municipalityId: "" }))
-      fetchMunicipalities(formData.districtId)
+      setFormData((prev) => ({
+        ...prev,
+        constituencyId: "",
+        wardId: "",
+        municipalityId: "",
+      }));
+      fetchMunicipalities(formData.districtId);
     }
   }, [formData.provinceId, formData.districtId]);
 
   useEffect(() => {
     if (formData.municipalityId) {
-      setFormData((prev) => ({ ...prev, constituencyId: "", wardId: "" }))
-      fetchWards(formData.municipalityId)
+      setFormData((prev) => ({ ...prev, constituencyId: "", wardId: "" }));
+      fetchWards(formData.municipalityId);
     }
   }, [formData.provinceId, formData.districtId, formData.municipalityId]);
 
   useEffect(() => {
     if (formData.wardId) {
-      setFormData((prev) => ({ ...prev, constituencyId: "" }))
-      fetchConstituency(formData.wardId)
+      setFormData((prev) => ({ ...prev, constituencyId: "" }));
+      fetchConstituency(formData.wardId);
     }
-  }, [formData.provinceId, formData.districtId, formData.municipalityId, formData.wardId])
+  }, [
+    formData.provinceId,
+    formData.districtId,
+    formData.municipalityId,
+    formData.wardId,
+  ]);
 
   useEffect(() => {
     if (constituency) {
-      setFormData(prev => ({ ...prev, constituencyId: constituency.id }))
+      setFormData((prev) => ({ ...prev, constituencyId: constituency.id }));
     }
-  }, [constituency])
+  }, [constituency]);
 
-  const selectedDistrictName = districts.find((district) => district.id === formData.districtId)?.name;
+  const selectedDistrictName = districts.find(
+    (district) => district.id === formData.districtId,
+  )?.name;
   let constituencyName = "";
   if (constituency) {
     constituencyName = `${selectedDistrictName} - ${constituency.constituencyNumber}`;
@@ -103,9 +143,7 @@ export default function RegisterScreen() {
       <div className="flex-1 flex items-center justify-center px-2 py-4">
         <div className="w-full max-w-sm">
           <div className="mb-4 ml-1">
-            <p className="text-lg font-bold text-gray-800">
-              Join In
-            </p>
+            <p className="text-lg font-bold text-gray-800">Join In</p>
             <p className="text-gray-600 text-xs">
               Sign up to start fighting corruption
             </p>
@@ -127,7 +165,9 @@ export default function RegisterScreen() {
                     className="border-gray-300 focus:border-red-500 focus:ring-red-500 h-10"
                     placeholder="Enter your full name"
                     value={formData.fullName}
-                    onChange={(e) => handleInputChange("fullName", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("fullName", e.target.value)
+                    }
                   />
                 </div>
 
@@ -162,7 +202,9 @@ export default function RegisterScreen() {
                     className="border-gray-300 focus:border-red-500 focus:ring-red-500 h-10"
                     placeholder="Enter your password"
                     value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
                   />
                 </div>
 
@@ -179,7 +221,9 @@ export default function RegisterScreen() {
                     className="border-gray-300 focus:border-red-500 focus:ring-red-500 h-10"
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("confirmPassword", e.target.value)
+                    }
                   />
                 </div>
 
@@ -204,10 +248,12 @@ export default function RegisterScreen() {
                   <select
                     className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
                     value={formData.provinceId}
-                    onChange={(e) => handleInputChange("provinceId", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("provinceId", e.target.value)
+                    }
                   >
                     <option value="">Select Province</option>
-                    {provinces.map(province => (
+                    {provinces.map((province) => (
                       <option key={province.id} value={province.id}>
                         {province.name}
                       </option>
@@ -216,94 +262,106 @@ export default function RegisterScreen() {
                 </div>
 
                 {/* District Field */}
-                {formData.provinceId && <div>
-                  <div className="flex items-center mb-1">
-                    <Home className="text-gray-500 w-4 h-4 mr-2" />
-                    <p className="text-sm font-medium text-gray-700">
-                      District
-                    </p>
+                {formData.provinceId && (
+                  <div>
+                    <div className="flex items-center mb-1">
+                      <Home className="text-gray-500 w-4 h-4 mr-2" />
+                      <p className="text-sm font-medium text-gray-700">
+                        District
+                      </p>
+                    </div>
+                    <select
+                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
+                      value={formData.districtId}
+                      onChange={(e) =>
+                        handleInputChange("districtId", e.target.value)
+                      }
+                      disabled={!formData.provinceId}
+                    >
+                      <option value="">Select District</option>
+                      {districts.map((district) => (
+                        <option key={district.id} value={district.id}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
-                    value={formData.districtId}
-                    onChange={(e) => handleInputChange("districtId", e.target.value)}
-                    disabled={!formData.provinceId}
-                  >
-                    <option value="">Select District</option>
-                    {districts.map(district => (
-                      <option key={district.id} value={district.id}>
-                        {district.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>}
+                )}
 
                 {/* Municipality Field */}
-                {formData.districtId && <div>
-                  <div className="flex items-center mb-1">
-                    <Home className="text-gray-500 w-4 h-4 mr-2" />
-                    <p className="text-sm font-medium text-gray-700">
-                      Municipality
-                    </p>
+                {formData.districtId && (
+                  <div>
+                    <div className="flex items-center mb-1">
+                      <Home className="text-gray-500 w-4 h-4 mr-2" />
+                      <p className="text-sm font-medium text-gray-700">
+                        Municipality
+                      </p>
+                    </div>
+                    <select
+                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
+                      value={formData.municipalityId}
+                      onChange={(e) =>
+                        handleInputChange("municipalityId", e.target.value)
+                      }
+                      disabled={!formData.districtId}
+                    >
+                      <option value="">Select Municipality</option>
+                      {municipalities.map((municipality) => (
+                        <option key={municipality.id} value={municipality.id}>
+                          {municipality.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
-                    value={formData.municipalityId}
-                    onChange={(e) => handleInputChange("municipalityId", e.target.value)}
-                    disabled={!formData.districtId}
-                  >
-                    <option value="">Select Municipality</option>
-                    {municipalities.map(municipality => (
-                      <option key={municipality.id} value={municipality.id}>
-                        {municipality.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>}
+                )}
 
                 {/* Ward Field */}
-                {formData.municipalityId && <div>
-                  <div className="flex items-center mb-1">
-                    <Home className="text-gray-500 w-4 h-4 mr-2" />
-                    <p className="text-sm font-medium text-gray-700">
-                      Ward
-                    </p>
+                {formData.municipalityId && (
+                  <div>
+                    <div className="flex items-center mb-1">
+                      <Home className="text-gray-500 w-4 h-4 mr-2" />
+                      <p className="text-sm font-medium text-gray-700">Ward</p>
+                    </div>
+                    <select
+                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
+                      value={formData.wardId}
+                      onChange={(e) =>
+                        handleInputChange("wardId", e.target.value)
+                      }
+                      disabled={!formData.municipalityId}
+                    >
+                      <option value="">Select Ward Number</option>
+                      {wards.map((ward) => (
+                        <option key={ward.id} value={ward.id}>
+                          {ward.wardNumber}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white"
-                    value={formData.wardId}
-                    onChange={(e) => handleInputChange("wardId", e.target.value)}
-                    disabled={!formData.municipalityId}
-                  >
-                    <option value="">Select Ward Number</option>
-                    {wards.map(ward => (
-                      <option key={ward.id} value={ward.id}>
-                        {ward.wardNumber}
-                      </option>
-                    ))}
-                  </select>
-                </div>}
+                )}
 
                 {/* Constituency Field */}
-                {formData.wardId && formData.constituencyId && <div>
-                  <div className="flex items-center mb-1">
-                    <Home className="text-gray-500 w-4 h-4 mr-2" />
-                    <p className="text-sm font-medium text-gray-700">
-                      Constituency
-                    </p>
+                {formData.wardId && formData.constituencyId && (
+                  <div>
+                    <div className="flex items-center mb-1">
+                      <Home className="text-gray-500 w-4 h-4 mr-2" />
+                      <p className="text-sm font-medium text-gray-700">
+                        Constituency
+                      </p>
+                    </div>
+                    <select
+                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white disabled:bg-gray-100 hover:disabled:cursor-not-allowed"
+                      value={formData.constituencyId}
+                      disabled
+                    >
+                      {formData.constituencyId ? (
+                        <option value={constituency?.id}>
+                          {constituencyName}
+                        </option>
+                      ) : null}
+                    </select>
                   </div>
-                  <select
-                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-red-500 focus:ring-red-500 bg-white disabled:bg-gray-100 hover:disabled:cursor-not-allowed"
-                    value={formData.constituencyId}
-                    disabled
-                  >
-                    {formData.constituencyId ? (
-                      <option value={constituency?.id}>
-                       {constituencyName}
-                    </option>) : null}
-                    
-                  </select>
-                </div>}
+                )}
               </div>
 
               <div className="mt-4 space-y-3">
@@ -317,7 +375,10 @@ export default function RegisterScreen() {
                 </Button>
 
                 <div className="text-center">
-                  <Link to="/login" className="text-red-600 hover:text-red-700 text-sm font-medium">
+                  <Link
+                    to="/login"
+                    className="text-red-600 hover:text-red-700 text-sm font-medium"
+                  >
                     Already have an account? Login
                   </Link>
                 </div>
@@ -335,7 +396,9 @@ export default function RegisterScreen() {
                     Why Location Matters
                   </p>
                   <p className="text-blue-700 text-xs">
-                    Your location helps us connect you with the right representatives and show relevant corruption data for your area.
+                    Your location helps us connect you with the right
+                    representatives and show relevant corruption data for your
+                    area.
                   </p>
                 </div>
               </div>

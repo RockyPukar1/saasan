@@ -24,7 +24,7 @@ export class UserRepository {
   async findAll({ page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      this.model.find({}, {}, {}).skip(skip).limit(limit),
+      this.model.find().skip(skip).limit(limit),
       this.model.countDocuments(),
     ]);
 

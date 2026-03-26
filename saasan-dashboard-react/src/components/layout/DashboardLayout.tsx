@@ -49,6 +49,7 @@ const navigation = [
   // { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
   { name: "Geography", href: "/geography", icon: MapPin },
   { name: "Polling", href: "/polling", icon: BarChart3 },
+  { name: "Users", href: "/users", icon: Users },
   // { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
 ];
 
@@ -161,7 +162,7 @@ export const DashboardLayout: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  {user?.full_name}
+                  {user?.fullName}
                 </p>
                 <p className="text-xs text-gray-500">{user?.role}</p>
               </div>
@@ -238,7 +239,7 @@ export const DashboardLayout: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  {user?.full_name}
+                  {user?.fullName}
                 </p>
                 <p className="text-xs text-gray-500">{user?.role}</p>
               </div>

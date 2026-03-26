@@ -25,6 +25,7 @@ import DistrictScreen from "./screens/GeographyScreen/DistrictScreen";
 import MunicipalityScreen from "./screens/GeographyScreen/MunicipalityScreen";
 import PoliticiansScreen from "./screens/PoliticiansScreen";
 import PartyScreen from "./screens/PartyScreen";
+import UsersScreen from "./screens/UsersScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +56,7 @@ function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="politicians" element={<PoliticiansScreen />} />
                 <Route path="parties" element={<PartyScreen />} />
+                <Route path="users" element={<UsersScreen />} />
                 <Route path="reports" element={<ReportsScreen />} />
                 <Route path="reports/types" element={<ReportTypesScreen />} />
                 <Route

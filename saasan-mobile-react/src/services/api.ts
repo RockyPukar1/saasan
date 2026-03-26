@@ -65,6 +65,13 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+interface ApiData<T> {
+  data: T;
+  total?: number;
+  page?: number;
+  limit?: number;
+}
+
 interface LoginData {
   email: string;
   password: string;
@@ -272,14 +279,24 @@ class ApiService {
   }
 
   // Location APIs
-  async getAllProvinces(): Promise<ApiResponse<IProvince[]>> {
-    return this.request<IProvince[]>("GET", "/province");
+  async getAllProvinces(): Promise<ApiData<IProvince[]>> {
+    const data = await this.request<ApiResponse<IProvince[]>>(
+      "GET",
+      "/province",
+    );
+    console.log(data);
+
+    return data.data;
   }
 
   async getDistrictsByProvinceId(
     provinceId: string,
-  ): Promise<ApiResponse<IDistrict[]>> {
-    return this.request<IDistrict[]>("GET", `/district/province/${provinceId}`);
+  ): Promise<ApiData<IDistrict[]>> {
+    const data = await this.request<ApiResponse<IDistrict[]>>(
+      "GET",
+      `/district/province/${provinceId}`,
+    );
+    return data.data;
   }
 
   async getConstituencyByWardId(
@@ -290,17 +307,22 @@ class ApiService {
 
   async getMunicipalitiesByDistrictId(
     districtId: string,
-  ): Promise<ApiResponse<IMunicipality[]>> {
-    return this.request<IMunicipality[]>(
+  ): Promise<ApiData<IMunicipality[]>> {
+    const data = await this.request<ApiResponse<IMunicipality[]>>(
       "GET",
       `/municipality/district/${districtId}`,
     );
+    return data.data;
   }
 
   async getWardsByMunicipalityId(
     municipalityId: string,
-  ): Promise<ApiResponse<IWard[]>> {
-    return this.request<IWard[]>("GET", `/ward/municipality/${municipalityId}`);
+  ): Promise<ApiData<IWard[]>> {
+    const data = await this.request<ApiResponse<IWard[]>>(
+      "GET",
+      `/ward/municipality/${municipalityId}`,
+    );
+    return data.data;
   }
 
   // Reports APIs

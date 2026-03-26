@@ -83,14 +83,11 @@ export class ConstituencyService {
     );
   }
 
-  async getConstituencyByWardId({ wardId }: WardIdDto) {
-    const ward = await this.wardRepo.findById(wardId);
-    if (!ward) {
-      throw new GlobalHttpException('ward404', HttpStatus.NOT_FOUND);
+  async getConstituencyByWardId(wardIdDto: WardIdDto) {
+    const constituency = await this.constituencyRepo.findOneByWardId(wardIdDto);
+    if (!constituency) {
+      throw new GlobalHttpException('constituency404', HttpStatus.NOT_FOUND);
     }
-    const constituency = await this.constituencyRepo.findById(
-      ward.constituencyId.toString(),
-    );
     return ResponseHelper.response(
       ConstituencySerializer,
       constituency,

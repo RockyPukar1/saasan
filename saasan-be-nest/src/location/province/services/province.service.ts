@@ -33,7 +33,7 @@ export class ProvinceService {
     await this.redisCache.del('location:provinces');
   }
 
-  async getProvinces({ page, limit }) {
+  async getProvinces({ page = 1, limit = 10 }) {
     const cacheKey = `location:provinces:${page}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
@@ -45,13 +45,13 @@ export class ProvinceService {
       );
     }
 
-    const data = await this.provinceRepo.find({ page, limit });
+    const provinces = await this.provinceRepo.find({ page, limit });
 
-    await this.redisCache.set(cacheKey, data);
+    await this.redisCache.set(cacheKey, provinces);
 
     return ResponseHelper.response(
       ProvinceSerializer,
-      data,
+      provinces,
       'Provinces fetched successfully',
     );
   }

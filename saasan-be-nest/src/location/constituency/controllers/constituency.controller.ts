@@ -25,6 +25,19 @@ export class ConstituencyController {
     return await this.constituencyService.getConstituencies({ page, limit });
   }
 
+  @HttpCode(201)
+  @Post()
+  async createConstituency(@Body() constituencyData: CreateConstituencyDto) {
+    return this.constituencyService.createConstituency(constituencyData);
+  }
+
+  @Get(':constituencyId')
+  async getConstituencyById(@Param() constituencyIdDto: ConstituencyIdDto) {
+    return await this.constituencyService.getConstituencyById(
+      constituencyIdDto,
+    );
+  }
+
   @Get('province/:provinceId')
   async getConstituenciesByProvinceId(
     @Param() provinceIdDto: ProvinceIdDto,
@@ -55,21 +68,8 @@ export class ConstituencyController {
     );
   }
 
-  @Get(':constituencyId')
-  async getConstituencyById(@Param() constituencyIdDto: ConstituencyIdDto) {
-    return await this.constituencyService.getConstituencyById(
-      constituencyIdDto,
-    );
-  }
-
   @Get('ward/:wardId')
   async getConstituencyByWardId(@Param() data: WardIdDto) {
     return await this.constituencyService.getConstituencyByWardId(data);
-  }
-
-  @HttpCode(201)
-  @Post()
-  async createConstituency(@Body() constituencyData: CreateConstituencyDto) {
-    return this.constituencyService.createConstituency(constituencyData);
   }
 }
