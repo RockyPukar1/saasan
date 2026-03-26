@@ -615,6 +615,14 @@ export const geographicApi = {
     return response.data.data;
   },
 
+  getConstituencyByWardId: async (
+    wardId: string,
+  ): Promise<{ data: IConstituency }> => {
+    const response = await api.get(`/constituency/ward/${wardId}`);
+    console.log(response);
+    return response.data;
+  },
+
   getConstituencyById: async (
     constituencyId: string,
   ): Promise<{ data: IConstituency }> => {
@@ -1074,6 +1082,48 @@ export const pollingApi = {
 
   createType: async (data: { name: string; name_nepali?: string }) => {
     const response = await api.post("/poll/types", data);
+    return response.data;
+  },
+};
+
+// User API
+export const userApi = {
+  getAll: async (
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResponse<IUser>> => {
+    const url = page && limit ? `/user?page=${page}&limit=${limit}` : "/user";
+    const response = await api.get(url);
+    return response.data.data;
+  },
+
+  getById: async (id: string): Promise<ApiResponse<IUser>> => {
+    const response = await api.get(`/user/${id}`);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    userData: Partial<IUser>,
+  ): Promise<ApiResponse<IUser>> => {
+    const response = await api.put(`/user/${id}`, userData);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/user/${id}`);
+    return response.data;
+  },
+
+  getProfile: async (): Promise<ApiResponse<IUser>> => {
+    const response = await api.get("/user/profile");
+    return response.data;
+  },
+
+  updateProfile: async (
+    userData: Partial<IUser>,
+  ): Promise<ApiResponse<IUser>> => {
+    const response = await api.put("/user/profile", userData);
     return response.data;
   },
 };

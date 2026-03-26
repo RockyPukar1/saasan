@@ -1,11 +1,13 @@
 import { Types } from 'mongoose';
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { UserIdDto } from '../dtos/user-id.dto';
+import { Injectable, Logger, HttpStatus } from '@nestjs/common';
+import { UserEntity } from '../entities/user.entity';
 import { UserRepository } from '../repositories/user.repository';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { UserIdDto } from '../dtos/user-id.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
-import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
+import { UserSerializer } from '../serializers/user.serializer';
 
 @Injectable()
 export class UserService {
@@ -24,28 +26,45 @@ export class UserService {
       throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
     }
 
-    return ResponseHelper.success(user, 'User Profile fetched successfully');
+    return ResponseHelper.response(
+      UserSerializer,
+      user,
+      'User Profile fetched successfully',
+    );
   }
 
   async updateProfile(userIdDto: UserIdDto, updateData: UpdateUserDto) {
     const user = await this.userRepo.findByIdAndUpdate(userIdDto, updateData);
     if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
 
-    return ResponseHelper.success(user, 'User Profile updated successfully');
+    return ResponseHelper.response(
+      UserSerializer,
+      user,
+      'User Profile updated successfully',
+    );
   }
 
-  async getAllUsers({ page, limit }) {
+  async getAllUsers({ page = 1, limit = 10 }) {
     const cacheKey = `users:${page}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
+
     if (cached) {
-      return ResponseHelper.success(cached, 'Users fetched successfully');
+      return ResponseHelper.response(
+        UserSerializer,
+        cached,
+        'Users fetched successfully from cache',
+      );
     }
     const users = await this.userRepo.findAll({ page, limit });
 
     this.redisCache.set(cacheKey, users);
 
-    return ResponseHelper.success(users, 'Users fetched successfully');
+    return ResponseHelper.response(
+      UserSerializer,
+      users,
+      'Users fetched successfully',
+    );
   }
 
   async getUserById({ userId }: UserIdDto) {
@@ -54,7 +73,11 @@ export class UserService {
     }).lean();
     if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
 
-    return ResponseHelper.success(user);
+    return ResponseHelper.response(
+      UserSerializer,
+      user,
+      'User fetched successfully',
+    );
   }
 
   async deleteUser(userIdDto: UserIdDto) {

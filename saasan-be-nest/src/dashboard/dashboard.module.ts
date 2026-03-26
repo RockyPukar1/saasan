@@ -17,6 +17,6 @@ import { CaseModule } from 'src/case/case.module';
   ],
   controllers: [DashboardController],
   providers: [DashboardService],
-  exports: [DashboardService]
+  exports: [DashboardService],
 })
 export class DashboardModule {}
