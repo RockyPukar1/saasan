@@ -1,122 +1,158 @@
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "@/services/api";
-import type {
-  IConstituency,
-  IDistrict,
-  IMunicipality,
-  IProvince,
-  IWard,
-} from "@/types/location";
-
 export const useLocation = () => {
-  const [allProvinces, setAllProvinces] = useState<IProvince[]>([]);
-  const [districtsByProvinceId, setDistrictsByProvinceId] = useState<
-    IDistrict[]
-  >([]);
-  const [constituencyByWardId, setConstituencyByWardId] =
-    useState<IConstituency | null>(null);
-  const [municipalitiesByDistrictId, setMunicipalitiesByDistrictId] = useState<
-    IMunicipality[]
-  >([]);
-  const [wardsByMunicipalityId, setWardsByMunicipalityId] = useState<IWard[]>(
-    [],
+  const queryClient = useQueryClient();
+
+  // Provinces Query - Long cache as location data rarely changes
+  const {
+    data: provincesData,
+    isLoading: provincesLoading,
+    error: provincesError,
+  } = useQuery({
+    queryKey: ["location", "provinces"],
+    queryFn: () => apiService.getAllProvinces(),
+    staleTime: 60 * 60 * 1000, // 1 hour
+    select: (response) => response.data,
+  });
+
+  // Districts by Province Query - Medium cache
+  const {
+    data: districtsData,
+    isLoading: districtsLoading,
+    error: districtsError,
+  } = useQuery({
+    queryKey: ["location", "districts"],
+    queryFn: () => apiService.getDistrictsByProvinceId(""),
+    enabled: false, // Only enable when provinceId is provided
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    select: (response) => response.data,
+  });
+
+  // Constituency by Ward Query - Medium cache
+  const {
+    data: constituencyData,
+    isLoading: constituencyLoading,
+    error: constituencyError,
+  } = useQuery({
+    queryKey: ["location", "constituency"],
+    queryFn: () => apiService.getConstituencyByWardId(""),
+    enabled: false, // Only enable when wardId is provided
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    select: (response) => response.data,
+  });
+
+  // Municipalities by District Query - Medium cache
+  const {
+    data: municipalitiesData,
+    isLoading: municipalitiesLoading,
+    error: municipalitiesError,
+  } = useQuery({
+    queryKey: ["location", "municipalities"],
+    queryFn: () => apiService.getMunicipalitiesByDistrictId(""),
+    enabled: false, // Only enable when districtId is provided
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    select: (response) => response.data,
+  });
+
+  // Wards by Municipality Query - Medium cache
+  const {
+    data: wardsData,
+    isLoading: wardsLoading,
+    error: wardsError,
+  } = useQuery({
+    queryKey: ["location", "wards"],
+    queryFn: () => apiService.getWardsByMunicipalityId(""),
+    enabled: false, // Only enable when municipalityId is provided
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    select: (response) => response.data,
+  });
+
+  const allProvinces = useMemo(() => provincesData || [], [provincesData]);
+  const districtsByProvinceId = useMemo(
+    () => districtsData || [],
+    [districtsData],
   );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const constituencyByWardId = useMemo(
+    () => constituencyData || null,
+    [constituencyData],
+  );
+  const municipalitiesByDistrictId = useMemo(
+    () => municipalitiesData || [],
+    [municipalitiesData],
+  );
+  const wardsByMunicipalityId = useMemo(() => wardsData || [], [wardsData]);
 
-  const fetchAllProvinces = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getAllProvinces();
-      setAllProvinces(response.data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch provinces",
-      );
-      console.error("Error fetching provinces:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loading =
+    provincesLoading ||
+    districtsLoading ||
+    constituencyLoading ||
+    municipalitiesLoading ||
+    wardsLoading;
+  const error =
+    provincesError ||
+    districtsError ||
+    constituencyError ||
+    municipalitiesError ||
+    wardsError;
 
-  const fetchDistrictsByProvinceId = useCallback(async (provinceId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getDistrictsByProvinceId(provinceId);
-      setDistrictsByProvinceId(response.data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch districts",
-      );
-      console.error("Error fetching districts:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchDistrictsByProvinceId = useCallback(
+    async (provinceId: string) => {
+      const response = await queryClient.fetchQuery({
+        queryKey: ["location", "districts", provinceId],
+        queryFn: () => apiService.getDistrictsByProvinceId(provinceId),
+        staleTime: 30 * 60 * 1000,
+      });
+      return response.data;
+    },
+    [queryClient],
+  );
 
-  const fetchConstituencyByWardId = useCallback(async (wardId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getConstituencyByWardId(wardId);
-      setConstituencyByWardId(response.data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch districts",
-      );
-      console.error("Error fetching districts:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchConstituencyByWardId = useCallback(
+    async (wardId: string) => {
+      const response = await queryClient.fetchQuery({
+        queryKey: ["location", "constituency", wardId],
+        queryFn: () => apiService.getConstituencyByWardId(wardId),
+        staleTime: 30 * 60 * 1000,
+      });
+      return response.data;
+    },
+    [queryClient],
+  );
 
   const fetchMunicipalitiesByDistrictId = useCallback(
     async (districtId: string) => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response =
-          await apiService.getMunicipalitiesByDistrictId(districtId);
-        setMunicipalitiesByDistrictId(response.data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch municipalities",
-        );
-        console.error("Error fetching municipalities:", err);
-      } finally {
-        setLoading(false);
-      }
+      const response = await queryClient.fetchQuery({
+        queryKey: ["location", "municipalities", districtId],
+        queryFn: () => apiService.getMunicipalitiesByDistrictId(districtId),
+        staleTime: 30 * 60 * 1000,
+      });
+      return response.data;
     },
-    [],
+    [queryClient],
   );
 
   const fetchWardsByMunicipalityId = useCallback(
     async (municipalityId: string) => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response =
-          await apiService.getWardsByMunicipalityId(municipalityId);
-        setWardsByMunicipalityId(response.data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch wards");
-        console.error("Error fetching wards:", err);
-      } finally {
-        setLoading(false);
-      }
+      const response = await queryClient.fetchQuery({
+        queryKey: ["location", "wards", municipalityId],
+        queryFn: () => apiService.getWardsByMunicipalityId(municipalityId),
+        staleTime: 30 * 60 * 1000,
+      });
+      return response.data;
     },
-    [],
+    [queryClient],
   );
 
-  useEffect(() => {
-    fetchAllProvinces();
-  }, [fetchAllProvinces]);
+  const fetchAllProvinces = useCallback(() => {
+    return queryClient.invalidateQueries({
+      queryKey: ["location", "provinces"],
+    });
+  }, [queryClient]);
 
   return {
     loading,
-    error,
+    error: error instanceof Error ? error.message : null,
 
     // data
     allProvinces,
@@ -124,8 +160,6 @@ export const useLocation = () => {
     constituencyByWardId,
     municipalitiesByDistrictId,
     wardsByMunicipalityId,
-
-    // constituencyByWardId,
 
     // fetch functions
     fetchAllProvinces,

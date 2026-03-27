@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,9 @@ export default function PollsScreen() {
     usePolling();
 
   const [activeTab, setActiveTab] = useState<"all" | "my-votes">("all");
-  // const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadPolls();
-  }, [loadPolls]);
+  // Remove the useEffect that forces refetch on mount
+  // React Query will handle caching automatically
 
   // const onRefresh = async () => {
   //   setRefreshing(true);
@@ -75,7 +73,7 @@ export default function PollsScreen() {
   const renderPollCard = (poll: Poll) => {
     const totalVotes = poll.options.reduce(
       (sum, opt) => sum + opt.voteCount,
-      0
+      0,
     );
 
     return (
@@ -83,17 +81,13 @@ export default function PollsScreen() {
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-3">
             <div className="flex-1">
-              <p className="text-lg font-bold text-gray-800">
-                {poll.title}
-              </p>
-              <p className="text-gray-600 text-sm mt-1">
-                {poll.description}
-              </p>
+              <p className="text-lg font-bold text-gray-800">{poll.title}</p>
+              <p className="text-gray-600 text-sm mt-1">{poll.description}</p>
             </div>
             <div className="flex flex-col items-end">
               <div
                 className={`px-3 py-1 rounded-full ${getStatusColor(
-                  poll.status
+                  poll.status,
                 )} mb-1`}
               >
                 <p className="text-white text-xs font-bold">
@@ -182,7 +176,6 @@ export default function PollsScreen() {
 
   return (
     <div className="flex-1 bg-gray-50">
-
       {/* Tab Selector */}
       <TabSelector
         activeTab={activeTab}
@@ -190,19 +183,17 @@ export default function PollsScreen() {
         tabs={[
           {
             label: t("polling.activePolls"),
-            value: "all"
+            value: "all",
           },
           {
             label: t("polling.myPolls"),
-            value: "my-votes"
-          }
+            value: "my-votes",
+          },
         ]}
       />
 
       {/* Poll List */}
-      <div
-        className="flex-1 px-4 py-4"
-      >
+      <div className="flex-1 px-4 py-4">
         {loading && polls.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <p>{t("polling.loadingPolls")}</p>
@@ -216,11 +207,11 @@ export default function PollsScreen() {
             .filter((poll) =>
               activeTab === "my-votes"
                 ? poll.options.some((o) => o.isVoted)
-                : true
+                : true,
             )
             .map(renderPollCard)
         )}
       </div>
     </div>
   );
-};
+}

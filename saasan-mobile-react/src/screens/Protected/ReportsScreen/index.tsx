@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -293,13 +293,9 @@ type MyReportsTabProps = {
 };
 
 const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
-  const { userReports: reports, fetchUserReports } = useReports();
+  const { userReports: reports } = useReports();
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchUserReports();
-  }, []);
 
   return (
     <div className="flex-1 px-4 py-4">
@@ -378,12 +374,8 @@ type AllReportsTabProps = {
 };
 
 const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
-  const { allReports: reports, fetchAllReports } = useReports();
+  const { allReports: reports } = useReports();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchAllReports();
-  }, []);
 
   return (
     <div className="flex-1 px-4 py-4">
@@ -487,17 +479,11 @@ export default function ReportsScreen() {
       return;
     }
 
-    try {
-      await createReport(form, selectedFiles);
+    await createReport(form, selectedFiles);
 
-      toast.success("Report submitted successfully");
-      setForm(initialReport);
-      setSelectedFiles([]);
-      setActiveTab("my_reports");
-    } catch (error) {
-      console.log(error);
-      toast.error("Failed to submit report. Please try again");
-    }
+    setForm(initialReport);
+    setSelectedFiles([]);
+    setActiveTab("my_reports");
   };
 
   return (

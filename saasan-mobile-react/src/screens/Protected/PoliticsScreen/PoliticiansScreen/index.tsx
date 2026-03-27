@@ -35,6 +35,7 @@ export default function PoliticiansScreen() {
     loading,
     error,
     refresh,
+    fetchPoliticians,
   } = usePoliticians();
 
   const filterNames = [
@@ -56,8 +57,13 @@ export default function PoliticiansScreen() {
   ] as Array<{ name: keyof typeof initialFilter; text: string; data: any[] }>;
 
   useEffect(() => {
-    refresh(toApplyFilter);
-  }, [toApplyFilter]);
+    fetchPoliticians(toApplyFilter);
+  }, [toApplyFilter, fetchPoliticians]);
+
+  // Load initial data
+  useEffect(() => {
+    fetchPoliticians(initialFilter);
+  }, [fetchPoliticians]);
 
   // Extract unique parties and positions
   const [currentFilterDropdown, setCurrentFilterDropdown] = useState("");
@@ -329,7 +335,7 @@ export default function PoliticiansScreen() {
       {loading ? (
         <Loading />
       ) : error ? (
-        <Error error={error} refresh={() => refresh(filter)} />
+        <Error error={error} refresh={() => refresh()} />
       ) : (
         <div className="px-4 py-4 overflow-auto">
           {politicians.length > 0 ? (

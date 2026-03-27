@@ -22,7 +22,6 @@ export class EvidenceRepository {
     evidences: any,
     session: ClientSession,
   ) {
-    console.log('Repository received evidences:', evidences);
     return await this.model.updateOne(
       { reportId: new Types.ObjectId(reportId) },
       {
