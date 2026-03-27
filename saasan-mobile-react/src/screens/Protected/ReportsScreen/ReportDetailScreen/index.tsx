@@ -17,10 +17,9 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useReports } from "@/hooks/useReports";
-import Loading from "@/components/Loading";
+import { ReportDetailSkeleton } from "@/components/ui/skeleton";
 import EvidencePicker from "@/components/EvidencePicker";
 import toast from "react-hot-toast";
-import type { IReport } from "@/types/reports";
 
 export default function ReportDetailScreen() {
   const { reportId } = useParams();
@@ -30,14 +29,14 @@ export default function ReportDetailScreen() {
 
   const navigate = useNavigate();
   const {
-    getReport,
+    fetchReportById: getReport,
     voteOnReport,
     uploadEvidence,
     updateReport,
     deleteEvidence,
+    currentReport,
+    loading,
   } = useReports();
-  const [report, setReport] = useState<IReport | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -48,23 +47,21 @@ export default function ReportDetailScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    loadReport();
-  }, [reportId]);
-
-  const loadReport = async () => {
-    try {
-      const data = await getReport(reportId as string);
-      setReport(data);
-      setEditForm({
-        title: data.title,
-        description: data.description,
-      });
-    } catch (error) {
-      toast.error("Failed to load report details");
-    } finally {
-      setLoading(false);
+    if (reportId) {
+      getReport(reportId);
     }
-  };
+  }, [reportId, getReport]);
+
+  const report = currentReport;
+
+  useEffect(() => {
+    if (report) {
+      setEditForm({
+        title: report.title,
+        description: report.description,
+      });
+    }
+  }, [report]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -79,8 +76,6 @@ export default function ReportDetailScreen() {
     setSelectedFiles([]);
   };
 
-  console.log(isEditing);
-
   const handleSaveEdit = async () => {
     try {
       // Update report metadata
@@ -94,7 +89,7 @@ export default function ReportDetailScreen() {
       toast.success("Report updated successfully");
       setIsEditing(false);
       setSelectedFiles([]);
-      loadReport();
+      getReport(reportId as string);
     } catch (error) {
       toast.error("Failed to update report");
     }
@@ -124,7 +119,7 @@ export default function ReportDetailScreen() {
       toast.success("Evidence deleted successfully");
       setShowDeleteConfirm(false);
       setEvidenceToDelete(null);
-      loadReport();
+      getReport(reportId as string);
     } catch (error) {
       toast.error("Failed to delete evidence");
     }
@@ -133,7 +128,7 @@ export default function ReportDetailScreen() {
   const handleVote = async (isUpvote: boolean) => {
     try {
       await voteOnReport(reportId as string, isUpvote);
-      loadReport(); // Reload report to get updated vote counts
+      getReport(reportId as string); // Reload report to get updated vote counts
     } catch (error) {
       toast.error("Failed to register vote");
     }
@@ -159,8 +154,21 @@ export default function ReportDetailScreen() {
     }
   };
 
-  if (loading || !report) {
-    return <Loading />;
+  if (loading) {
+    return <ReportDetailSkeleton />;
+  }
+
+  if (!report) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Report not found</p>
+          <Button onClick={() => navigate(-1)} variant="outline">
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

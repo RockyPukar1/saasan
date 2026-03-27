@@ -1,170 +1,104 @@
-import { useState, useCallback, useEffect } from "react";
+import { useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "@/services/api";
 import type { IRegisterData } from "@/types/auth";
-
-interface AuthState {
-  isAuthenticated: boolean;
-  user: {
-    id: string;
-    email: string;
-    full_name: string;
-    role: string;
-    phone?: string;
-    district?: string;
-    municipality?: string;
-    ward_number?: number;
-    last_active_at: string;
-    created_at: string;
-    updated_at: string;
-  } | null;
-  loading: boolean;
-  error: string | null;
-}
+import toast from "react-hot-toast";
 
 export const useAuth = () => {
-  const [state, setState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    loading: true,
-    error: null,
+  const queryClient = useQueryClient();
+
+  const {
+    data: user,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["auth", "profile"],
+    queryFn: () => apiService.getProfile(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+    enabled: !!localStorage.getItem("accessToken"),
   });
 
-  const login = useCallback(async (email: string, password: string) => {
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-      const response = await apiService.login({ email, password });
-      setState({
-        isAuthenticated: true,
-        user: response.data.user,
-        loading: false,
-        error: null,
-      });
-      return response.data;
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : "Login failed",
-      }));
-      throw error;
-    }
-  }, []);
+  const loginMutation = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      apiService.login({ email, password }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      toast.success("Login successful!");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Login failed");
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: (data: IRegisterData) => apiService.register(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      toast.success("Registration successful!");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Registration failed",
+      );
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () => apiService.logout(),
+    onSuccess: () => {
+      queryClient.clear();
+      toast.success("Logged out successfully");
+    },
+    onError: () => {
+      queryClient.clear();
+      toast.success("Logged out successfully");
+    },
+  });
+
+  const isAuthenticated = !!user;
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      return loginMutation.mutateAsync({ email, password });
+    },
+    [loginMutation],
+  );
 
   const register = useCallback(
     async (data: IRegisterData) => {
-      try {
-        setState((prev) => ({ ...prev, loading: true, error: null }));
-        const response = await apiService.register(data);
-        setState({
-          isAuthenticated: true,
-          user: response.data.user,
-          loading: false,
-          error: null,
-        });
-        return response.data;
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          error: error instanceof Error ? error.message : "Registration failed",
-        }));
-        throw error;
-      }
+      return registerMutation.mutateAsync(data);
     },
-    []
+    [registerMutation],
   );
 
   const logout = useCallback(async () => {
-    try {
-      console.log("Logout initiated...");
-      setState((prev) => ({ ...prev, loading: true }));
-      await apiService.logout();
-      console.log("Token removed, setting state...");
-      setState({
-        isAuthenticated: false,
-        user: null,
-        loading: false,
-        error: null,
-      });
-      console.log("Logout completed successfully");
-    } catch (error) {
-      console.log("Logout error, clearing state anyway:", error);
-      // Even if logout fails, clear local state
-      setState({
-        isAuthenticated: false,
-        user: null,
-        loading: false,
-        error: null,
-      });
-    }
-  }, []);
+    await logoutMutation.mutateAsync();
+  }, [logoutMutation]);
 
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      console.log("Checking auth status...");
-      setState((prev) => ({ ...prev, loading: true }));
+  const refreshUser = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["auth"] });
+  }, [queryClient]);
 
-      // Check if token exists first
-      const token = localStorage.getItem("accessToken");
-      console.log("Token exists:", !!token);
-      if (!token) {
-        console.log("No token found, setting as unauthenticated");
-        setState({
-          isAuthenticated: false,
-          user: null,
-          loading: false,
-          error: null,
-        });
-        return;
-      }
-
-      console.log("Token found, checking with API...");
-      const response = await apiService.getProfile();
-      console.log("API response successful, user authenticated");
-      setState({
-        isAuthenticated: true,
-        user: response.data,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      console.log("API call failed, removing token:", error);
-      // If API call fails, remove token and set as unauthenticated
-      await localStorage.removeItem("auth_token");
-      setState({
-        isAuthenticated: false,
-        user: null,
-        loading: false,
-        error: null,
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    checkAuthStatus();
-
-    // Listen for app state changes to check auth when app comes to foreground
-    // const handleAppStateChange = (nextAppState: string) => {
-    //   if (nextAppState === "active") {
-    //     checkAuthStatus();
-    //   }
-    // };
-
-    // const subscription = AppState.addEventListener(
-    //   "change",
-    //   handleAppStateChange
-    // );
-
-    // return () => {
-    //   subscription?.remove();
-    // };
-  }, [checkAuthStatus]);
+  const isLoading =
+    loading ||
+    loginMutation.isPending ||
+    registerMutation.isPending ||
+    logoutMutation.isPending;
+  const errorState =
+    error ||
+    loginMutation.error ||
+    registerMutation.error ||
+    logoutMutation.error;
 
   return {
-    ...state,
+    isAuthenticated,
+    user: user?.data || null,
+    loading: isLoading,
+    error: errorState instanceof Error ? errorState.message : null,
     login,
     register,
     logout,
-    refreshUser: checkAuthStatus,
+    refreshUser,
   };
 };
