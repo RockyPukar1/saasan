@@ -4,13 +4,14 @@
   "description": "Saasan - Anti-corruption platform for Nepal with viral features",
   "main": "index.js",
   "scripts": {
-    "install:all": "npm install && cd saasan-be-nest && npm install && cd ../saasan-dashboard-react && npm install && cd ../saasan-mobile-rn && npm install",
-    "setup": "npm run install:all && npm run setup:env && npm run seed:smart",
-    "seed:smart": "node scripts/setup-database.js",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\" \"npm run dev:mobile\"",
-    "dev:backend": "cd saasan-be-nest && pnpm run start:dev",
-    "dev:dashboard": "cd saasan-dashboard-react && pnpm run dev",
-    "dev:mobile": "cd saasan-mobile-react && pnpm run dev"
+    "setup:all": "pnpm install:all && pnpm setup:env && pnpm seed:smart",
+    "install:all": "pnpm install concurrently && concurrently \"pnpm install\" \"cd saasan-be-nest && pnpm install\" \"cd saasan-dashboard-react && pnpm install\" \"cd saasan-mobile-react && pnpm install\"",
+    "setup:env": "concurrently \"cp saasan-be-nest/.env.example saasan-be-nest/.env\" \"cp saasan-dashboard-react/.env.example saasan-dashboard-react/.env\" \"cp saasan-mobile-react/.env.example saasan-mobile-react/.env\"",
+    "seed:smart": "cd saasan-be-nest && pnpm seed:smart",
+    "dev:all": "concurrently \"pnpm dev:backend\" \"pnpm dev:dashboard\" \"pnpm dev:mobile\"",
+    "dev:backend": "cd saasan-be-nest && pnpm start:dev",
+    "dev:dashboard": "cd saasan-dashboard-react && pnpm dev",
+    "dev:mobile": "cd saasan-mobile-react && pnpm dev"
   },
   "keywords": [
     "nepal",
@@ -18,9 +19,12 @@
     "transparency",
     "democracy",
     "citizen-engagement",
-    "react-native",
     "react",
     "nodejs",
+    "saasan-nepal",
+    "nestjs",
+    "mongoose",
+    "mongodb",
     "typescript"
   ],
   "author": "Saasan Team",
@@ -35,12 +39,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/saasan.git"
+    "url": "https://github.com/rockypukar/saasan.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/saasan/issues"
+    "url": "https://github.com/rockypukar/saasan/issues"
   },
-  "homepage": "https://github.com/your-username/saasan#readme",
+  "homepage": "https://github.com/rockypukar/saasan#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.2",
