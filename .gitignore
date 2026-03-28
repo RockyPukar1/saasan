@@ -5,7 +5,8 @@ android
 ios
 
 # Environment variables
-.env*
+.env
+.env.production
 
 # Build outputs
 dist/

@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed:smart": "pnpm seed:location && pnpm seed:report && pnpm seed:politics && pnpm seed:poll && pnpm seed:event",
     "seed:location": "nest start --entryFile common/seeders/location/seed-location",
     "seed:report": "nest start --entryFile common/seeders/report/seed-report",
     "seed:politics": "nest start --entryFile common/seeders/politics/seed-politics",
