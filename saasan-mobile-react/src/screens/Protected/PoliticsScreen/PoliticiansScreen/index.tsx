@@ -369,7 +369,7 @@ const PoliticianCard = ({ politician }: { politician: IPolitician }) => {
       className="mb-3"
       onClick={() => navigate(`/politics/politician/${politician.id}`)}
     >
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden p-0">
         <CardContent className="p-3">
           {/* Compact Header */}
           <div className="flex items-start justify-between mb-2">
@@ -435,7 +435,7 @@ const PoliticianCard = ({ politician }: { politician: IPolitician }) => {
           </div>
 
           {/* Compact Action Buttons */}
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Button
               className="flex-1 bg-blue-600 py-2 rounded"
               onClick={(e) => {
@@ -453,7 +453,7 @@ const PoliticianCard = ({ politician }: { politician: IPolitician }) => {
                 View Details
               </p>
             </Button>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>

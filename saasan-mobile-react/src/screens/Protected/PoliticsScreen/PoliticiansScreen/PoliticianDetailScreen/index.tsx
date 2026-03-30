@@ -25,6 +25,7 @@ import { usePoliticians } from "@/hooks/usePoliticians";
 import type { IPolitician } from "@/types/politics";
 import Loading from "@/components/Loading";
 import TabSelector from "@/components/common/TabSelector";
+import { showComingSoon } from "@/utils/coming-soon";
 
 export default function PoliticianDetailScreen() {
   const { politicianId } = useParams();
@@ -48,10 +49,28 @@ export default function PoliticianDetailScreen() {
     const colors: { [key: string]: string } = {
       "CPN-UML": "bg-red-500",
       "Nepali Congress": "bg-green-500",
-      RSP: "bg-purple-500",
-      "CPN-MC": "bg-yellow-500",
+      "CPN (Maoist Center)": "bg-purple-500",
+      RPP: "bg-orange-500",
+      JSP: "bg-yellow-500",
+      Others: "bg-gray-500",
     };
     return colors[party] || "bg-gray-500";
+  };
+
+  const handleRate = () => {
+    showComingSoon("Rate Politician");
+  };
+
+  const handleMessage = () => {
+    showComingSoon("Message Politician");
+  };
+
+  const handleShare = () => {
+    showComingSoon("Share Politician");
+  };
+
+  const handleFlag = () => {
+    showComingSoon("Report Politician");
   };
 
   const getTrendIcon = (trend: string) => {
@@ -118,6 +137,7 @@ export default function PoliticianDetailScreen() {
             </p>
           </div>
           <Button
+            onClick={handleShare}
             variant="ghost"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -413,13 +433,19 @@ export default function PoliticianDetailScreen() {
         {/* Action Buttons */}
         <div className="m-4">
           <div className="flex gap-3">
-            <Button className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-lg transition-colors">
+            <Button
+              onClick={handleRate}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-lg transition-colors"
+            >
               <div className="flex items-center justify-center">
                 <Star className="text-white mr-2" size={16} />
                 <span className="text-white font-semibold text-sm">Rate</span>
               </div>
             </Button>
-            <Button className="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded-lg transition-colors">
+            <Button
+              onClick={handleMessage}
+              className="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded-lg transition-colors"
+            >
               <div className="flex items-center justify-center">
                 <MessageCircle className="text-white mr-2" size={16} />
                 <span className="text-white font-semibold text-sm">
@@ -427,7 +453,10 @@ export default function PoliticianDetailScreen() {
                 </span>
               </div>
             </Button>
-            <Button className="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded-lg transition-colors">
+            <Button
+              onClick={handleFlag}
+              className="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded-lg transition-colors"
+            >
               <div className="flex items-center justify-center">
                 <Flag className="text-white mr-2" size={16} />
                 <span className="text-white font-semibold text-sm">Report</span>
