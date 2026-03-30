@@ -6,13 +6,11 @@ import {
   TrendingUp,
   Calendar,
   X,
-  ArrowLeft,
 } from "lucide-react";
 import Loading from "@/components/Loading";
 import Error from "@/components/Error";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
 
 // Mock data for budget (since it's not implemented yet)
 const mockBudgetData = [
@@ -43,7 +41,6 @@ const mockBudgetData = [
 ];
 
 export default function BudgetScreen() {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [loading] = useState(false);
   const [error] = useState<string | null>(null);
@@ -87,69 +84,67 @@ export default function BudgetScreen() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Header with Back Button */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="text-gray-600" size={20} />
-          </Button>
-          <h1 className="text-xl font-bold text-gray-900">Budget Overview</h1>
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            size={20}
-          />
-          <Input
-            type="text"
-            placeholder="Search budget items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full"
-          />
-          {searchQuery && (
-            <X
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
-              size={20}
-              onClick={() => setSearchQuery("")}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Budget Summary */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 text-green-600">
-              <DollarSign size={20} />
-              <span className="text-lg font-bold">
-                {formatAmount(
-                  mockBudgetData.reduce((sum, item) => sum + item.amount, 0),
-                )}
-              </span>
+    <ScrollHideHeaderLayout
+      title="Budget Overview"
+      showBackButton={true}
+      subHeader={
+        <>
+          {/* Search Bar */}
+          <div className="bg-white border-b border-gray-200 p-4">
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={20}
+              />
+              <Input
+                type="text"
+                placeholder="Search budget items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full"
+              />
+              {searchQuery && (
+                <X
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                  size={20}
+                  onClick={() => setSearchQuery("")}
+                />
+              )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Total Budget</p>
           </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 text-blue-600">
-              <TrendingUp size={20} />
-              <span className="text-lg font-bold">{mockBudgetData.length}</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Budget Items</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Budget Items List */}
-      <div className="flex-1 overflow-y-auto p-4">
+          {/* Budget Summary */}
+          <div className="bg-white border-b border-gray-200 p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-2 text-green-600">
+                  <DollarSign size={20} />
+                  <span className="text-lg font-bold">
+                    {formatAmount(
+                      mockBudgetData.reduce(
+                        (sum, item) => sum + item.amount,
+                        0,
+                      ),
+                    )}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Total Budget</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-2 text-blue-600">
+                  <TrendingUp size={20} />
+                  <span className="text-lg font-bold">
+                    {mockBudgetData.length}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Budget Items</p>
+              </div>
+            </div>
+          </div>
+        </>
+      }
+    >
+      <div className="p-4">
         {filteredBudgetItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <DollarSign className="w-16 h-16 mb-4 text-gray-300" />
@@ -194,6 +189,6 @@ export default function BudgetScreen() {
           </div>
         )}
       </div>
-    </div>
+    </ScrollHideHeaderLayout>
   );
 }

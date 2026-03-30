@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft,
   MapPin,
   Star,
   TrendingUp,
@@ -20,17 +19,17 @@ import {
   FileText,
   MessageCircle,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { usePoliticians } from "@/hooks/usePoliticians";
 import type { IPolitician } from "@/types/politics";
 import Loading from "@/components/Loading";
 import TabSelector from "@/components/common/TabSelector";
 import { showComingSoon } from "@/utils/coming-soon";
+import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
 
 export default function PoliticianDetailScreen() {
   const { politicianId } = useParams();
 
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [politician, setPolitician] = useState<IPolitician | null>(null);
 
@@ -63,10 +62,6 @@ export default function PoliticianDetailScreen() {
 
   const handleMessage = () => {
     showComingSoon("Message Politician");
-  };
-
-  const handleShare = () => {
-    showComingSoon("Share Politician");
   };
 
   const handleFlag = () => {
@@ -117,35 +112,19 @@ export default function PoliticianDetailScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white m-4 border-b border-gray-200">
-        <div className="flex items-center">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="mr-4 p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="text-gray-600" size={24} />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {politician?.fullName}
-            </h1>
-            <p className="text-gray-600">
-              {politician?.sourceCategories?.positions?.[0] || "Position"}
-            </p>
-          </div>
-          <Button
-            onClick={handleShare}
-            variant="ghost"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Share className="text-gray-600" size={20} />
-          </Button>
-        </div>
-      </div>
-
+    <ScrollHideHeaderLayout
+      title={politician?.fullName || "Politician"}
+      subtitle={politician?.sourceCategories?.positions?.[0] || "Position"}
+      showBackButton={true}
+      rightAction={
+        <Button
+          variant="ghost"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <Share className="text-gray-600" size={20} />
+        </Button>
+      }
+    >
       <div className="max-w-4xl mx-auto">
         {/* Profile Card */}
         <div className="m-4">
@@ -465,6 +444,6 @@ export default function PoliticianDetailScreen() {
           </div>
         </div>
       </div>
-    </div>
+    </ScrollHideHeaderLayout>
   );
 }

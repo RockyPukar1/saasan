@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Building, Users, X, ArrowLeft } from "lucide-react";
+import { Search, Building, Users, X } from "lucide-react";
 import { useParties } from "@/hooks/useParties";
 import Loading from "@/components/Loading";
 import Error from "@/components/Error";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import type { IParty } from "@/types/politics";
 import { useNavigate } from "react-router-dom";
+import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
 
 export default function PartiesScreen() {
   const navigate = useNavigate();
@@ -32,45 +32,35 @@ export default function PartiesScreen() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Header with Back Button */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="text-gray-600" size={20} />
-          </Button>
-          <h1 className="text-xl font-bold text-gray-900">Political Parties</h1>
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            size={20}
-          />
-          <Input
-            type="text"
-            placeholder="Search parties..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full"
-          />
-          {searchQuery && (
-            <X
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+    <ScrollHideHeaderLayout
+      title="Political Parties"
+      showBackButton={true}
+      subHeader={
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               size={20}
-              onClick={() => setSearchQuery("")}
             />
-          )}
+            <Input
+              type="text"
+              placeholder="Search parties..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full"
+            />
+            {searchQuery && (
+              <X
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                size={20}
+                onClick={() => setSearchQuery("")}
+              />
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Parties List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      }
+    >
+      <div className="p-4">
         {filteredParties.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <Building className="w-16 h-16 mb-4 text-gray-300" />
@@ -130,6 +120,6 @@ export default function PartiesScreen() {
           </div>
         )}
       </div>
-    </div>
+    </ScrollHideHeaderLayout>
   );
 }
