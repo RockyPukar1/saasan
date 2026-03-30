@@ -288,11 +288,7 @@ const NewReportForm: React.FC<NewReportFormProps> = ({
   );
 };
 
-type MyReportsTabProps = {
-  setSelectedReport: React.Dispatch<React.SetStateAction<IReport | null>>;
-};
-
-const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
+const MyReportsTab: React.FC = () => {
   const { userReports: reports } = useReports();
 
   const navigate = useNavigate();
@@ -348,11 +344,11 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
               </div>
 
               {/* Share Button */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
+              {/* <div className="mt-3 pt-3 border-t border-gray-100">
                 <Button
                   onClick={() => {
                     // Show share modal
-                    setSelectedReport(report);
+                    // setSelectedReport(report);
                   }}
                   className="flex items-center justify-center bg-blue-500 py-2 rounded-lg"
                 >
@@ -360,7 +356,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
                     🚀 Share This Report
                   </p>
                 </Button>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         </div>
@@ -369,11 +365,7 @@ const MyReportsTab: React.FC<MyReportsTabProps> = ({ setSelectedReport }) => {
   );
 };
 
-type AllReportsTabProps = {
-  setSelectedReport: React.Dispatch<React.SetStateAction<IReport | null>>;
-};
-
-const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
+const AllReportsTab: React.FC = () => {
   const { allReports: reports } = useReports();
   const navigate = useNavigate();
 
@@ -428,11 +420,11 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
               </div>
 
               {/* Share Button */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
+              {/* <div className="mt-3 pt-3 border-t border-gray-100">
                 <Button
                   onClick={() => {
                     // Show share modal
-                    setSelectedReport(report);
+                    // setSelectedReport(report);
                   }}
                   className="flex items-center justify-center bg-blue-500 py-2 rounded-lg"
                 >
@@ -440,7 +432,7 @@ const AllReportsTab: React.FC<AllReportsTabProps> = ({ setSelectedReport }) => {
                     🚀 Share This Report
                   </p>
                 </Button>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         </div>
@@ -558,9 +550,9 @@ export default function ReportsScreen() {
             onSubmit={handleSubmitReport}
           />
         ) : activeTab === "my_reports" ? (
-          <MyReportsTab setSelectedReport={setSelectedReport} />
+          <MyReportsTab />
         ) : (
-          <AllReportsTab setSelectedReport={setSelectedReport} />
+          <AllReportsTab />
         )}
 
         {/* Share Modal */}

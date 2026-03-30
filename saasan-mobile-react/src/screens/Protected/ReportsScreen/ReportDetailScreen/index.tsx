@@ -1,22 +1,23 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import {
-  Clock,
-  EyeOff,
-  FileText,
-  Camera,
-  Upload,
   ThumbsUp,
   ThumbsDown,
   Share2,
   Edit,
   X,
   Save,
+  Upload,
+  FileText,
+  Camera,
+  EyeOff,
+  Clock,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 import { useReports } from "@/hooks/useReports";
+import { showComingSoon } from "@/utils/coming-soon";
 import { ReportDetailSkeleton } from "@/components/ui/skeleton";
 import EvidencePicker from "@/components/EvidencePicker";
 import toast from "react-hot-toast";
@@ -30,7 +31,6 @@ export default function ReportDetailScreen() {
   const navigate = useNavigate();
   const {
     fetchReportById: getReport,
-    voteOnReport,
     uploadEvidence,
     updateReport,
     deleteEvidence,
@@ -126,32 +126,11 @@ export default function ReportDetailScreen() {
   };
 
   const handleVote = async (isUpvote: boolean) => {
-    try {
-      await voteOnReport(reportId as string, isUpvote);
-      getReport(reportId as string); // Reload report to get updated vote counts
-    } catch (error) {
-      toast.error("Failed to register vote");
-    }
+    showComingSoon(isUpvote ? "Upvote" : "Downvote");
   };
 
   const handleShare = async () => {
-    try {
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({
-          title: report?.title || "Corruption Report",
-          text: `Check out this corruption report: ${report?.description}`,
-          url: `https://saasan.app/report/${reportId}`,
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(
-          `https://citizen.saasannepal.com/reports/${reportId}`,
-        );
-        toast.success("Link copied to clipboard!");
-      }
-    } catch (error) {
-      toast.error("Failed to share report");
-    }
+    showComingSoon("Share");
   };
 
   if (loading) {

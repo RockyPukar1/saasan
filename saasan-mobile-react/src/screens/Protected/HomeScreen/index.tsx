@@ -17,7 +17,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import toast from "react-hot-toast";
+import { showComingSoon } from "@/utils/coming-soon";
 
 export default function HomeScreen() {
   const { t } = useLanguage();
@@ -81,6 +81,10 @@ export default function HomeScreen() {
 
   const calculateDaysSince = (dateString: string): number => {
     return differenceInDays(new Date(), parseISO(dateString));
+  };
+
+  const handleShareApp = () => {
+    showComingSoon("Share app");
   };
 
   return (
@@ -474,17 +478,7 @@ export default function HomeScreen() {
 
             <div
               className="flex flex-col items-center p-4"
-              onClick={() => {
-                if (typeof navigator !== "undefined" && navigator.share) {
-                  navigator.share({
-                    title: "Saasan App",
-                    text: "Help fight corruption in Nepal with Saasan App",
-                    url: "https://saasan.app",
-                  });
-                } else {
-                  toast("Share app functionality coming soon!");
-                }
-              }}
+              onClick={handleShareApp}
             >
               <div className="bg-green-100 p-3 rounded-full mb-2">
                 <Share className="text-green-600 w-6 h-6" />
