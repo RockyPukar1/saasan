@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft,
   Users,
   Calendar,
   MapPin,
@@ -18,6 +16,7 @@ import type { IParty } from "@/types/politics";
 import type { IPolitician } from "@/types/politics";
 import { useParties } from "@/hooks/useParties";
 import { usePoliticians } from "@/hooks/usePoliticians";
+import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
 
 const partyTabs = [
   { label: "Overview", value: "overview" },
@@ -72,9 +71,9 @@ export default function PartyDetailsScreen() {
 
   if (!party) {
     return (
-      <div className="flex flex-col h-full bg-gray-50">
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
+      <ScrollHideHeaderLayout title="Party Details" showBackButton={true}>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center px-4">
             <X className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-gray-900 mb-2">
               Party Not Found
@@ -82,15 +81,9 @@ export default function PartyDetailsScreen() {
             <p className="text-gray-600 mb-4">
               The party you're looking for doesn't exist.
             </p>
-            <Button
-              onClick={() => navigate("/politicians")}
-              className="bg-blue-600"
-            >
-              <p className="text-white font-bold">Back to Parties</p>
-            </Button>
           </div>
         </div>
-      </div>
+      </ScrollHideHeaderLayout>
     );
   }
 
@@ -328,30 +321,18 @@ export default function PartyDetailsScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center">
-          <Button onClick={() => navigate(-1)} className="mr-4">
-            <ArrowLeft size={20} className="mr-2" />
-            <p className="text-white font-bold">Back</p>
-          </Button>
-
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">Party Details</h1>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <TabSelector
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        tabs={partyTabs}
-      />
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">{renderTabContent()}</div>
-    </div>
+    <ScrollHideHeaderLayout
+      title="Party Details"
+      showBackButton={true}
+      subHeader={
+        <TabSelector
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          tabs={partyTabs}
+        />
+      }
+    >
+      <div className="p-4">{renderTabContent()}</div>
+    </ScrollHideHeaderLayout>
   );
 }

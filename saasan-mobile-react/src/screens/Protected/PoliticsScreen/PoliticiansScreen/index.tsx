@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Star, Users, X, Filter, ArrowLeft } from "lucide-react";
+import { Search, Star, Users, X, Filter } from "lucide-react";
 import { usePoliticians } from "@/hooks/usePoliticians";
 import Loading from "@/components/Loading";
 import Error from "@/components/Error";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import type { IPolitician } from "@/types/politics";
 import { showComingSoon } from "@/utils/coming-soon";
+import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
 
 export interface PoliticianFilter {
   level: string[];
@@ -23,7 +24,6 @@ const initialFilter: PoliticianFilter = {
 };
 
 export default function PoliticiansScreen() {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<PoliticianFilter>(initialFilter);
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
@@ -184,43 +184,32 @@ export default function PoliticiansScreen() {
   }, [isDragging]);
 
   return (
-    <div className="flex-1 bg-gray-50">
-      {/* Header with Back Button */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="text-gray-600" size={20} />
-          </Button>
-          <h1 className="text-xl font-bold text-gray-900">Politicians</h1>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-stretch gap-3">
-          <div className="flex-1 flex items-center bg-white rounded-lg px-4 shadow-sm">
-            <Search className="text-gray-500 w-5 h-5" />
-            <Input
-              placeholder="Search politicians..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={handleSearchClick}
-              className="flex-1 text-gray-800 border-none outline-none focus-visible:ring-0"
-            />
+    <ScrollHideHeaderLayout
+      title="Politicians"
+      showBackButton={true}
+      subHeader={
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-stretch gap-3">
+            <div className="flex-1 flex items-center bg-white rounded-lg px-4 shadow-sm">
+              <Search className="text-gray-500 w-5 h-5" />
+              <Input
+                placeholder="Search politicians..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={handleSearchClick}
+                className="flex-1 text-gray-800 border-none outline-none focus-visible:ring-0"
+              />
+            </div>
+            <Button
+              onClick={handleFilterClick}
+              className="h-12 w-12 rounded-lg bg-white flex items-center justify-center shadow-sm"
+            >
+              <Filter className="text-gray-700 w-5 h-5" />
+            </Button>
           </div>
-          <Button
-            onClick={handleFilterClick}
-            className="h-12 w-12 rounded-lg bg-white flex items-center justify-center shadow-sm"
-          >
-            <Filter className="text-gray-700 w-5 h-5" />
-          </Button>
         </div>
-      </div>
-
+      }
+    >
       {currentFilterDropdown === "OPEN" && (
         <div
           className="fixed inset-0 flex items-end justify-center z-60"
@@ -337,7 +326,7 @@ export default function PoliticiansScreen() {
       ) : error ? (
         <Error error={error} refresh={() => refresh()} />
       ) : (
-        <div className="px-4 py-4 overflow-auto">
+        <div className="px-4 py-4">
           {politicians.length > 0 ? (
             politicians.map((politician) => (
               <PoliticianCard key={politician.id} politician={politician} />
@@ -357,7 +346,7 @@ export default function PoliticiansScreen() {
           )}
         </div>
       )}
-    </div>
+    </ScrollHideHeaderLayout>
   );
 }
 
