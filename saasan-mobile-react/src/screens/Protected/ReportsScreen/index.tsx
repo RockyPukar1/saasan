@@ -462,6 +462,13 @@ const initialReport: ReportCreateData = {
   wardId: "",
   dateOccurred: new Date().toISOString(),
   peopleAffectedCount: 0,
+  locationDescription: "",
+  latitude: undefined,
+  longitude: undefined,
+  priority: "medium",
+  visibility: "public",
+  type: "corruption",
+  tags: [],
 };
 export default function ReportsScreen() {
   const { createReport } = useReports();

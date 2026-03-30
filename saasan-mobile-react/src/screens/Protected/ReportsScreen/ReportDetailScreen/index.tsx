@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Clock,
   EyeOff,
@@ -13,7 +14,6 @@ import {
   Edit,
   X,
   Save,
-  ArrowLeft,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useReports } from "@/hooks/useReports";
@@ -172,57 +172,48 @@ export default function ReportDetailScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hidden file inputs */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-      />
-      <input
-        ref={documentInputRef}
-        type="file"
-        accept="application/pdf,.doc,.docx"
-        multiple
-        className="hidden"
-      />
-      <input
-        ref={audioInputRef}
-        type="file"
-        accept="audio/*"
-        multiple
-        className="hidden"
-      />
+    <div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Hidden file inputs */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+        />
+        <input
+          ref={documentInputRef}
+          type="file"
+          accept="application/pdf,.doc,.docx"
+          multiple
+          className="hidden"
+        />
+        <input
+          ref={audioInputRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          className="hidden"
+        />
 
-      {/* Header */}
-      <div className="bg-white m-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <Button
-            onClick={() => navigate(-1)}
-            variant="ghost"
-            className="flex items-center"
-          >
-            <ArrowLeft className="text-gray-600" size={24} />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {report?.title}
-            </h1>
-          </div>
-
-          {!isEditing && (
-            <Button
-              onClick={handleEdit}
-              variant="ghost"
-              className="flex items-center text-blue-600 hover:text-blue-700"
-            >
-              <Edit size={20} />
-              <span className="ml-2">Edit</span>
-            </Button>
-          )}
-        </div>
+        {/* Header */}
+        <PageHeader
+          title={report?.title || "Report Details"}
+          showBackButton={true}
+          rightAction={
+            !isEditing && (
+              <Button
+                onClick={handleEdit}
+                variant="ghost"
+                className="flex items-center text-blue-600 hover:text-blue-700"
+              >
+                <Edit size={20} className="mr-2" />
+                Edit
+              </Button>
+            )
+          }
+        />
 
         {isEditing ? (
           <div className="space-y-3">

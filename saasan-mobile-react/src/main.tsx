@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 import "./index.css";
@@ -7,6 +7,7 @@ import { router } from "./router";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import SplashScreen from "./components/SplashScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,15 +22,32 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppWithSplash() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
+  return (
+    <>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      {!showSplash && (
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            <AuthProvider>
+              <RouterProvider router={router} />
+              <Toaster position="top-center" />
+            </AuthProvider>
+          </LanguageProvider>
+        </QueryClientProvider>
+      )}
+    </>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-          <Toaster position="top-center" />
-        </AuthProvider>
-      </LanguageProvider>
-    </QueryClientProvider>
+    <AppWithSplash />
   </StrictMode>,
 );

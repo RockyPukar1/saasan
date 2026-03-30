@@ -405,6 +405,13 @@ export interface ReportCreateData {
   wardId: string;
   dateOccurred: string;
   peopleAffectedCount?: number;
+  locationDescription?: string;
+  latitude?: number;
+  longitude?: number;
+  priority?: string;
+  visibility?: string;
+  type?: string;
+  tags?: string[];
 }
 
 export interface ReportUpdateData {
