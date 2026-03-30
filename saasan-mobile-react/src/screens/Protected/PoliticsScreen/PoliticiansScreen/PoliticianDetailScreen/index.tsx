@@ -64,10 +64,6 @@ export default function PoliticianDetailScreen() {
     showComingSoon("Message Politician");
   };
 
-  const handleShare = () => {
-    showComingSoon("Share Politician");
-  };
-
   const handleFlag = () => {
     showComingSoon("Report Politician");
   };
