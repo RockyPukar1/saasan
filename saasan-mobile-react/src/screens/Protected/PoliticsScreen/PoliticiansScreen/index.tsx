@@ -8,6 +8,7 @@ import Error from "@/components/Error";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import type { IPolitician } from "@/types/politics";
+import { showComingSoon } from "@/utils/coming-soon";
 
 export interface PoliticianFilter {
   level: string[];
@@ -102,9 +103,12 @@ export default function PoliticiansScreen() {
     setIsDragging(false);
   };
 
-  const openFilter = () => {
-    setFilterHeight(70); // Reset to full height
-    setCurrentFilterDropdown("OPEN");
+  const handleSearchClick = () => {
+    showComingSoon("Search");
+  };
+
+  const handleFilterClick = () => {
+    showComingSoon("Filter");
   };
 
   useEffect(() => {
@@ -204,15 +208,12 @@ export default function PoliticiansScreen() {
               placeholder="Search politicians..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={handleSearchClick}
               className="flex-1 text-gray-800 border-none outline-none focus-visible:ring-0"
             />
           </div>
           <Button
-            onClick={() =>
-              currentFilterDropdown
-                ? setCurrentFilterDropdown("")
-                : openFilter()
-            }
+            onClick={handleFilterClick}
             className="h-12 w-12 rounded-lg bg-white flex items-center justify-center shadow-sm"
           >
             <Filter className="text-gray-700 w-5 h-5" />
@@ -331,7 +332,6 @@ export default function PoliticiansScreen() {
           </div>
         </div>
       )}
-
       {loading ? (
         <Loading />
       ) : error ? (
