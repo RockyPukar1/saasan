@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "setup:all": "pnpm install:all && pnpm setup:env && pnpm seed:smart",
-    "install:all": "pnpm install concurrently && concurrently \"pnpm install\" \"cd saasan-be-nest && pnpm install\" \"cd saasan-dashboard-react && pnpm install\" \"cd saasan-mobile-react && pnpm install\"",
-    "setup:env": "concurrently \"cp saasan-be-nest/.env.example saasan-be-nest/.env\" \"cp saasan-dashboard-react/.env.example saasan-dashboard-react/.env\" \"cp saasan-mobile-react/.env.example saasan-mobile-react/.env\"",
+    "install:all": "pnpm install concurrently && concurrently \"pnpm install\" \"cd saasan-be-nest && pnpm install\" \"cd saasan-dashboard-react && pnpm install\" \"cd saasan-mobile-react && pnpm install\" \"cd saasan-politician-react && pnpm install\"",
+    "setup:env": "concurrently \"cp saasan-be-nest/.env.example saasan-be-nest/.env\" \"cp saasan-dashboard-react/.env.example saasan-dashboard-react/.env\" \"cp saasan-mobile-react/.env.example saasan-mobile-react/.env\" \"cp saasan-politician-react/.env.example saasan-politician-react/.env\"",
     "seed:smart": "cd saasan-be-nest && pnpm seed:smart",
-    "dev:all": "concurrently \"pnpm dev:backend\" \"pnpm dev:dashboard\" \"pnpm dev:mobile\"",
+    "dev:all": "concurrently \"pnpm dev:backend\" \"pnpm dev:dashboard\" \"pnpm dev:mobile\" \"pnpm dev:politician\"",
     "dev:backend": "cd saasan-be-nest && pnpm start:dev",
     "dev:dashboard": "cd saasan-dashboard-react && pnpm dev",
-    "dev:mobile": "cd saasan-mobile-react && pnpm dev"
+    "dev:mobile": "cd saasan-mobile-react && pnpm dev",
+    "dev:politician": "cd saasan-politician-react && pnpm dev"
   },
   "keywords": [
     "nepal",

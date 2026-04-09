@@ -17,6 +17,8 @@ import { ShareableImage } from "@/components/ShareableImage";
 import { useReports } from "@/hooks/useReports";
 import type { ReportCreateData } from "@/types";
 import EvidencePicker from "@/components/EvidencePicker";
+import LocationPicker from "@/components/LocationPicker";
+import AdditionalReportFields from "@/components/AdditionalReportFields";
 import { Input } from "@/components/ui/input";
 import TabSelector from "@/components/common/TabSelector";
 import toast from "react-hot-toast";
@@ -215,7 +217,11 @@ const NewReportForm: React.FC<NewReportFormProps> = ({
         />
       </div>
 
-      {/* TODO: Province, District, Municipality, Ward */}
+      {/* Location Information */}
+      <LocationPicker form={form} setForm={setForm} />
+
+      {/* Additional Report Fields */}
+      <AdditionalReportFields form={form} setForm={setForm} />
 
       <div className="mb-6">
         <p className="font-bold text-gray-800 mb-2">Evidence (Optional)</p>

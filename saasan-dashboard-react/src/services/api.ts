@@ -688,7 +688,7 @@ export const reportsApi = {
     status: string,
     comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    const response = await api.put(`/reports/${id}/status`, {
+    const response = await api.put(`/report/${id}/status`, {
       status,
       comment,
     });
@@ -701,8 +701,16 @@ export const reportsApi = {
   approve: async (
     id: string,
     comment?: string,
+    escalateToHigher?: boolean,
   ): Promise<ApiResponse<IReport>> => {
-    return reportsApi.updateStatus(id, "verified", comment);
+    const response = await api.post(`/report/${id}/approve`, {
+      escalateToHigher: escalateToHigher || false,
+      notes: comment,
+    });
+    return {
+      ...response.data,
+      data: transformReport(response.data.data),
+    };
   },
 
   reject: async (

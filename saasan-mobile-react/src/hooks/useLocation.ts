@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "@/services/api";
 export const useLocation = () => {
@@ -6,7 +6,7 @@ export const useLocation = () => {
 
   // Provinces Query - Long cache as location data rarely changes
   const {
-    data: provincesData,
+    data: allProvincesData,
     isLoading: provincesLoading,
     error: provincesError,
   } = useQuery({
@@ -18,7 +18,7 @@ export const useLocation = () => {
 
   // Districts by Province Query - Medium cache
   const {
-    data: districtsData,
+    data: allDistrictsData,
     isLoading: districtsLoading,
     error: districtsError,
   } = useQuery({
@@ -31,7 +31,7 @@ export const useLocation = () => {
 
   // Constituency by Ward Query - Medium cache
   const {
-    data: constituencyData,
+    data: allConstituencyData,
     isLoading: constituencyLoading,
     error: constituencyError,
   } = useQuery({
@@ -44,7 +44,7 @@ export const useLocation = () => {
 
   // Municipalities by District Query - Medium cache
   const {
-    data: municipalitiesData,
+    data: allMunicipalitiesData,
     isLoading: municipalitiesLoading,
     error: municipalitiesError,
   } = useQuery({
@@ -57,7 +57,7 @@ export const useLocation = () => {
 
   // Wards by Municipality Query - Medium cache
   const {
-    data: wardsData,
+    data: allWardsData,
     isLoading: wardsLoading,
     error: wardsError,
   } = useQuery({
@@ -67,21 +67,6 @@ export const useLocation = () => {
     staleTime: 30 * 60 * 1000, // 30 minutes
     select: (response) => response.data,
   });
-
-  const allProvinces = useMemo(() => provincesData || [], [provincesData]);
-  const districtsByProvinceId = useMemo(
-    () => districtsData || [],
-    [districtsData],
-  );
-  const constituencyByWardId = useMemo(
-    () => constituencyData || null,
-    [constituencyData],
-  );
-  const municipalitiesByDistrictId = useMemo(
-    () => municipalitiesData || [],
-    [municipalitiesData],
-  );
-  const wardsByMunicipalityId = useMemo(() => wardsData || [], [wardsData]);
 
   const loading =
     provincesLoading ||
@@ -155,11 +140,11 @@ export const useLocation = () => {
     error: error instanceof Error ? error.message : null,
 
     // data
-    allProvinces,
-    districtsByProvinceId,
-    constituencyByWardId,
-    municipalitiesByDistrictId,
-    wardsByMunicipalityId,
+    allProvincesData,
+    allDistrictsData,
+    allConstituencyData,
+    allMunicipalitiesData,
+    allWardsData,
 
     // fetch functions
     fetchAllProvinces,

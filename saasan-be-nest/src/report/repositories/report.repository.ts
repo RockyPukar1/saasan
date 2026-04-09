@@ -314,4 +314,14 @@ export class ReportRepository {
       },
     });
   }
+
+  async findByIdWithPopulate(reportId: string) {
+    return await this.model.findById(reportId).populate('reporterId').exec();
+  }
+
+  async updateReportConversion(reportId: string, updateData: any) {
+    return await this.model
+      .findByIdAndUpdate(reportId, updateData, { new: true })
+      .exec();
+  }
 }

@@ -284,7 +284,6 @@ class ApiService {
       "GET",
       "/province",
     );
-    console.log(data);
 
     return data.data;
   }
@@ -296,6 +295,7 @@ class ApiService {
       "GET",
       `/district/province/${provinceId}`,
     );
+
     return data.data;
   }
 

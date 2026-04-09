@@ -38,6 +38,8 @@ import { AdminConstituencyController } from './constituency/controllers/admin-co
 import { AdminMunicipalityController } from './municipality/controllers/admin-municipality.controller';
 import { AdminWardController } from './ward/controllers/admin-ward.controller';
 import { CacheModule } from 'src/common/cache/cache.module';
+import { JurisdictionService } from './services/jurisdiction.service';
+import { PoliticsModule } from 'src/politics/politics.module';
 
 @Module({
   imports: [
@@ -48,7 +50,8 @@ import { CacheModule } from 'src/common/cache/cache.module';
       { name: MunicipalityEntity.name, schema: MunicipalityEntitySchema },
       { name: WardEntity.name, schema: WardEntitySchema },
     ]),
-    forwardRef(() => CacheModule)
+    forwardRef(() => CacheModule),
+    PoliticsModule,
   ],
   providers: [
     // Services
@@ -57,6 +60,7 @@ import { CacheModule } from 'src/common/cache/cache.module';
     ConstituencyService,
     MunicipalityService,
     WardService,
+    JurisdictionService,
 
     // Repositories
     ProvinceRepository,
@@ -71,20 +75,21 @@ import { CacheModule } from 'src/common/cache/cache.module';
     ConstituencyController,
     MunicipalityController,
     WardController,
-    
+
     // Admin controller
     AdminProvinceController,
     AdminDistrictController,
     AdminConstituencyController,
     AdminMunicipalityController,
-    AdminWardController
+    AdminWardController,
   ],
   exports: [
     ProvinceRepository,
     MunicipalityRepository,
     WardRepository,
     ConstituencyRepository,
-    DistrictRepository
-  ]
+    DistrictRepository,
+    JurisdictionService,
+  ],
 })
 export class LocationModule {}

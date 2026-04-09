@@ -412,6 +412,33 @@ export class PoliticianRepository {
     ]);
   }
 
+  async findByIdWithRelations({ politicianId }: PoliticianIdDto) {
+    return this.model
+      .findById(politicianId)
+      .populate(['partyId', 'positionIds', 'constituencyId']);
+  }
+
+  async findByJurisdiction(locationFilters: any) {
+    const filter: any = {};
+    if (locationFilters.wardId) filter.wardId = locationFilters.wardId;
+    if (locationFilters.municipalityId)
+      filter.municipalityId = locationFilters.municipalityId;
+    if (locationFilters.constituencyId)
+      filter.constituencyId = locationFilters.constituencyId;
+    if (locationFilters.districtId)
+      filter.districtId = locationFilters.districtId;
+    if (locationFilters.provinceId)
+      filter.provinceId = locationFilters.provinceId;
+
+    const politicians = await this.model.find(filter).exec();
+    return politicians[0] || null;
+  }
+
+  async findHighestLevelPolitician() {
+    const politicians = await this.model.find().sort({ level: -1 }).exec();
+    return politicians[0] || null;
+  }
+
   private async countDocuments(filter?: any) {
     return await this.model.countDocuments(filter);
   }

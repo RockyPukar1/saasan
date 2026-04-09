@@ -41,6 +41,9 @@ import {
 import { AdminReportController } from './controllers/admin-report.controller';
 import { UserModule } from 'src/user/user.module';
 import { CacheModule } from 'src/common/cache/cache.module';
+import { ReportToMessageService } from './services/report-to-message.service';
+import { PoliticsModule } from 'src/politics/politics.module';
+import { MessageModule } from 'src/message/message.module';
 
 @Module({
   imports: [
@@ -59,6 +62,8 @@ import { CacheModule } from 'src/common/cache/cache.module';
     CloudinaryModule,
     TransactionModule,
     UserModule,
+    PoliticsModule,
+    MessageModule,
     forwardRef(() => CacheModule),
   ],
   controllers: [
@@ -76,6 +81,7 @@ import { CacheModule } from 'src/common/cache/cache.module';
     ReportStatusRepository,
     ReportPriorityRepository,
     ReportVisibilityRepository,
+    ReportToMessageService,
   ],
   exports: [
     ReportRepository,
