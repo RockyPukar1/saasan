@@ -117,6 +117,29 @@ export default function PoliticiansScreen() {
     }
   };
 
+  const handleCreateAccount = async (politician: IPolitician) => {
+    if (!politician.contact?.email) {
+      toast.error("Politician must have contact email to create account");
+      return;
+    }
+
+    if (politician.hasAccount) {
+      toast.error("Account already exists for this politician");
+      return;
+    }
+
+    try {
+      await politicsApi.createPoliticianAccount(politician.id, {
+        email: politician.contact.email,
+      });
+
+      toast.success("Account created successfully");
+      queryClient.invalidateQueries({ queryKey: ["politicians"] });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to create account");
+    }
+  };
+
   const handleDelete = (id: string) => {
     confirm({
       title: "Delete Politician",
@@ -336,6 +359,20 @@ export default function PoliticiansScreen() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
+                    {politician.hasAccount ? (
+                      <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                        Account Active
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCreateAccount(politician)}
+                        disabled={!politician.contact?.email}
+                      >
+                        Create Account
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

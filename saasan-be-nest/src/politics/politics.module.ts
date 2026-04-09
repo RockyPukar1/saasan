@@ -4,6 +4,10 @@ import {
   PoliticianEntity,
   PoliticianEntitySchema,
 } from './politician/entities/politician.entity';
+import {
+  PoliticianAccountEntity,
+  PoliticianAccountEntitySchema,
+} from './politician/entities/politician-account.entity';
 import { LevelEntity, LevelEntitySchema } from './level/entities/level.entity';
 import { PartyEntity, PartyEntitySchema } from './party/entities/party.entity';
 import {
@@ -23,19 +27,28 @@ import { PositionService } from './position/services/position.service';
 import { PartyRepository } from './party/repositories/party.repository';
 import { PositionRepository } from './position/repositories/position.repository';
 import { CacheModule } from 'src/common/cache/cache.module';
+import { AdminPoliticianController } from './politician/controllers/admin-politician.controller';
+import { PoliticianAccountRepository } from './politician/repositories/politician-account.repository';
+import { EmailModule } from 'src/common/email/email.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: PoliticianEntity.name, schema: PoliticianEntitySchema },
+      {
+        name: PoliticianAccountEntity.name,
+        schema: PoliticianAccountEntitySchema,
+      },
       { name: LevelEntity.name, schema: LevelEntitySchema },
       { name: PartyEntity.name, schema: PartyEntitySchema },
       { name: PositionEntity.name, schema: PositionEntitySchema },
     ]),
-    forwardRef(() => CacheModule)
+    forwardRef(() => CacheModule),
+    EmailModule,
   ],
   controllers: [
     PoliticianController,
+    AdminPoliticianController,
     LevelController,
     PartyController,
     PositionController,
@@ -49,6 +62,7 @@ import { CacheModule } from 'src/common/cache/cache.module';
 
     // repositories
     PoliticianRepository,
+    PoliticianAccountRepository,
     LevelRepository,
     PartyRepository,
     PositionRepository,

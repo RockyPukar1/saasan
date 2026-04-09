@@ -88,4 +88,6 @@ export interface IPolitician {
     category: string;
     date: Date;
   }[];
+  hasAccount?: boolean;
+  accountCreatedAt?: string;
 }
