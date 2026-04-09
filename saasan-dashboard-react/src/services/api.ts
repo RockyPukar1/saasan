@@ -338,6 +338,13 @@ export const politicsApi = {
     return response.data;
   },
 
+  createPoliticianAccount: async (
+    politicianId: string,
+    data: { email: string },
+  ) => {
+    await api.post(`/admin/politician/${politicianId}/create-account`, data);
+  },
+
   // Update individual sections
   updatePromises: async (
     id: string,
@@ -1085,6 +1092,17 @@ export const pollingApi = {
 
   createCategory: async (data: { name: string; name_nepali?: string }) => {
     const response = await api.post("/poll/categories", data);
+    return response.data;
+  },
+
+  createPoliticianAccount: async (
+    politicianId: string,
+    data: { email: string },
+  ): Promise<ApiResponse<any>> => {
+    const response = await api.post(
+      `/admin/politician/${politicianId}/create-account`,
+      data,
+    );
     return response.data;
   },
 
