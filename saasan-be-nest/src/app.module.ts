@@ -19,6 +19,7 @@ import { EventSeederModule } from './common/seeders/event/event-seeder.module';
 import { AppController } from './app.controller';
 import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
 import { CacheModule } from './common/cache/cache.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { CacheModule } from './common/cache/cache.module';
     CaseModule,
     PoliticsModule,
     CacheModule,
+    MessageModule,
   ],
   controllers: [AppController],
 })

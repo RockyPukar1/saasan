@@ -91,14 +91,31 @@ export class ReportController {
   async vote() {}
 
   @HttpCode(204)
-  @Post(':reportId/approve')
-  async approve() {}
-
-  @HttpCode(204)
-  @Post(':reportId/reject')
-  async reject() {}
-
-  @HttpCode(204)
   @Post(':reportId/resolve')
   async resolve() {}
+
+  @HttpCode(204)
+  @Post(':reportId/approve')
+  async approveReport(
+    @Param() param: ReportIdDto,
+    @Req() req: Request,
+    @Body() approvalData: { escalateToHigher?: boolean; notes?: string },
+  ) {
+    return await this.reportService.approveReport(param.reportId, {
+      approvedBy: req.user.id,
+      ...approvalData,
+    });
+  }
+
+  @HttpCode(204)
+  @Post(':reportId/escalate')
+  async escalateReport(
+    @Param() param: ReportIdDto,
+    @Body() escalationData: { escalateTo: string; reason: string },
+  ) {
+    return await this.reportService.escalateReport(
+      param.reportId,
+      escalationData,
+    );
+  }
 }

@@ -28,6 +28,7 @@ import { UserRepository } from 'src/user/repositories/user.repository';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { Logger } from '@nestjs/common';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
+import { ReportToMessageService } from './report-to-message.service';
 
 @Injectable()
 export class ReportService {
@@ -38,6 +39,7 @@ export class ReportService {
     private cloudinaryService: CloudinaryService,
     private evidenceRepo: EvidenceRepository,
     private tx: TransactionRunner,
+    private readonly reportToMessageService: ReportToMessageService,
     private readonly userRepo: UserRepository,
     private readonly reportActivityRepo: ReportActivityRepository,
     private readonly reportTypeRepo: ReportTypeRepository,
@@ -483,5 +485,23 @@ export class ReportService {
     await this.reportVisibilityRepo.delete(id);
 
     await this.redisCache.del('report:visibilities');
+  }
+
+  async approveReport(reportId: string, approvalData: any) {
+    return await this.reportToMessageService.approveReport({
+      reportId,
+      ...approvalData,
+    });
+  }
+
+  async escalateReport(
+    reportId: string,
+    escalationData: { escalateTo: string; reason: string },
+  ) {
+    return await this.reportToMessageService.escalateReport(
+      reportId,
+      escalationData.escalateTo,
+      escalationData.reason,
+    );
   }
 }

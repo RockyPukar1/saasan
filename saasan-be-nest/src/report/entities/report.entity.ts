@@ -10,6 +10,7 @@ import { ReportTypeEntity } from './report-type.entity';
 import { ReportVisibilityEntity } from './report-visibility.entity';
 import { ReportPriorityEntity } from './report-priority.entity';
 import { ReportStatusEntity } from './report-status.entity';
+import { PoliticianEntity } from '../../politics/politician/entities/politician.entity';
 
 @Schema({ timestamps: true, collection: ReportEntity.collection })
 export class ReportEntity {
@@ -101,6 +102,29 @@ export class ReportEntity {
 
   @Prop({ type: Number, default: 0, required: true })
   peopleAffectedCount: number;
+
+  @Prop({
+    type: String,
+    enum: [
+      'ward',
+      'municipality',
+      'constituency',
+      'district',
+      'province',
+      'federal',
+    ],
+    required: true,
+  })
+  reportLevel: string;
+
+  @Prop({ type: Boolean, default: false })
+  autoConvertedToMessage: boolean;
+
+  @Prop({ type: Types.ObjectId, ref: 'PoliticianEntity' })
+  targetPoliticianId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: PoliticianEntity.name })
+  escalatedToPoliticianId?: Types.ObjectId;
 }
 
 export const ReportEntitySchema = SchemaFactory.createForClass(ReportEntity);

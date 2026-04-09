@@ -28,7 +28,7 @@ import {
   reportVisibilitiesApi,
   reportTypesApi,
 } from "@/services/api";
-import { Save, X, Flag, Eye, FileText } from "lucide-react";
+import { Save, X, Flag, Eye, FileText, CheckCircle } from "lucide-react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IReport } from "@/types/report";
 
@@ -131,8 +131,33 @@ export default function ReportEditForm({
     },
   });
 
+  // Approve report mutation
+  const approveMutation = useMutation({
+    mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
+      reportsApi.approve(id, comment),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success(
+        "Report approved successfully! Message thread created for politician.",
+      );
+      setEditingReport(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to approve report");
+    },
+  });
+
   const onSubmit = async (data: ReportFormData) => {
     updateReportMutation.mutate(data);
+  };
+
+  const handleApprove = () => {
+    if (!editingReport) return;
+
+    approveMutation.mutate({
+      id: editingReport.id,
+      comment: undefined,
+    });
   };
 
   const handleCancel = () => {
@@ -494,16 +519,47 @@ export default function ReportEditForm({
                       </div>
                     </div>
                     <div className="flex justify-between mt-4">
-                      <Button
-                        variant="outline"
-                        onClick={handleCancel}
-                        disabled={updateReportMutation.isPending}
-                      >
-                        Cancel
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          onClick={handleCancel}
+                          disabled={
+                            updateReportMutation.isPending ||
+                            approveMutation.isPending
+                          }
+                        >
+                          Cancel
+                        </Button>
+                        {editingReport.statusId !== "approved" && (
+                          <Button
+                            variant="default"
+                            onClick={handleApprove}
+                            disabled={
+                              updateReportMutation.isPending ||
+                              approveMutation.isPending
+                            }
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {approveMutation.isPending ? (
+                              <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-r-2 border-white border-t-transparent border-l-transparent mr-2"></div>
+                                Approving...
+                              </div>
+                            ) : (
+                              <div className="flex items-center">
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Approve Report
+                              </div>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                       <Button
                         type="submit"
-                        disabled={updateReportMutation.isPending}
+                        disabled={
+                          updateReportMutation.isPending ||
+                          approveMutation.isPending
+                        }
                       >
                         {updateReportMutation.isPending ? (
                           <div className="flex items-center">

@@ -14,19 +14,26 @@ import {
   Home,
 } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
+import type {
+  IDistrict,
+  IMunicipality,
+  IWard,
+  IConstituency,
+} from "@/types/location";
 
 export default function RegisterScreen() {
   const {
-    allProvinces: provinces,
-    districtsByProvinceId: districts,
+    allProvincesData: provinces,
     fetchDistrictsByProvinceId: fetchDistricts,
-    constituencyByWardId: constituency,
     fetchConstituencyByWardId: fetchConstituency,
-    municipalitiesByDistrictId: municipalities,
     fetchMunicipalitiesByDistrictId: fetchMunicipalities,
-    wardsByMunicipalityId: wards,
     fetchWardsByMunicipalityId: fetchWards,
   } = useLocation();
+
+  const [districts, setDistricts] = useState<IDistrict[]>([]);
+  const [municipalities, setMunicipalities] = useState<IMunicipality[]>([]);
+  const [wards, setWards] = useState<IWard[]>([]);
+  const [constituency, setConstituency] = useState<IConstituency>();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -81,7 +88,9 @@ export default function RegisterScreen() {
         municipalityId: "",
         wardId: "",
       }));
-      fetchDistricts(formData.provinceId);
+      fetchDistricts(formData.provinceId).then((districts) => {
+        setDistricts(districts);
+      });
     }
   }, [formData.provinceId]);
 
@@ -93,21 +102,27 @@ export default function RegisterScreen() {
         wardId: "",
         municipalityId: "",
       }));
-      fetchMunicipalities(formData.districtId);
+      fetchMunicipalities(formData.districtId).then((municipalities) => {
+        setMunicipalities(municipalities);
+      });
     }
   }, [formData.provinceId, formData.districtId]);
 
   useEffect(() => {
     if (formData.municipalityId) {
       setFormData((prev) => ({ ...prev, constituencyId: "", wardId: "" }));
-      fetchWards(formData.municipalityId);
+      fetchWards(formData.municipalityId).then((wards) => {
+        setWards(wards);
+      });
     }
   }, [formData.provinceId, formData.districtId, formData.municipalityId]);
 
   useEffect(() => {
     if (formData.wardId) {
       setFormData((prev) => ({ ...prev, constituencyId: "" }));
-      fetchConstituency(formData.wardId);
+      fetchConstituency(formData.wardId).then((constituency) => {
+        setConstituency(constituency);
+      });
     }
   }, [
     formData.provinceId,
@@ -253,7 +268,7 @@ export default function RegisterScreen() {
                     }
                   >
                     <option value="">Select Province</option>
-                    {provinces.map((province) => (
+                    {provinces?.map((province) => (
                       <option key={province.id} value={province.id}>
                         {province.name}
                       </option>
