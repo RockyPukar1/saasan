@@ -13,6 +13,8 @@ import PoliticianDetailScreen from "./screens/Protected/PoliticsScreen/Politicia
 import PoliticiansScreen from "./screens/Protected/PoliticsScreen/PoliticiansScreen";
 import PartiesScreen from "./screens/Protected/PoliticsScreen/PartiesScreen";
 import BudgetScreen from "./screens/Protected/PoliticsScreen/BudgetScreen";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PERMISSIONS } from "@/constants/permission.constants";
 
 export const router = createBrowserRouter([
   {
@@ -20,43 +22,83 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <HomeScreen />,
+        element: (
+          <ProtectedRoute requiredRole="citizen">
+            <HomeScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/polls",
-        element: <PollsScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.polls.view}>
+            <PollsScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/reports",
-        element: <ReportsScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.reports.viewOwn}>
+            <ReportsScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/reports/:reportId",
-        element: <ReportDetailScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.reports.viewOwn}>
+            <ReportDetailScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/politics",
-        element: <PoliticsScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.politicians.view}>
+            <PoliticsScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/politics/politicians",
-        element: <PoliticiansScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.politicians.view}>
+            <PoliticiansScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/politics/politician/:politicianId",
-        element: <PoliticianDetailScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.politicians.view}>
+            <PoliticianDetailScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/politics/parties",
-        element: <PartiesScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.parties.view}>
+            <PartiesScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/politics/party/:partyId",
-        element: <PartyDetailsScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.parties.view}>
+            <PartyDetailsScreen />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/politics/budget",
-        element: <BudgetScreen />,
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS.politicians.view}>
+            <BudgetScreen />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

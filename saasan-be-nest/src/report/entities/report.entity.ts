@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
 import { DistrictEntity } from 'src/location/district/entities/district.entity';
 import { MunicipalityEntity } from 'src/location/municipality/entities/municipality.entity';

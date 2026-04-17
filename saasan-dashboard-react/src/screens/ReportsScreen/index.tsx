@@ -37,6 +37,9 @@ import {
 } from "@/services/api";
 import type { IReport } from "@/types/report";
 import ReportEditForm from "@/components/reports/ReportEditForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSIONS } from "@/constants/permission.constants";
+import { PermissionGate } from "@/components/PermissionGate";
 
 export interface IReportFilter {
   status: string[];
@@ -53,6 +56,10 @@ const initialFilter: IReportFilter = {
 };
 
 export default function ReportsScreen() {
+  const { hasPermission } = useAuth();
+
+  const canResolveReports = hasPermission(PERMISSIONS.reports.resolve);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
@@ -203,16 +210,31 @@ export default function ReportsScreen() {
   });
 
   const handleResolve = (id: string) => {
+    if (!canResolveReports) {
+      toast.error("You do not have permission to manage reports");
+      return;
+    }
+
     const comment = prompt("Add a resolution comment:");
     resolveMutation.mutate({ id, comment: comment || undefined });
   };
 
   const handleApprove = (id: string) => {
+    if (!canResolveReports) {
+      toast.error("You do not have permission to manage reports");
+      return;
+    }
+
     const comment = prompt("Add a comment (optional):");
     approveMutation.mutate({ id, comment: comment || undefined });
   };
 
   const handleReject = (id: string) => {
+    if (!canResolveReports) {
+      toast.error("You do not have permission to manage reports");
+      return;
+    }
+
     const comment = prompt("Add a reason for rejection:");
     if (comment) {
       rejectMutation.mutate({ id, comment });
@@ -220,6 +242,11 @@ export default function ReportsScreen() {
   };
 
   const handleEdit = async (report: IReport) => {
+    if (!canResolveReports) {
+      toast.error("You do not have permission to update reports");
+      return;
+    }
+
     try {
       // Fetch complete report data before opening form
       const response = await reportsApi.getById(report.id);
@@ -430,32 +457,40 @@ export default function ReportsScreen() {
                       {report?.sourceCategories?.status?.toLowerCase() ===
                         "submitted" && (
                         <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApprove(report.id);
-                            }}
-                            disabled={approveMutation.isPending}
-                            className="text-green-600 hover:text-green-700"
+                          <PermissionGate
+                            permission={PERMISSIONS.reports.resolve}
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(report.id);
-                            }}
-                            disabled={rejectMutation.isPending}
-                            className="text-red-600 hover:text-red-700"
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(report.id);
+                              }}
+                              disabled={approveMutation.isPending}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                          </PermissionGate>
+                          <PermissionGate
+                            permission={PERMISSIONS.reports.resolve}
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(report.id);
+                              }}
+                              disabled={rejectMutation.isPending}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </PermissionGate>
                         </>
                       )}
                       {report?.sourceCategories?.status?.toLowerCase() ===
@@ -654,34 +689,40 @@ export default function ReportsScreen() {
                 {showDetails?.sourceCategories?.status?.toLowerCase() ===
                   "submitted" && (
                   <>
-                    <Button
-                      onClick={() => handleApprove(showDetails.id)}
-                      disabled={approveMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleReject(showDetails.id)}
-                      disabled={rejectMutation.isPending}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
+                    <PermissionGate permission={PERMISSIONS.reports.resolve}>
+                      <Button
+                        onClick={() => handleApprove(showDetails.id)}
+                        disabled={approveMutation.isPending}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Approve
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate permission={PERMISSIONS.reports.resolve}>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleReject(showDetails.id)}
+                        disabled={rejectMutation.isPending}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Reject
+                      </Button>
+                    </PermissionGate>
                   </>
                 )}
                 {showDetails?.sourceCategories?.status?.toLowerCase() ===
                   "verified" && (
-                  <Button
-                    onClick={() => handleResolve(showDetails.id)}
-                    disabled={resolveMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Resolve
-                  </Button>
+                  <PermissionGate permission={PERMISSIONS.reports.resolve}>
+                    <Button
+                      onClick={() => handleResolve(showDetails.id)}
+                      disabled={resolveMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Resolve
+                    </Button>
+                  </PermissionGate>
                 )}
               </div>
             </CardContent>
@@ -857,12 +898,14 @@ export default function ReportsScreen() {
         </div>
       )}
 
-      {editingReport ? (
-        <ReportEditForm
-          editingReport={editingReport}
-          setEditingReport={setEditingReport}
-        />
-      ) : null}
+      <PermissionGate permission={PERMISSIONS.reports.resolve}>
+        {editingReport && (
+          <ReportEditForm
+            editingReport={editingReport}
+            setEditingReport={setEditingReport}
+          />
+        )}
+      </PermissionGate>
     </div>
   );
 }

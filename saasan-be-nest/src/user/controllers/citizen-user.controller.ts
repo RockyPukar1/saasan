@@ -16,19 +16,16 @@ import { UserIdDto } from '../dtos/user-id.dto';
 import { type Request } from 'express';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/user/entities/user.entity';
+import { PermissionGuard } from 'src/common/guards/permission.guard';
 
-@UseGuards(HttpAccessTokenGuard)
-@Controller('user')
-export class UserController {
+@UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
+@Roles(UserRole.CITIZEN)
+@Controller('citizen/user')
+export class CitizenUserController {
   constructor(private readonly userService: UserService) {}
-
-  @Get()
-  async getAllUsers(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return await this.userService.getAllUsers({ page, limit });
-  }
 
   // TODO: Change email
   // TODO: Change password
@@ -41,16 +38,5 @@ export class UserController {
   @Put('profile')
   async updateProfile(@Req() req: Request, @Body() updateData: UpdateUserDto) {
     return this.userService.updateProfile({ userId: req.user.id }, updateData);
-  }
-
-  @Get(':userId')
-  async getUserById(@Param() param: UserIdDto) {
-    return this.userService.getUserById(param);
-  }
-
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':userId')
-  async deleteUser(@Param() param: UserIdDto) {
-    await this.userService.deleteUser(param);
   }
 }

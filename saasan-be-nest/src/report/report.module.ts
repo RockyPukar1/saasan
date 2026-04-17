@@ -39,8 +39,6 @@ import {
   ReportVisibilityEntitySchema,
 } from './entities/report-visibility.entity';
 import { AdminReportController } from './controllers/admin-report.controller';
-import { UserModule } from 'src/user/user.module';
-import { CacheModule } from 'src/common/cache/cache.module';
 import { ReportToMessageService } from './services/report-to-message.service';
 import { PoliticsModule } from 'src/politics/politics.module';
 import { MessageModule } from 'src/message/message.module';
@@ -61,10 +59,8 @@ import { MessageModule } from 'src/message/message.module';
     ]),
     CloudinaryModule,
     TransactionModule,
-    UserModule,
     PoliticsModule,
     MessageModule,
-    forwardRef(() => CacheModule),
   ],
   controllers: [
     ReportController,

@@ -8,6 +8,8 @@ import { GlobalHttpException } from 'src/common/exceptions/global-http.exception
 import { UserIdDto } from '../dtos/user-id.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { UserSerializer } from '../serializers/user.serializer';
+import { PermissionHelper } from 'src/common/helpers/permission.helper';
+import { RolePermissionService } from 'src/role-permission/services/role-permission.service';
 
 @Injectable()
 export class UserService {
@@ -16,6 +18,7 @@ export class UserService {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly redisCache: RedisCacheService,
+    private readonly rolePermissionService: RolePermissionService,
   ) {}
 
   async getProfile({ userId }: UserIdDto) {
@@ -26,9 +29,19 @@ export class UserService {
       throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
     }
 
-    return ResponseHelper.response(
-      UserSerializer,
-      user,
+    const permissions = await this.rolePermissionService.getPermissionsByRole(
+      user.role,
+    );
+    const nestedPermissions = PermissionHelper.toNestedPermissions(
+      permissions.permissions,
+    );
+
+    return ResponseHelper.success(
+      {
+        user,
+        permissions: permissions.permissions,
+        nestedPermissions,
+      },
       'User Profile fetched successfully',
     );
   }

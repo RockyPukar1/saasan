@@ -113,9 +113,9 @@ export class PoliticianService {
     });
 
     const accessToken = AuthHelper.generateToken(politician);
-    const refreshToken = AuthHelper.generateRefreshToken(
-      politician._id.toString(),
-    );
+    const refreshToken = AuthHelper.generateRefreshToken({
+      userId: politician._id.toString(),
+    });
     const email = doesPoliticianExists.contact.email;
 
     if (email) {

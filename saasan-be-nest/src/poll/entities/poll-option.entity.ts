@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { PollEntity } from './poll.entity';
 
 @Schema({ timestamps: true, collection: PollOptionEntity.collection })

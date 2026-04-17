@@ -39,6 +39,18 @@ import type { IUser } from "@/types/user";
 import type { IPoliticianFilter } from "@/screens/PoliticiansScreen";
 import type { IMajorCase } from "@/types/case";
 import type { IHistoricalEvent } from "@/types/event";
+import type { AuthPayload, ProfilePayload } from "@/types/auth";
+import type { IAuthSession } from "@/types/session";
+import type {
+  IRolePermission,
+  IUpdateRolePermissionPayload,
+} from "@/types/role-permission";
+
+declare module "axios" {
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean;
+  }
+}
 
 // Utility function to transform snake_case to camelCase
 const transformPolitician = (politician: IPolitician) => ({
@@ -183,10 +195,69 @@ const api = axios.create({
   },
 });
 
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+const getAccessToken = () => localStorage.getItem("accessToken");
+const getRefreshToken = () => localStorage.getItem("refreshToken");
+
+const setTokens = (accessToken: string, refreshToken: string) => {
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
+};
+
+const clearTokens = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+};
+
+const normalizePermissions = (permissions: unknown): string[] => {
+  if (Array.isArray(permissions)) {
+    return permissions;
+  }
+
+  if (
+    permissions &&
+    typeof permissions === "object" &&
+    Array.isArray((permissions as { permissions?: unknown }).permissions)
+  ) {
+    return (permissions as { permissions: string[] }).permissions;
+  }
+
+  return [];
+};
+
+const refreshAccessToken = async () => {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    clearTokens();
+    return null;
+  }
+
+  try {
+    const response = await api.post("/auth/refresh-token", { refreshToken });
+
+    if (response.data?.success) {
+      const newAccessToken = response.data.data.accessToken;
+      const newRefreshToken = response.data.data.refreshToken;
+
+      setTokens(newAccessToken, newRefreshToken);
+      return newAccessToken;
+    }
+
+    clearTokens();
+    return null;
+  } catch (error) {
+    clearTokens();
+    return null;
+  }
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -200,11 +271,49 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("accessToken");
-      window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (!error.response) {
+      return Promise.reject(error);
     }
+
+    if (
+      error.response.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/auth/refresh-token")
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken();
+        }
+
+        const newAccessToken = await refreshPromise;
+
+        isRefreshing = false;
+        refreshPromise = null;
+
+        if (!newAccessToken) {
+          clearTokens();
+          window.location.href = "/login";
+          return Promise.reject(error);
+        }
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshPromise = null;
+        clearTokens();
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
     return Promise.reject(error);
   },
 );
@@ -214,10 +323,15 @@ export const authApi = {
   login: async (
     email: string,
     password: string,
-  ): Promise<
-    ApiResponse<{ accessToken: string; refreshToken: string; user: IUser }>
-  > => {
+  ): Promise<ApiResponse<AuthPayload>> => {
     const response = await api.post("/auth/login", { email, password });
+    return response.data;
+  },
+
+  refreshToken: async (
+    refreshToken: string,
+  ): Promise<ApiResponse<AuthPayload>> => {
+    const response = await api.post("/auth/refresh-token", { refreshToken });
     return response.data;
   },
 
@@ -229,27 +343,79 @@ export const authApi = {
     district?: string;
     municipality?: string;
     wardNumber?: number;
-  }): Promise<
-    ApiResponse<{ accessToken: string; refreshToken: string; user: IUser }>
-  > => {
+  }): Promise<ApiResponse<AuthPayload>> => {
     const response = await api.post("/auth/register", userData);
     return response.data;
   },
 
-  getProfile: async (): Promise<ApiResponse<IUser>> => {
-    const response = await api.get("/user/profile");
+  getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
+    const response = await api.get("/admin/user/profile");
+    return {
+      ...response.data,
+      data: {
+        ...response.data.data,
+        permissions: normalizePermissions(response.data.data?.permissions),
+      },
+    };
+  },
+
+  logout: async () => {
+    try {
+      await sessionApi.logoutCurrentSession();
+    } catch (error) {
+      // Ignore logout API failure
+    } finally {
+      clearTokens();
+    }
+  },
+};
+
+export const rolePermissionApi = {
+  getAll: async (): Promise<ApiResponse<IRolePermission[]>> => {
+    const response = await api.get("/role-permissions");
     return response.data;
   },
 
-  logout: () => {
-    localStorage.removeItem("accessToken");
+  getByRole: async (role: string): Promise<ApiResponse<IRolePermission>> => {
+    const response = await api.get(`/role-permissions/${role}`);
+    return response.data;
+  },
+
+  update: async (
+    role: string,
+    payload: IUpdateRolePermissionPayload,
+  ): Promise<ApiResponse<IRolePermission>> => {
+    const response = await api.put(`/role-permissions/${role}`, payload);
+    return response.data;
+  },
+};
+
+export const sessionApi = {
+  getMySessions: async (): Promise<ApiResponse<IAuthSession[]>> => {
+    const response = await api.get("/auth/sessions");
+    return response.data;
+  },
+
+  revokeSession: async (sessionId: string): Promise<ApiResponse<null>> => {
+    const response = await api.delete(`/auth/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  revokeAllOtherSessions: async (): Promise<ApiResponse<null>> => {
+    const response = await api.post("/auth/sessions/revoke-all");
+    return response.data;
+  },
+
+  logoutCurrentSession: async (): Promise<ApiResponse<null>> => {
+    const response = await api.post("/auth/logout");
+    return response.data;
   },
 };
 
 // Dashboard API
 export const dashboardApi = {
   getStats: async (): Promise<ApiResponse<IDashboardStats>> => {
-    const response = await api.get("/dashboard/stats");
+    const response = await api.get("/admin/dashboard/stats");
     return response.data;
   },
 
@@ -666,7 +832,7 @@ export const reportsApi = {
     visibility?: string[];
     type?: string[];
   }): Promise<IReport[]> => {
-    const response = await api.post("/report/filter", params || {});
+    const response = await api.post("/admin/report/filter", params || {});
     return response.data.data;
   },
 
@@ -1118,13 +1284,16 @@ export const userApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IUser>> => {
-    const url = page && limit ? `/user?page=${page}&limit=${limit}` : "/user";
+    const url =
+      page && limit
+        ? `/admin/user?page=${page}&limit=${limit}`
+        : "/admin/user";
     const response = await api.get(url);
     return response.data.data;
   },
 
   getById: async (id: string): Promise<ApiResponse<IUser>> => {
-    const response = await api.get(`/user/${id}`);
+    const response = await api.get(`/admin/user/${id}`);
     return response.data;
   },
 
@@ -1132,24 +1301,24 @@ export const userApi = {
     id: string,
     userData: Partial<IUser>,
   ): Promise<ApiResponse<IUser>> => {
-    const response = await api.put(`/user/${id}`, userData);
+    const response = await api.put(`/admin/user/${id}`, userData);
     return response.data;
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/user/${id}`);
+    const response = await api.delete(`/admin/user/${id}`);
     return response.data;
   },
 
   getProfile: async (): Promise<ApiResponse<IUser>> => {
-    const response = await api.get("/user/profile");
+    const response = await api.get("/admin/user/profile");
     return response.data;
   },
 
   updateProfile: async (
     userData: Partial<IUser>,
   ): Promise<ApiResponse<IUser>> => {
-    const response = await api.put("/user/profile", userData);
+    const response = await api.put("/admin/user/profile", userData);
     return response.data;
   },
 };

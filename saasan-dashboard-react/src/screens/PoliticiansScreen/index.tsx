@@ -26,6 +26,9 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IPolitician } from "@/types/politics";
 import PoliticianEditForm from "@/components/politics/PoliticianEditForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSIONS } from "@/constants/permission.constants";
+import { PermissionGate } from "@/components/PermissionGate";
 
 export interface IPoliticianFilter {
   level: string[];
@@ -40,6 +43,14 @@ const initialFilter: IPoliticianFilter = {
 };
 
 export default function PoliticiansScreen() {
+  const { hasPermission } = useAuth();
+
+  const canUpdatePolitician = hasPermission(PERMISSIONS.politicians.update);
+  const canDeletePolitician = hasPermission(PERMISSIONS.politicians.delete);
+  const canCreatePoliticianAccount = hasPermission(
+    PERMISSIONS.politicians.createAccount,
+  );
+
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
@@ -104,6 +115,11 @@ export default function PoliticiansScreen() {
   });
 
   const handleEdit = async (politician: IPolitician) => {
+    if (!canUpdatePolitician) {
+      toast.error("You do not have permission to edit politicians");
+      return;
+    }
+
     try {
       // Fetch complete politician data before opening form
       const response = await politicsApi.getById(politician.id);
@@ -118,6 +134,11 @@ export default function PoliticiansScreen() {
   };
 
   const handleCreateAccount = async (politician: IPolitician) => {
+    if (!canCreatePoliticianAccount) {
+      toast.error("You do not have permission to create politician accounts");
+      return;
+    }
+
     if (!politician.contact?.email) {
       toast.error("Politician must have contact email to create account");
       return;
@@ -141,6 +162,11 @@ export default function PoliticiansScreen() {
   };
 
   const handleDelete = (id: string) => {
+    if (!canDeletePolitician) {
+      toast.error("You do not have permission to delete politicians");
+      return;
+    }
+
     confirm({
       title: "Delete Politician",
       description:
@@ -173,10 +199,12 @@ export default function PoliticiansScreen() {
             <Upload className="h-4 w-4 mr-2" />
             Upload CSV
           </Button> */}
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Politician
-          </Button>
+          <PermissionGate permission={PERMISSIONS.politicians.create}>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Politician
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -359,35 +387,37 @@ export default function PoliticiansScreen() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-                    {politician.hasAccount ? (
-                      <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                        Account Active
-                      </div>
-                    ) : (
+                    <PermissionGate
+                      permission={PERMISSIONS.politicians.createAccount}
+                    >
                       <Button
-                        variant="outline"
-                        size="sm"
                         onClick={() => handleCreateAccount(politician)}
-                        disabled={!politician.contact?.email}
+                        size="sm"
+                        variant="outline"
                       >
                         Create Account
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(politician)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(politician.id)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    </PermissionGate>
+
+                    <PermissionGate permission={PERMISSIONS.politicians.update}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(politician)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+
+                    <PermissionGate permission={PERMISSIONS.politicians.delete}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(politician.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
@@ -397,14 +427,22 @@ export default function PoliticiansScreen() {
       </Card>
 
       {/* Add/Edit Form Modal */}
-      {showForm && (
-        <PoliticianEditForm
-          setShowForm={setShowForm}
-          editingPolitician={editingPolitician!}
-          setEditingPolitician={setEditingPolitician}
-          setShowUploadModal={setShowUploadModal}
-        />
-      )}
+      <PermissionGate
+        permission={
+          editingPolitician
+            ? PERMISSIONS.politicians.update
+            : PERMISSIONS.politicians.create
+        }
+      >
+        {showForm && (
+          <PoliticianEditForm
+            editingPolitician={editingPolitician}
+            setEditingPolitician={setEditingPolitician}
+            setShowForm={setShowForm}
+            setShowUploadModal={setShowUploadModal}
+          />
+        )}
+      </PermissionGate>
 
       {/* Upload Modal */}
       {showUploadModal && (

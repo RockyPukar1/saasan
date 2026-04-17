@@ -20,9 +20,11 @@ import { AppController } from './app.controller';
 import { ReportSeederModule } from './common/seeders/report/report-seeder.module';
 import { CacheModule } from './common/cache/cache.module';
 import { MessageModule } from './message/message.module';
+import { RolePermissionModule } from './role-permission/role-permission.module';
 
 @Module({
   imports: [
+    CacheModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -39,6 +41,7 @@ import { MessageModule } from './message/message.module';
     PollSeederModule,
     EventSeederModule,
     // Normal modules
+    RolePermissionModule,
     PollModule,
     LocationModule,
     AuthModule,
@@ -48,7 +51,6 @@ import { MessageModule } from './message/message.module';
     EventModule,
     CaseModule,
     PoliticsModule,
-    CacheModule,
     MessageModule,
   ],
   controllers: [AppController],

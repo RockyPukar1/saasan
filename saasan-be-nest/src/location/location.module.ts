@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MunicipalityService } from './municipality/services/municipality.service';
 import { ConstituencyService } from './constituency/services/constituency.service';
 import { WardService } from './ward/services/ward.service';
@@ -37,7 +37,6 @@ import { AdminProvinceController } from './province/controllers/admin-province.c
 import { AdminConstituencyController } from './constituency/controllers/admin-constituency.controller';
 import { AdminMunicipalityController } from './municipality/controllers/admin-municipality.controller';
 import { AdminWardController } from './ward/controllers/admin-ward.controller';
-import { CacheModule } from 'src/common/cache/cache.module';
 import { JurisdictionService } from './services/jurisdiction.service';
 import { PoliticsModule } from 'src/politics/politics.module';
 
@@ -50,7 +49,6 @@ import { PoliticsModule } from 'src/politics/politics.module';
       { name: MunicipalityEntity.name, schema: MunicipalityEntitySchema },
       { name: WardEntity.name, schema: WardEntitySchema },
     ]),
-    forwardRef(() => CacheModule),
     PoliticsModule,
   ],
   providers: [

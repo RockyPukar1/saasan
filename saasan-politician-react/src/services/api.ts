@@ -1,7 +1,14 @@
 // API service functions for politician portal
 // Following the same standards as citizen-app and admin-dashboard
 
+import type { AuthPayload, ProfilePayload } from "@/types/auth";
 import axios from "axios";
+
+declare module "axios" {
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean;
+  }
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -14,31 +21,106 @@ const api = axios.create({
 });
 
 // Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (!error.response) {
+      return Promise.reject(error);
     }
+
+    if (
+      error.response.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/auth/refresh-token")
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken();
+        }
+
+        const newAccessToken = await refreshPromise;
+
+        isRefreshing = false;
+        refreshPromise = null;
+
+        if (!newAccessToken) {
+          clearTokens();
+          window.location.href = "/login";
+          return Promise.reject(error);
+        }
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshPromise = null;
+        clearTokens();
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
     return Promise.reject(error);
   },
 );
+
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+const getAccessToken = () => localStorage.getItem("accessToken");
+const getRefreshToken = () => localStorage.getItem("refreshToken");
+
+const setTokens = (accessToken: string, refreshToken: string) => {
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
+};
+
+const clearTokens = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+};
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    clearTokens();
+    return null;
+  }
+
+  try {
+    const response = await api.post("/auth/refresh-token", { refreshToken });
+
+    if (response.data?.success) {
+      const newAccessToken = response.data.data.accessToken;
+      const newRefreshToken = response.data.data.refreshToken;
+
+      setTokens(newAccessToken, newRefreshToken);
+      return newAccessToken;
+    }
+
+    clearTokens();
+    return null;
+  } catch (error) {
+    clearTokens();
+    return null;
+  }
+};
 
 // Types for API responses
 interface ApiResponse<T> {
@@ -276,21 +358,18 @@ export const authApi = {
   login: async (
     email: string,
     password: string,
-  ): Promise<
-    ApiResponse<{ accessToken: string; refreshToken: string; user: any }>
-  > => {
+  ): Promise<ApiResponse<AuthPayload>> => {
     const response = await api.post("/auth/login", { email, password });
     return response.data;
   },
 
-  getProfile: async (): Promise<ApiResponse<any>> => {
+  getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.get("/user/profile");
     return response.data;
   },
 
   logout: () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    clearTokens();
   },
 };
 

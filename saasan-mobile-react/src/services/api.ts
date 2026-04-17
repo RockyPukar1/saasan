@@ -28,6 +28,10 @@ import type {
 } from "@/types/location";
 import type { IRegisterData } from "@/types/auth";
 import type { IReport } from "@/types/reports";
+import type {
+  AuthPayload,
+  ProfilePayload,
+} from "@/types/auth-session";
 
 // Utility function to transform poll data from backend format to frontend format
 const transformPoll = (data: any): Poll => {
@@ -77,20 +81,6 @@ interface LoginData {
   password: string;
 }
 
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  role: string;
-  phone?: string;
-  district?: string;
-  municipality?: string;
-  ward_number?: number;
-  last_active_at: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface DashboardStats {
   overview: {
     totalReportsCount: number;
@@ -110,9 +100,57 @@ export interface DashboardStats {
 
 class ApiService {
   private baseURL: string;
+  private isRefreshing = false;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor() {
     this.baseURL = BASE_URL;
+  }
+
+  private async getRefreshToken(): Promise<string | null> {
+    return localStorage.getItem("refreshToken");
+  }
+
+  private async clearTokens(): Promise<void> {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+  }
+
+  private async refreshAccessToken(): Promise<string | null> {
+    const refreshToken = await this.getRefreshToken();
+
+    if (!refreshToken) {
+      await this.clearTokens();
+      return null;
+    }
+
+    try {
+      const url = new URL(`${this.baseURL}/auth/refresh-token`);
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = res.status === 204 ? null : await res.json();
+
+      if (!res.ok || !data?.success) {
+        await this.clearTokens();
+        return null;
+      }
+
+      const newAccessToken = data.data.accessToken;
+      const newRefreshToken = data.data.refreshToken;
+
+      await this.setAuthToken(newAccessToken, newRefreshToken);
+
+      return newAccessToken;
+    } catch (error) {
+      await this.clearTokens();
+      return null;
+    }
   }
 
   private async getAuthToken(): Promise<string | null> {
@@ -128,7 +166,22 @@ class ApiService {
   }
 
   private async removeAuthToken(): Promise<void> {
-    localStorage.removeItem("accessToken");
+    await this.clearTokens();
+  }
+
+  async refreshToken(refreshToken: string): Promise<ApiResponse<AuthPayload>> {
+    const response = await this.request<AuthPayload>(
+      "POST",
+      "/auth/refresh-token",
+      { refreshToken },
+    );
+
+    await this.setAuthToken(
+      response.data.accessToken,
+      response.data.refreshToken,
+    );
+
+    return response;
   }
 
   private async request<T>(
@@ -137,9 +190,9 @@ class ApiService {
     body?: any,
     options: RequestInit = {},
     language: Language = "en",
+    retry = true,
   ): Promise<ApiResponse<T>> {
     const token = await this.getAuthToken();
-
     const isFormData = body instanceof FormData;
 
     const config: RequestInit = {
@@ -156,21 +209,53 @@ class ApiService {
     };
 
     try {
-      // Add language query parameter
       const url = new URL(`${this.baseURL}${endpoint}`);
       const queryParams = getApiQuery(language);
+
       Object.entries(queryParams).forEach(([key, value]) => {
         url.searchParams.set(key, value);
       });
 
       const res = await fetch(url.toString(), config);
+
+      if (
+        res.status === 401 &&
+        retry &&
+        !endpoint.includes("/auth/refresh-token")
+      ) {
+        let newAccessToken: string | null = null;
+
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          this.refreshPromise = this.refreshAccessToken();
+        }
+
+        newAccessToken = await this.refreshPromise;
+
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+
+        if (!newAccessToken) {
+          await this.clearTokens();
+          throw new Error("Session expired. Please log in again.");
+        }
+
+        return this.request<T>(
+          method,
+          endpoint,
+          body,
+          options,
+          language,
+          false,
+        );
+      }
+
       const data = res.status === 204 ? null : await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || `API Error: ${res.status}`);
+        throw new Error(data?.message || `API Error: ${res.status}`);
       }
 
-      // Format response data based on language
       const formattedData = formatApiResponse(data, language);
       return formattedData;
     } catch (error) {
@@ -181,18 +266,8 @@ class ApiService {
   }
 
   // Auth APIs
-  async login(data: LoginData): Promise<
-    ApiResponse<{
-      accessToken: string;
-      refreshToken: string;
-      user: UserProfile;
-    }>
-  > {
-    const response = await this.request<{
-      accessToken: string;
-      refreshToken: string;
-      user: UserProfile;
-    }>("POST", "/auth/login", data);
+  async login(data: LoginData): Promise<ApiResponse<AuthPayload>> {
+    const response = await this.request<AuthPayload>("POST", "/auth/login", data);
     await this.setAuthToken(
       response.data.accessToken,
       response.data.refreshToken,
@@ -200,18 +275,8 @@ class ApiService {
     return response;
   }
 
-  async register(data: IRegisterData): Promise<
-    ApiResponse<{
-      accessToken: string;
-      refreshToken: string;
-      user: UserProfile;
-    }>
-  > {
-    const response = await this.request<{
-      accessToken: string;
-      refreshToken: string;
-      user: UserProfile;
-    }>("POST", "/auth/register", data);
+  async register(data: IRegisterData): Promise<ApiResponse<AuthPayload>> {
+    const response = await this.request<AuthPayload>("POST", "/auth/register", data);
     await this.setAuthToken(
       response.data.accessToken,
       response.data.refreshToken,
@@ -223,8 +288,8 @@ class ApiService {
     await this.removeAuthToken();
   }
 
-  async getProfile(): Promise<ApiResponse<UserProfile>> {
-    return this.request<UserProfile>("GET", "/user/profile");
+  async getProfile(): Promise<ApiResponse<ProfilePayload>> {
+    return this.request<ProfilePayload>("GET", "/user/profile");
   }
 
   // Dashboard APIs

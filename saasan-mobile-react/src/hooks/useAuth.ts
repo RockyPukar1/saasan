@@ -1,19 +1,28 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiService } from "@/services/api";
 import type { IRegisterData } from "@/types/auth";
+import type { NestedPermissions } from "@/types/auth-session";
 import toast from "react-hot-toast";
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [nestedPermissions, setNestedPermissions] =
+    useState<NestedPermissions | null>(null);
 
   const {
-    data: user,
+    data: profileResponse,
     isLoading: loading,
     error,
   } = useQuery({
     queryKey: ["auth", "profile"],
-    queryFn: () => apiService.getProfile(),
+    queryFn: async () => {
+      const response = await apiService.getProfile();
+      setPermissions(response.data.permissions || []);
+      setNestedPermissions(response.data.nestedPermissions || null);
+      return response;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
     enabled: !!localStorage.getItem("accessToken"),
@@ -22,7 +31,9 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       apiService.login({ email, password }),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      setPermissions(response.data.permissions || []);
+      setNestedPermissions(response.data.nestedPermissions || null);
       queryClient.invalidateQueries({ queryKey: ["auth"] });
       toast.success("Login successful!");
     },
@@ -33,7 +44,9 @@ export const useAuth = () => {
 
   const registerMutation = useMutation({
     mutationFn: (data: IRegisterData) => apiService.register(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      setPermissions(response.data.permissions || []);
+      setNestedPermissions(response.data.nestedPermissions || null);
       queryClient.invalidateQueries({ queryKey: ["auth"] });
       toast.success("Registration successful!");
     },
@@ -47,15 +60,20 @@ export const useAuth = () => {
   const logoutMutation = useMutation({
     mutationFn: () => apiService.logout(),
     onSuccess: () => {
+      setPermissions([]);
+      setNestedPermissions(null);
       queryClient.clear();
       toast.success("Logged out successfully");
     },
     onError: () => {
+      setPermissions([]);
+      setNestedPermissions(null);
       queryClient.clear();
       toast.success("Logged out successfully");
     },
   });
 
+  const user = profileResponse?.data.user || null;
   const isAuthenticated = !!user;
 
   const login = useCallback(
@@ -76,9 +94,48 @@ export const useAuth = () => {
     await logoutMutation.mutateAsync();
   }, [logoutMutation]);
 
-  const refreshUser = useCallback(() => {
+  const refreshUser = useCallback(async () => {
+    const response = await apiService.getProfile();
+    setPermissions(response.data.permissions || []);
+    setNestedPermissions(response.data.nestedPermissions || null);
     queryClient.invalidateQueries({ queryKey: ["auth"] });
   }, [queryClient]);
+
+  const hasRole = useCallback(
+    (role: string) => {
+      return user?.role === role;
+    },
+    [user],
+  );
+
+  const hasPermission = useCallback(
+    (permission: string) => {
+      return permissions.includes(permission);
+    },
+    [permissions],
+  );
+
+  const hasAnyPermission = useCallback(
+    (requiredPermissions: string[]) => {
+      return requiredPermissions.some((permission) =>
+        permissions.includes(permission),
+      );
+    },
+    [permissions],
+  );
+
+  const hasAllPermissions = useCallback(
+    (requiredPermissions: string[]) => {
+      return requiredPermissions.every((permission) =>
+        permissions.includes(permission),
+      );
+    },
+    [permissions],
+  );
+
+  const canAccessCitizenApp = useMemo(() => {
+    return !!user && user.role === "citizen";
+  }, [user]);
 
   const isLoading =
     loading ||
@@ -93,12 +150,19 @@ export const useAuth = () => {
 
   return {
     isAuthenticated,
-    user: user?.data || null,
+    user,
+    permissions,
+    nestedPermissions,
     loading: isLoading,
     error: errorState instanceof Error ? errorState.message : null,
     login,
     register,
     logout,
     refreshUser,
+    hasRole,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    canAccessCitizenApp,
   };
 };

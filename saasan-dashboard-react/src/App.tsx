@@ -1,10 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -26,6 +21,9 @@ import MunicipalityScreen from "./screens/GeographyScreen/MunicipalityScreen";
 import PoliticiansScreen from "./screens/PoliticiansScreen";
 import PartyScreen from "./screens/PartyScreen";
 import UsersScreen from "./screens/UsersScreen";
+import { PERMISSIONS } from "./constants/permission.constants";
+import SessionsPage from "./screens/SessionsScreen";
+import RolePermissionsPage from "./screens/RolePermissionsScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,50 +43,177 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route
+                path="/sessions"
+                element={
+                  <ProtectedRoute
+                    requiredPermission={PERMISSIONS.sessions.view}
+                  >
+                    <SessionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole="admin">
                     <DashboardLayout />
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="politicians" element={<PoliticiansScreen />} />
-                <Route path="parties" element={<PartyScreen />} />
-                <Route path="users" element={<UsersScreen />} />
-                <Route path="reports" element={<ReportsScreen />} />
-                <Route path="reports/types" element={<ReportTypesScreen />} />
+                <Route
+                  path="role-permissions"
+                  element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.roles.view}>
+                      <RolePermissionsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="dashboard"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.dashboard.view}
+                    >
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="politicians"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.politicians.view}
+                    >
+                      <PoliticiansScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="parties"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.parties.view}
+                    >
+                      <PartyScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="users"
+                  element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.users.view}>
+                      <UsersScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="reports"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.reports.view}
+                    >
+                      <ReportsScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="reports/types"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.reports.types.view}
+                    >
+                      <ReportTypesScreen />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="reports/statuses"
-                  element={<ReportStatusesScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.reports.statuses.view}
+                    >
+                      <ReportStatusesScreen />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route
                   path="reports/priorities"
-                  element={<ReportPrioritiesScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.reports.priorities.view}
+                    >
+                      <ReportPrioritiesScreen />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route
                   path="reports/visibilities"
-                  element={<ReportVisibilitiesScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.reports.visibilities.view}
+                    >
+                      <ReportVisibilitiesScreen />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route
                   path="historical-events"
-                  element={<HistoricalEventsPage />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.dashboard.view}
+                    >
+                      <HistoricalEventsPage />
+                    </ProtectedRoute>
+                  }
                 />
-                <Route path="geography" element={<GeographyScreen />} />
+                <Route
+                  path="geography"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.geography.view}
+                    >
+                      <GeographyScreen />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="geography/province/:provinceId"
-                  element={<ProvinceScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.geography.view}
+                    >
+                      <ProvinceScreen />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route
                   path="geography/district/:districtId"
-                  element={<DistrictScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.geography.view}
+                    >
+                      <DistrictScreen />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route
                   path="geography/municipality/:municipalityId"
-                  element={<MunicipalityScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.geography.view}
+                    >
+                      <MunicipalityScreen />
+                    </ProtectedRoute>
+                  }
                 />
-                <Route path="polling" element={<PollingPage />} />
+                <Route
+                  path="polling"
+                  element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.polls.view}>
+                      <PollingPage />
+                    </ProtectedRoute>
+                  }
+                />
                 {/* <Route
                   path="viral-management"
                   element={<ViralManagementPage />}
