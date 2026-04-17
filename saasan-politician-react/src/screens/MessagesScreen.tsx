@@ -22,8 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { messagesApi, type MessageThread } from "@/services/api";
+import { PERMISSIONS } from "@/constants/permission.constants";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const MessagesScreen: React.FC = () => {
+  const { hasPermission } = useAuth();
+
+  const canReplyMessages = hasPermission(PERMISSIONS.messages.reply);
+  const canManageMessages = hasPermission(PERMISSIONS.messages.manage);
+
   const [messages, setMessages] = useState<MessageThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedThread, setSelectedThread] = useState<MessageThread | null>(
@@ -60,6 +67,9 @@ export const MessagesScreen: React.FC = () => {
 
   const handleReply = async () => {
     if (!selectedThread || !replyText.trim()) return;
+    if (!canReplyMessages) {
+      return;
+    }
 
     try {
       await messagesApi.addReply(selectedThread.id, replyText);
@@ -94,6 +104,10 @@ export const MessagesScreen: React.FC = () => {
     messageId: string,
     status: "pending" | "in_progress" | "resolved" | "closed",
   ) => {
+    if (!canManageMessages) {
+      return;
+    }
+
     try {
       await messagesApi.updateStatus(messageId, status);
       loadMessages();

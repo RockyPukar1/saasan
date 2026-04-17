@@ -27,12 +27,20 @@ import { politicsApi } from "@/services/api";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IParty } from "@/types/politics";
 import PartyEditForm from "@/components/party/PartyEditForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSIONS } from "@/constants/permission.constants";
+import { PermissionGate } from "@/components/PermissionGate";
 
 const initialFilter = {
   search: "",
 };
 
 export default function PartyScreen() {
+  const { hasPermission } = useAuth();
+
+  const canUpdateParty = hasPermission(PERMISSIONS.parties.update);
+  const canDeleteParty = hasPermission(PERMISSIONS.parties.delete);
+
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
@@ -101,6 +109,11 @@ export default function PartyScreen() {
   });
 
   const handleEdit = async (party: IParty) => {
+    if (!canUpdateParty) {
+      toast.error("You do not have permission to edit parties");
+      return;
+    }
+
     try {
       setEditingParty(party);
       setShowForm(true);
@@ -111,6 +124,11 @@ export default function PartyScreen() {
   };
 
   const handleDelete = (id: string) => {
+    if (!canDeleteParty) {
+      toast.error("You do not have permission to delete parties");
+      return;
+    }
+
     confirm({
       title: "Delete Party",
       description:
@@ -153,18 +171,23 @@ export default function PartyScreen() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowUploadModal(true)}
-            disabled={uploadMutation.isPending}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload CSV
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Party
-          </Button>
+          <PermissionGate permission={PERMISSIONS.parties.create}>
+            <Button
+              variant="outline"
+              onClick={() => setShowUploadModal(true)}
+              disabled={uploadMutation.isPending}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload CSV
+            </Button>
+          </PermissionGate>
+
+          <PermissionGate permission={PERMISSIONS.parties.create}>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Party
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -327,13 +350,19 @@ export default function PartyScreen() {
       </Card>
 
       {/* Add/Edit Form Modal */}
-      {showForm && (
-        <PartyEditForm
-          setShowForm={setShowForm}
-          editingParty={editingParty}
-          setEditingParty={setEditingParty}
-        />
-      )}
+      <PermissionGate
+        permission={
+          editingParty ? PERMISSIONS.parties.update : PERMISSIONS.parties.create
+        }
+      >
+        {showForm && (
+          <PartyEditForm
+            editingParty={editingParty}
+            setEditingParty={setEditingParty}
+            setShowForm={setShowForm}
+          />
+        )}
+      </PermissionGate>
 
       {/* Upload Modal */}
       {showUploadModal && (

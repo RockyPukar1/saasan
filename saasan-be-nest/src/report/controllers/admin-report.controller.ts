@@ -22,17 +22,26 @@ import { CreateReportPriorityDto } from '../dtos/create-report-priority.dto';
 import { CreateReportVisibilityDto } from '../dtos/create-report-visibility.dto';
 import { ReportFilterDto } from '../dtos/report-filter.dto';
 import type { Request } from 'express';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/user/entities/user.entity';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { Permissions } from 'src/common/decorators/permissions.decorator';
+import { PERMISSIONS } from 'src/common/constants/permission.constants';
+import { PermissionGuard } from 'src/common/guards/permission.guard';
 
-@UseGuards(HttpAccessTokenGuard)
+@UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
+@Roles(UserRole.ADMIN)
 @Controller('admin/report')
 export class AdminReportController {
   constructor(private readonly reportService: ReportService) {}
 
+  @Permissions(PERMISSIONS.reports.view)
   @Post('filter')
   async getAll(@Body() reportFilterDto: ReportFilterDto) {
     return await this.reportService.getAll(reportFilterDto);
   }
 
+  @Permissions(PERMISSIONS.reports.resolve)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':reportId')
   async adminUpdateReport(
@@ -43,49 +52,21 @@ export class AdminReportController {
     await this.reportService.adminUpdateReport(param, req.user.id, updateData);
   }
 
-  // @Get(':reportId/activities')
-  // async adminGetReportActivities(
-  //   @Param() param: ReportIdDto,
-  //   @Query() query: GetReportActivitiesDto,
-  // ) {
-  //   return await this.reportService.getReportActivities(
-  //     param.reportId,
-  //     query.page,
-  //     query.limit,
-  //   );
-  // }
-
-  // @Get('activities/recent')
-  // async adminGetRecentActivities(@Query('limit') limit?: string) {
-  //   return await this.reportService.getRecentActivities(
-  //     limit ? parseInt(limit) : undefined,
-  //   );
-  // }
-
-  // @HttpCode(204)
-  // @Post(':reportId/approve')
-  // async approve() {}
-
-  // @HttpCode(204)
-  // @Post(':reportId/reject')
-  // async reject() {}
-
-  @HttpCode(204)
-  @Post(':reportId/resolve')
-  async resolve() {}
-
   // Report Types CRUD
+  @Permissions(PERMISSIONS.reports.types.view)
   @Get('types')
   async getReportTypes() {
     return await this.reportService.getReportTypes();
   }
 
+  @Permissions(PERMISSIONS.reports.types.create)
   @Post('types')
   @HttpCode(201)
   async createReportType(@Body() createReportTypeDto: CreateReportTypeDto) {
     return await this.reportService.createReportType(createReportTypeDto);
   }
 
+  @Permissions(PERMISSIONS.reports.types.update)
   @Put('types/:id')
   async updateReportType(
     @Param('id') id: string,
@@ -94,6 +75,7 @@ export class AdminReportController {
     return await this.reportService.updateReportType(id, updateData);
   }
 
+  @Permissions(PERMISSIONS.reports.types.delete)
   @HttpCode(204)
   @Delete('types/:id')
   async deleteReportType(@Param('id') id: string) {
@@ -101,11 +83,13 @@ export class AdminReportController {
   }
 
   // Report Statuses CRUD
+  @Permissions(PERMISSIONS.reports.statuses.view)
   @Get('statuses')
   async getReportStatuses() {
     return await this.reportService.getReportStatuses();
   }
 
+  @Permissions(PERMISSIONS.reports.statuses.create)
   @Post('statuses')
   @HttpCode(201)
   async createReportStatus(
@@ -114,6 +98,7 @@ export class AdminReportController {
     return await this.reportService.createReportStatus(createReportStatusDto);
   }
 
+  @Permissions(PERMISSIONS.reports.statuses.update)
   @Put('statuses/:id')
   async updateReportStatus(
     @Param('id') id: string,
@@ -122,6 +107,7 @@ export class AdminReportController {
     return await this.reportService.updateReportStatus(id, updateData);
   }
 
+  @Permissions(PERMISSIONS.reports.statuses.delete)
   @HttpCode(204)
   @Delete('statuses/:id')
   async deleteReportStatus(@Param('id') id: string) {
@@ -129,11 +115,13 @@ export class AdminReportController {
   }
 
   // Report Priorities CRUD
+  @Permissions(PERMISSIONS.reports.priorities.view)
   @Get('priorities')
   async getReportPriorities() {
     return await this.reportService.getReportPriorities();
   }
 
+  @Permissions(PERMISSIONS.reports.priorities.create)
   @Post('priorities')
   @HttpCode(201)
   async createReportPriority(
@@ -144,6 +132,7 @@ export class AdminReportController {
     );
   }
 
+  @Permissions(PERMISSIONS.reports.priorities.update)
   @Put('priorities/:id')
   async updateReportPriority(
     @Param('id') id: string,
@@ -152,6 +141,7 @@ export class AdminReportController {
     return await this.reportService.updateReportPriority(id, updateData);
   }
 
+  @Permissions(PERMISSIONS.reports.priorities.delete)
   @HttpCode(204)
   @Delete('priorities/:id')
   async deleteReportPriority(@Param('id') id: string) {
@@ -159,11 +149,13 @@ export class AdminReportController {
   }
 
   // Report Visibilities CRUD
+  @Permissions(PERMISSIONS.reports.visibilities.view)
   @Get('visibilities')
   async getReportVisibilities() {
     return await this.reportService.getReportVisibilities();
   }
 
+  @Permissions(PERMISSIONS.reports.visibilities.create)
   @Post('visibilities')
   @HttpCode(201)
   async createReportVisibility(
@@ -174,6 +166,7 @@ export class AdminReportController {
     );
   }
 
+  @Permissions(PERMISSIONS.reports.visibilities.update)
   @Put('visibilities/:id')
   async updateReportVisibility(
     @Param('id') id: string,
@@ -182,6 +175,7 @@ export class AdminReportController {
     return await this.reportService.updateReportVisibility(id, updateData);
   }
 
+  @Permissions(PERMISSIONS.reports.visibilities.delete)
   @HttpCode(204)
   @Delete('visibilities/:id')
   async deleteReportVisibility(@Param('id') id: string) {

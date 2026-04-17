@@ -1,12 +1,25 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
-import { UserModule } from 'src/user/user.module';
-import { CacheModule } from 'src/common/cache/cache.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  AuthSessionEntity,
+  AuthSessionEntitySchema,
+} from './entities/auth-session.entity';
+import { AuthSessionRepository } from './repositories/auth-session.repository';
 
+@Global()
 @Module({
-  imports: [UserModule, CacheModule],
+  imports: [
+    MongooseModule.forFeature([
+      {
+        name: AuthSessionEntity.name,
+        schema: AuthSessionEntitySchema,
+      },
+    ]),
+  ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, AuthSessionRepository],
+  exports: [AuthSessionRepository],
 })
 export class AuthModule {}

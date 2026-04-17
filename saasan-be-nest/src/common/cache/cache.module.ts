@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { LocationModule } from 'src/location/location.module';
 import { PoliticsModule } from 'src/politics/politics.module';
 import { PollModule } from 'src/poll/poll.module';
@@ -9,13 +9,14 @@ import { ReportModule } from 'src/report/report.module';
 import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
 
+@Global()
 @Module({
   imports: [
-    forwardRef(() => PollModule),
-    forwardRef(() => LocationModule),
-    forwardRef(() => PoliticsModule),
-    forwardRef(() => DashboardModule),
-    forwardRef(() => ReportModule),
+    PollModule,
+    LocationModule,
+    PoliticsModule,
+    DashboardModule,
+    ReportModule,
     NestCacheModule.registerAsync({
       useFactory: async () => {
         const host = process.env.SAASAN_REDIS_HOST || 'localhost';

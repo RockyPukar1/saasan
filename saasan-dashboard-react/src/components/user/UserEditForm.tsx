@@ -32,7 +32,7 @@ import { FormField } from "@/components/ui/form";
 
 interface UserEditFormProps {
   setShowForm: (show: boolean) => void;
-  editingUser: IUser;
+  editingUser: IUser | null;
   setEditingUser: (user: IUser | null) => void;
 }
 
@@ -65,16 +65,16 @@ export default function UserEditForm({
     formState: { errors, isSubmitting },
   } = useForm<UserFormData>({
     defaultValues: {
-      email: editingUser.email || "",
-      fullName: editingUser.fullName || "",
-      role: editingUser.role || "citizen",
-      isActive: editingUser.isActive ?? true,
-      isVerified: editingUser.isVerified ?? false,
-      provinceId: editingUser.provinceId || "",
-      districtId: editingUser.districtId || "",
-      municipalityId: editingUser.municipalityId || "",
-      wardId: editingUser.wardId || "",
-      constituencyId: editingUser.constituencyId || "",
+      email: editingUser?.email || "",
+      fullName: editingUser?.fullName || "",
+      role: editingUser?.role || "citizen",
+      isActive: editingUser?.isActive ?? true,
+      isVerified: editingUser?.isVerified ?? false,
+      provinceId: editingUser?.provinceId || "",
+      districtId: editingUser?.districtId || "",
+      municipalityId: editingUser?.municipalityId || "",
+      wardId: editingUser?.wardId || "",
+      constituencyId: editingUser?.constituencyId || "",
     },
   });
 

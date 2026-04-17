@@ -9,8 +9,12 @@ import {
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { WardService } from '../services/ward.service';
 import { CreateWardDto } from '../dtos/create-ward.dto';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/user/entities/user.entity';
 
-@UseGuards(HttpAccessTokenGuard)
+@UseGuards(HttpAccessTokenGuard, RoleGuard)
+@Roles(UserRole.ADMIN)
 @Controller('admin/ward')
 export class AdminWardController {
   constructor(private readonly wardService: WardService) {}

@@ -9,8 +9,12 @@ import {
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { MunicipalityService } from '../services/municipality.service';
 import { CreateMunicipalityDto } from '../dtos/create-municipality.dto';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/user/entities/user.entity';
 
-@UseGuards(HttpAccessTokenGuard)
+@UseGuards(HttpAccessTokenGuard, RoleGuard)
+@Roles(UserRole.ADMIN)
 @Controller('admin/municipality')
 export class AdminMunicipalityController {
   constructor(private readonly municipalityService: MunicipalityService) {}

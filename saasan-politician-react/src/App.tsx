@@ -17,6 +17,7 @@ import { ProfileScreen } from "@/screens/ProfileScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import "./index.css";
+import { PERMISSIONS } from "./constants/permission.constants";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,21 +39,72 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole="politician">
                     <Layout />
                   </ProtectedRoute>
                 }
               >
                 <Route index element={<Navigate to="/" replace />} />
-                <Route path="/" element={<DashboardScreen />} />
-                <Route path="/messages" element={<MessagesScreen />} />
-                <Route path="/promises" element={<PromisesScreen />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.dashboard.view}
+                    >
+                      <DashboardScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/messages"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.messages.view}
+                    >
+                      <MessagesScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/promises"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.promises.view}
+                    >
+                      <PromisesScreen />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/announcements"
-                  element={<AnnouncementsScreen />}
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.announcements.view}
+                    >
+                      <AnnouncementsScreen />
+                    </ProtectedRoute>
+                  }
                 />
-                <Route path="/profile" element={<ProfileScreen />} />
-                <Route path="/settings" element={<SettingsScreen />} />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.profile.view}
+                    >
+                      <ProfileScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.profile.view}
+                    >
+                      <SettingsScreen />
+                    </ProtectedRoute>
+                  }
+                />
               </Route>
             </Routes>
             <Toaster

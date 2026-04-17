@@ -31,12 +31,20 @@ import { userApi } from "@/services/api";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IUser } from "@/types/user";
 import UserEditForm from "@/components/user/UserEditForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSIONS } from "@/constants/permission.constants";
+import { PermissionGate } from "@/components/PermissionGate";
 
 const initialFilter = {
   search: "",
 };
 
 export default function UsersScreen() {
+  const { hasPermission } = useAuth();
+
+  const canUpdateUser = hasPermission(PERMISSIONS.users.update);
+  const canDeleteUser = hasPermission(PERMISSIONS.users.delete);
+
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
@@ -91,6 +99,11 @@ export default function UsersScreen() {
   });
 
   const handleEdit = async (user: IUser) => {
+    if (!canUpdateUser) {
+      toast.error("You do not have permission to edit users");
+      return;
+    }
+
     try {
       setEditingUser(user);
       setShowForm(true);
@@ -101,6 +114,11 @@ export default function UsersScreen() {
   };
 
   const handleDelete = (id: string) => {
+    if (!canDeleteUser) {
+      toast.error("You do not have permission to delete users");
+      return;
+    }
+
     confirm({
       title: "Delete User",
       description:
@@ -152,18 +170,23 @@ export default function UsersScreen() {
           <p className="text-gray-600">Manage user accounts and permissions</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowUploadModal(true)}
-            disabled={uploadMutation.isPending}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload CSV
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
+          <PermissionGate permission={PERMISSIONS.users.create}>
+            <Button
+              variant="outline"
+              onClick={() => setShowUploadModal(true)}
+              disabled={uploadMutation.isPending}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload CSV
+            </Button>
+          </PermissionGate>
+
+          <PermissionGate permission={PERMISSIONS.users.create}>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -318,21 +341,25 @@ export default function UsersScreen() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(user)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(user.id)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <PermissionGate permission={PERMISSIONS.users.update}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(user)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+
+                    <PermissionGate permission={PERMISSIONS.users.delete}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(user.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
@@ -342,13 +369,19 @@ export default function UsersScreen() {
       </Card>
 
       {/* Add/Edit Form Modal */}
-      {showForm && editingUser && (
-        <UserEditForm
-          setShowForm={setShowForm}
-          editingUser={editingUser}
-          setEditingUser={setEditingUser}
-        />
-      )}
+      <PermissionGate
+        permission={
+          editingUser ? PERMISSIONS.users.update : PERMISSIONS.users.create
+        }
+      >
+        {showForm && (
+          <UserEditForm
+            editingUser={editingUser}
+            setEditingUser={setEditingUser}
+            setShowForm={setShowForm}
+          />
+        )}
+      </PermissionGate>
 
       {/* Upload Modal */}
       {showUploadModal && (
