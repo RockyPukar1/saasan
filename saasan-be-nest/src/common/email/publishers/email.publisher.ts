@@ -28,7 +28,14 @@ export class EmailPublisher {
       maxAttempts: 3,
     });
 
-    await this.kafkaService.emit(KAFKA_TOPIC_EMAIL, payload);
+    try {
+      await this.kafkaService.emit(KAFKA_TOPIC_EMAIL, payload);
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : 'email publish failed';
+      await this.jobTracker.markDeadLettered(payload.jobKey, reason);
+      throw error;
+    }
   }
 
   async publishDeadLetter(payload: FailedEmailEvent) {

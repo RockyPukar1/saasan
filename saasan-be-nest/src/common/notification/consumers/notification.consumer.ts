@@ -24,6 +24,11 @@ export class NotificationConsumer implements OnModuleInit {
       KAFKA_GROUP_NOTIFICATION,
     );
 
+    if (!consumer) {
+      this.logger.warn('Notification consumer not started because Kafka is unavailable');
+      return;
+    }
+
     await consumer.subscribe({
       topic: KAFKA_TOPIC_NOTIFICATION,
       fromBeginning: false,

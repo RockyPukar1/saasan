@@ -25,6 +25,11 @@ export class EmailConsumer implements OnModuleInit {
   async onModuleInit() {
     const consumer = await this.kafkaService.createConsumer(KAFKA_GROUP_EMAIL);
 
+    if (!consumer) {
+      this.logger.warn('Email consumer not started because Kafka is unavailable');
+      return;
+    }
+
     await consumer.subscribe({
       topic: KAFKA_TOPIC_EMAIL,
       fromBeginning: false,

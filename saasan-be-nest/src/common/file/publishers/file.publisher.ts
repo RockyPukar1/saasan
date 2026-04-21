@@ -26,7 +26,14 @@ export class FilePublisher {
       maxAttempts: 3,
     });
 
-    await this.kafkaService.emit(KAFKA_TOPIC_FILE, payload);
+    try {
+      await this.kafkaService.emit(KAFKA_TOPIC_FILE, payload);
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : 'file event publish failed';
+      await this.jobTracker.markDeadLettered(payload.jobKey, reason);
+      throw error;
+    }
   }
 
   async publishDeadLetter(payload: FailedFileEvent) {

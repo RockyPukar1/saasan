@@ -19,13 +19,29 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   private producer: Producer = this.kafka.producer();
   private consumers: Consumer[] = [];
+  private producerConnected = false;
 
   async onModuleInit() {
-    await this.producer.connect();
-    this.logger.log('Kafka producer connected');
+    try {
+      await this.ensureProducerConnected();
+    } catch (error) {
+      this.logger.warn(
+        `Kafka producer unavailable during startup; continuing without Kafka. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   async emit(topic: string, payload: Record<string, any>) {
+    const isConnected = await this.ensureProducerConnected();
+
+    if (!isConnected) {
+      throw new Error(
+        `Kafka producer is unavailable; failed to publish topic "${topic}"`,
+      );
+    }
+
     await this.producer.send({
       topic,
       messages: [
@@ -38,9 +54,19 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async createConsumer(groupId: string) {
     const consumer = this.kafka.consumer({ groupId });
-    await consumer.connect();
-    this.consumers.push(consumer);
-    return consumer;
+
+    try {
+      await consumer.connect();
+      this.consumers.push(consumer);
+      return consumer;
+    } catch (error) {
+      this.logger.warn(
+        `Kafka consumer "${groupId}" unavailable; background consumer will stay idle. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
   }
 
   async onModuleDestroy() {
@@ -48,7 +74,26 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       await consumer.disconnect();
     }
 
-    await this.producer.disconnect();
+    if (this.producerConnected) {
+      await this.producer.disconnect();
+    }
+
     this.logger.log('Kafka connections closed');
+  }
+
+  private async ensureProducerConnected() {
+    if (this.producerConnected) {
+      return true;
+    }
+
+    try {
+      await this.producer.connect();
+      this.producerConnected = true;
+      this.logger.log('Kafka producer connected');
+      return true;
+    } catch (error) {
+      this.producerConnected = false;
+      return false;
+    }
   }
 }

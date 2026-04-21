@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { EvidenceIdDto } from '../dtos/evidence-id.dto';
 import { EvidenceRepository } from '../repositories/evidence.repository';
@@ -54,6 +55,7 @@ export class EvidenceService {
     await this.evidenceRepo.addEvidence(reportIdDto, uploads);
 
     await this.filePublisher.publishEvidenceUploaded({
+      jobKey: `file:evidence-uploaded:${reportIdDto.reportId}`,
       type: FILE_EVENT_TYPES.EVIDENCE_UPLOADED,
       reportId: reportIdDto.reportId,
       retryCount: 0,
@@ -123,6 +125,7 @@ export class EvidenceService {
         await this.evidenceRepo.addEvidence(reportIdDto, uploads, session);
 
         await this.filePublisher.publishEvidenceUploaded({
+          jobKey: `file:evidence-uploaded:${reportIdDto.reportId}`,
           type: FILE_EVENT_TYPES.EVIDENCE_UPLOADED,
           reportId: reportIdDto.reportId,
           retryCount: 0,

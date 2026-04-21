@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { PASSWORD_SALT } from 'src/user/entities/user.entity';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
@@ -120,6 +121,7 @@ export class PoliticianService {
 
     if (email) {
       await this.emailPublisher.publishPoliticianAccountCreated({
+        jobKey: `email:politician-account-created:${politician._id.toString()}`,
         type: EMAIL_EVENT_TYPES.POLITICIAN_ACCOUNT_CREATED,
         to: email,
         politicianName: doesPoliticianExists.fullName,

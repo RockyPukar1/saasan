@@ -6,7 +6,7 @@ import { KafkaModule } from './common/kafka/kafka.module';
 import { JobsModule } from './common/jobs/jobs.module';
 import { NotificationModule } from './common/notification/notification.module';
 import { EmailWorkerModule } from './common/email/email.worker.module';
-import { FileModule } from './common/file/file.module';
+import { FileWorkerModule } from './common/file/file.worker.module';
 import { NotificationWorkerModule } from './common/notification/notification.worker.module';
 import { AuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -22,7 +22,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     JobsModule,
     NotificationModule,
     EmailWorkerModule,
-    FileModule,
+    FileWorkerModule,
     NotificationWorkerModule,
     AuthModule,
     DashboardModule,

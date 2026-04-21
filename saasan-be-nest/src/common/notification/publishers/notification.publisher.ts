@@ -23,7 +23,14 @@ export class NotificationPublisher {
       maxAttempts: 3,
     });
 
-    await this.kafkaService.emit(KAFKA_TOPIC_NOTIFICATION, payload);
+    try {
+      await this.kafkaService.emit(KAFKA_TOPIC_NOTIFICATION, payload);
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : 'notification publish failed';
+      await this.jobTracker.markDeadLettered(payload.jobKey, reason);
+      throw error;
+    }
   }
 
   async publishDeadLetter(payload: Record<string, unknown>) {
