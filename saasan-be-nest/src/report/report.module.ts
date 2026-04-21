@@ -42,6 +42,7 @@ import { AdminReportController } from './controllers/admin-report.controller';
 import { ReportToMessageService } from './services/report-to-message.service';
 import { PoliticsModule } from 'src/politics/politics.module';
 import { MessageModule } from 'src/message/message.module';
+import { FileModule } from 'src/common/file/file.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { MessageModule } from 'src/message/message.module';
     TransactionModule,
     PoliticsModule,
     MessageModule,
+    FileModule,
   ],
   controllers: [
     ReportController,

@@ -7,6 +7,8 @@ import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { getFileType } from 'src/common/helpers/file-type.helper';
 import { ClientSession, Types } from 'mongoose';
 import { TransactionRunner } from 'src/common/transaction/runners/transaction.runner';
+import { FilePublisher } from 'src/common/file/publishers/file.publisher';
+import { FILE_EVENT_TYPES } from 'src/common/file/events/file.events';
 
 @Injectable()
 export class EvidenceService {
@@ -14,6 +16,7 @@ export class EvidenceService {
     private cloudinaryService: CloudinaryService,
     private evidenceRepo: EvidenceRepository,
     private tx: TransactionRunner,
+    private filePublisher: FilePublisher,
   ) {}
 
   async getEvidencesByReport(reportIdDto: ReportIdDto) {
@@ -48,15 +51,21 @@ export class EvidenceService {
       uploads.push(evidence);
     }
 
-    console.log('Final uploads array:', uploads);
-    console.log('Type of uploads[0]:', typeof uploads[0]);
+    await this.evidenceRepo.addEvidence(reportIdDto, uploads);
 
-    await this.tx.run<boolean>(async (session: ClientSession) => {
-      await this.evidenceRepo.addEvidence(reportIdDto, uploads, session);
-      return false;
+    await this.filePublisher.publishEvidenceUploaded({
+      type: FILE_EVENT_TYPES.EVIDENCE_UPLOADED,
+      reportId: reportIdDto.reportId,
+      retryCount: 0,
+      files: uploads.map((item) => ({
+        originalName: item.originalName,
+        mimeType: item.mimeType,
+        fileSize: item.fileSize,
+        fileType: item.fileType,
+        filePath: item.filePath,
+        cloudinaryPublicId: item.cloudinaryPublicId,
+      })),
     });
-
-    console.log('Evidence uploaded successfully');
   }
 
   async updateEvidence(
@@ -112,9 +121,23 @@ export class EvidenceService {
         }
 
         await this.evidenceRepo.addEvidence(reportIdDto, uploads, session);
+
+        await this.filePublisher.publishEvidenceUploaded({
+          type: FILE_EVENT_TYPES.EVIDENCE_UPLOADED,
+          reportId: reportIdDto.reportId,
+          retryCount: 0,
+          files: uploads.map((item) => ({
+            originalName: item.originalName,
+            mimeType: item.mimeType,
+            fileSize: item.fileSize,
+            fileType: item.fileType,
+            filePath: item.filePath,
+            cloudinaryPublicId: item.cloudinaryPublicId,
+          })),
+        });
       }
 
-      return false;
+      return true;
     });
   }
 

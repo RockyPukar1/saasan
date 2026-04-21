@@ -7,6 +7,7 @@ import {
   AuthSessionEntitySchema,
 } from './entities/auth-session.entity';
 import { AuthSessionRepository } from './repositories/auth-session.repository';
+import { AuthSessionCleanupService } from './services/auth-session-cleanup.service';
 
 @Global()
 @Module({
@@ -19,7 +20,7 @@ import { AuthSessionRepository } from './repositories/auth-session.repository';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthSessionRepository],
+  providers: [AuthService, AuthSessionRepository, AuthSessionCleanupService],
   exports: [AuthSessionRepository],
 })
 export class AuthModule {}

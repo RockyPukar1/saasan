@@ -21,10 +21,16 @@ import { ReportSeederModule } from './common/seeders/report/report-seeder.module
 import { CacheModule } from './common/cache/cache.module';
 import { MessageModule } from './message/message.module';
 import { RolePermissionModule } from './role-permission/role-permission.module';
+import { KafkaModule } from './common/kafka/kafka.module';
+import { JobsModule } from './common/jobs/jobs.module';
+import { NotificationModule } from './common/notification/notification.module';
 
 @Module({
   imports: [
     CacheModule,
+    KafkaModule,
+    JobsModule,
+    NotificationModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
