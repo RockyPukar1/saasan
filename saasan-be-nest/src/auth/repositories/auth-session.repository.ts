@@ -117,4 +117,25 @@ export class AuthSessionRepository {
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 });
   }
+
+  async revokeExpiredSessions() {
+    const now = new Date();
+
+    const result = await this.model.updateMany(
+      {
+        isActive: true,
+        revokedAt: null,
+        expiresAt: { $lt: now },
+      },
+      {
+        $set: {
+          isActive: false,
+          revokedAt: now,
+          revokedReason: RevokeSessionReason.REFRESH_TOKEN_EXPIRED,
+        },
+      },
+    );
+
+    return result.modifiedCount || 0;
+  }
 }

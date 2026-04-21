@@ -13,15 +13,15 @@ import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 import { generateRandomPassword } from 'src/common/helpers/generate-password.helper';
 import { PoliticianAccountRepository } from '../repositories/politician-account.repository';
 import { AuthHelper } from 'src/common/helpers/auth.helper';
-import { EmailTemplateFactory } from 'src/common/email/templates/template.factory';
-import { EmailService } from 'src/common/email/services/email.service';
+import { EmailPublisher } from 'src/common/email/publishers/email.publisher';
+import { EMAIL_EVENT_TYPES } from 'src/common/email/events/email.events';
 
 @Injectable()
 export class PoliticianService {
   constructor(
     private readonly politicianRepo: PoliticianRepository,
     private readonly politicianAccountRepo: PoliticianAccountRepository,
-    private readonly emailService: EmailService,
+    private readonly emailPublisher: EmailPublisher,
   ) {}
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {
@@ -119,15 +119,12 @@ export class PoliticianService {
     const email = doesPoliticianExists.contact.email;
 
     if (email) {
-      const emailTemplate = EmailTemplateFactory.createPoliticianAccountEmail({
-        politicianName: doesPoliticianExists.fullName,
-        email: email,
-        password: randomPassword,
-      });
-      await this.emailService.sendEmail({
+      await this.emailPublisher.publishPoliticianAccountCreated({
+        type: EMAIL_EVENT_TYPES.POLITICIAN_ACCOUNT_CREATED,
         to: email,
-        subject: emailTemplate.subject,
-        html: emailTemplate.html,
+        politicianName: doesPoliticianExists.fullName,
+        password: randomPassword,
+        retryCount: 0,
       });
     }
 

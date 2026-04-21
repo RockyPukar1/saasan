@@ -20,7 +20,7 @@ export class EvidenceRepository {
   async addEvidence(
     { reportId }: ReportIdDto,
     evidences: any,
-    session: ClientSession,
+    session?: ClientSession,
   ) {
     return await this.model.updateOne(
       { reportId: new Types.ObjectId(reportId) },
@@ -41,10 +41,12 @@ export class EvidenceRepository {
   async removeEvidence(
     { reportId }: ReportIdDto,
     { evidenceId }: EvidenceIdDto,
+    session?: ClientSession,
   ) {
     return this.model.updateOne(
       { reportId: new Types.ObjectId(reportId) },
       { $pull: { evidences: { _id: new Types.ObjectId(evidenceId) } } },
+      { session },
     );
   }
 }

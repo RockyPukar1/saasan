@@ -7,6 +7,7 @@ export enum RevokeSessionReason {
   REVOKE_ALL_EXCEPT_CURRENT = 'REVOKE_ALL_EXCEPT_CURRENT',
   REVOKE_ALL_SESSIONS = 'REVOKE_ALL_SESSIONS',
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
+  REFRESH_TOKEN_EXPIRED = 'REFRESH_TOKEN_EXPIRED',
   REFRESH_TOKEN_ROTATED = 'REFRESH_TOKEN_ROTATED',
   REFRESH_TOKEN_MISMATCH = 'REFRESH_TOKEN_MISMATCH',
 }
@@ -31,8 +32,8 @@ export class AuthSessionEntity {
   @Prop({ type: Date })
   revokedAt?: Date;
 
-  @Prop({ type: String, enum: RevokeSessionReason, default: null })
-  revokedReason?: RevokeSessionReason | null;
+  @Prop({ type: String, enum: RevokeSessionReason })
+  revokedReason?: RevokeSessionReason;
 
   @Prop({ type: Date })
   lastUsedAt?: Date;
