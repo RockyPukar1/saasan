@@ -197,11 +197,89 @@ export class ReportRepository {
   }
 
   async getResolvedReportsCount() {
-    return await this.countDocuments({ status: 'resolved' });
+    return await this.countDocuments({ isResolved: true });
   }
 
   async getRecentReports() {
     return await this.model.find().sort({ createdAt: -1 }).limit(5);
+  }
+
+  async getLevelBreakdown() {
+    return await this.model.aggregate([
+      {
+        $group: {
+          _id: {
+            $ifNull: ['$reportLevel', 'unknown'],
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          label: '$_id',
+          count: 1,
+        },
+      },
+      {
+        $sort: { count: -1, label: 1 },
+      },
+    ]);
+  }
+
+  async getStatusBreakdown() {
+    return await this.model.aggregate([
+      {
+        $group: {
+          _id: {
+            $cond: [{ $eq: ['$isResolved', true] }, 'resolved', 'open'],
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          label: '$_id',
+          count: 1,
+        },
+      },
+      {
+        $sort: { label: 1 },
+      },
+    ]);
+  }
+
+  async getVolumeTrend(days = 7) {
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - (days - 1));
+
+    return await this.model.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          count: 1,
+        },
+      },
+      {
+        $sort: { date: 1 },
+      },
+    ]);
   }
 
   async getStatsByCategory() {

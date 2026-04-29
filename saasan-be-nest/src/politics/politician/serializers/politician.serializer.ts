@@ -25,6 +25,9 @@ export class AchievementSerializer {
 }
 export class PoliticianSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.toString?.() || obj.userId)
+  userId?: string;
   @Expose() fullName: string;
   @Expose() biography: string;
   @Expose()
@@ -41,6 +44,8 @@ export class PoliticianSerializer {
   @Expose() totalReports: number;
   @Expose() totalVotes: number;
   @Expose() verifiedReports: number;
+  @Expose() hasAccount?: boolean;
+  @Expose() accountCreatedAt?: Date;
   @Expose()
   @Type(() => SourceCategoriesDto)
   sourceCategories: SourceCategoriesDto;

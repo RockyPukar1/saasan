@@ -43,10 +43,13 @@ export class HttpAccessTokenGuard implements CanActivate {
         id: payload.id,
         email: payload.email,
         role: payload.role,
+        politicianId: payload.politicianId,
         sessionId: payload.sessionId,
-      };
+      } as any;
 
-      await this.authSessionRepo.updateLastUsed(payload.sessionId);
+      await this.authSessionRepo.updateLastUsed({
+        sessionId: payload.sessionId,
+      });
     } catch (error) {
       throw new UnauthorizedException();
     }

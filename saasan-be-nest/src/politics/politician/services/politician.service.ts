@@ -1,5 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { PASSWORD_SALT } from 'src/user/entities/user.entity';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
@@ -12,17 +11,20 @@ import { PoliticianSerializer } from '../serializers/politician.serializer';
 import { PoliticianIdDto } from '../dtos/politician-id.dto';
 import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 import { generateRandomPassword } from 'src/common/helpers/generate-password.helper';
-import { PoliticianAccountRepository } from '../repositories/politician-account.repository';
-import { AuthHelper } from 'src/common/helpers/auth.helper';
 import { EmailPublisher } from 'src/common/email/publishers/email.publisher';
 import { EMAIL_EVENT_TYPES } from 'src/common/email/events/email.events';
+import { UserRepository } from 'src/user/repositories/user.repository';
+import { UserRole } from 'src/user/entities/user.entity';
+import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
+import { UserSerializer } from 'src/user/serializers/user.serializer';
 
 @Injectable()
 export class PoliticianService {
   constructor(
     private readonly politicianRepo: PoliticianRepository,
-    private readonly politicianAccountRepo: PoliticianAccountRepository,
     private readonly emailPublisher: EmailPublisher,
+    private readonly userRepo: UserRepository,
+    private readonly redisCache: RedisCacheService,
   ) {}
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {
@@ -104,24 +106,49 @@ export class PoliticianService {
       throw new GlobalHttpException('politician404', HttpStatus.NOT_FOUND);
     }
 
+    const email = doesPoliticianExists.contact?.email?.trim().toLowerCase();
+
+    if (!email) {
+      throw new Error(
+        'Politician must have an email before creating an account',
+      );
+    }
+
+    const existingUserByEmail = await this.userRepo.findOne({ email });
+
+    if (doesPoliticianExists.userId) {
+      throw new GlobalHttpException(
+        'userAlreadyExistsWithEmail',
+        HttpStatus.AMBIGUOUS,
+      );
+    }
+
+    if (existingUserByEmail) {
+      throw new GlobalHttpException(
+        'userAlreadyExistsWithEmail',
+        HttpStatus.AMBIGUOUS,
+      );
+    }
+
     const randomPassword = generateRandomPassword();
     const hashedPassword = await bcrypt.hash(randomPassword, PASSWORD_SALT);
 
-    const politician = await this.politicianAccountRepo.create({
-      politicianId,
+    const user = await this.userRepo.create({
+      email,
       password: hashedPassword,
-      accountCreatedAt: new Date(),
+      role: UserRole.POLITICIAN,
+      isVerified: true,
     });
 
-    const accessToken = AuthHelper.generateToken(politician);
-    const refreshToken = AuthHelper.generateRefreshToken({
-      userId: politician._id.toString(),
+    await this.politicianRepo.findByIdAndUpdate(politicianId, {
+      userId: user._id,
     });
-    const email = doesPoliticianExists.contact.email;
+
+    await this.redisCache.del('users:*');
 
     if (email) {
       await this.emailPublisher.publishPoliticianAccountCreated({
-        jobKey: `email:politician-account-created:${politician._id.toString()}`,
+        jobKey: `email:politician-account-created:${user._id.toString()}`,
         type: EMAIL_EVENT_TYPES.POLITICIAN_ACCOUNT_CREATED,
         to: email,
         politicianName: doesPoliticianExists.fullName,
@@ -132,9 +159,10 @@ export class PoliticianService {
 
     return ResponseHelper.success(
       {
-        politician,
-        accessToken,
-        refreshToken,
+        user: UserSerializer.toPayload(
+          { ...user.toObject(), politicianId },
+          doesPoliticianExists,
+        ),
       },
       'Politician account created successfully',
     );

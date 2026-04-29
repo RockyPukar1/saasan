@@ -3,7 +3,6 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -44,9 +43,8 @@ function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/" replace />} />
                 <Route
-                  path="/"
+                  index
                   element={
                     <ProtectedRoute
                       requiredPermission={PERMISSIONS.dashboard.view}

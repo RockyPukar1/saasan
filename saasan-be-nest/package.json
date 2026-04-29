@@ -10,6 +10,8 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "start:worker": "nest start --entryFile worker",
+    "start:worker:dev": "nest start --watch --entryFile worker",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -19,6 +21,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:smart": "pnpm seed:location && pnpm seed:report && pnpm seed:politics && pnpm seed:poll && pnpm seed:event",
+    "seed:fake-data": "nest start --entryFile common/seeders/seed-all",
+    "reset:fake-data": "nest start --entryFile common/seeders/reset-fake-data",
+    "seed:all-fake": "pnpm seed:fake-data",
     "seed:location": "nest start --entryFile common/seeders/location/seed-location",
     "seed:report": "nest start --entryFile common/seeders/report/seed-report",
     "seed:politics": "nest start --entryFile common/seeders/politics/seed-politics",
@@ -90,6 +95,9 @@
       "ts"
     ],
     "rootDir": "src",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    },
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"

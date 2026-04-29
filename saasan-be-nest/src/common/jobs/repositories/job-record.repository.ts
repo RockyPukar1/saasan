@@ -121,6 +121,16 @@ export class JobRecordRepository {
       .limit(limit);
   }
 
+  async findStalePending(limit = 50, olderThanMs = 30_000) {
+    return await this.model
+      .find({
+        status: JobRecordStatus.PENDING,
+        createdAt: { $lte: new Date(Date.now() - olderThanMs) },
+      })
+      .sort({ createdAt: 1 })
+      .limit(limit);
+  }
+
   async findFailedJobs() {
     return await this.model
       .find({ status: JobRecordStatus.DEAD_LETTERED })

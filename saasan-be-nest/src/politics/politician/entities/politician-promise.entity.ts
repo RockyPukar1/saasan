@@ -10,7 +10,7 @@ export enum PoliticianPromiseStatus {
 
 @Schema({ timestamps: true, collection: PoliticianPromiseEntity.collection })
 export class PoliticianPromiseEntity {
-  static readonly collection = 'politician-promises';
+  static readonly collection = 'politician_promises';
   _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

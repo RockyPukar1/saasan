@@ -20,12 +20,16 @@ export class NotificationConsumer implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    this.logger.log('Starting notification consumer');
+
     const consumer = await this.kafkaService.createConsumer(
       KAFKA_GROUP_NOTIFICATION,
     );
 
     if (!consumer) {
-      this.logger.warn('Notification consumer not started because Kafka is unavailable');
+      this.logger.warn(
+        'Notification consumer not started because Kafka is unavailable',
+      );
       return;
     }
 
@@ -33,6 +37,10 @@ export class NotificationConsumer implements OnModuleInit {
       topic: KAFKA_TOPIC_NOTIFICATION,
       fromBeginning: false,
     });
+
+    this.logger.log(
+      `Notification consumer subscribed group=${KAFKA_GROUP_NOTIFICATION} topic=${KAFKA_TOPIC_NOTIFICATION}`,
+    );
 
     await consumer.run({
       eachMessage: async ({ topic, message }) => {

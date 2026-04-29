@@ -84,8 +84,10 @@ export const DashboardLayout: React.FC = () => {
     navigate("/login");
   };
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f6f8fc]">
       {/* Mobile sidebar */}
       <div
         className={`fixed inset-0 z-50 lg:hidden ${
@@ -93,22 +95,41 @@ export const DashboardLayout: React.FC = () => {
         }`}
       >
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75"
-          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm"
+          onClick={closeSidebar}
         />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
-          <div className="flex h-16 items-center justify-between px-4 bg-saasan-red">
-            <h1 className="text-xl font-bold text-white">Saasan Admin</h1>
+        <div className="fixed inset-y-0 left-0 flex w-[20rem] max-w-[88vw] flex-col bg-white shadow-2xl">
+          <div className="border-b border-red-100 bg-gradient-to-br from-red-700 via-red-600 to-orange-500 px-5 py-6 text-white">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-100">
+                  Admin Portal
+                </p>
+                <h1 className="text-2xl font-bold text-white">Saasan</h1>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+              <p className="text-sm text-red-50">Signed in as</p>
+              <p className="mt-1 text-base font-semibold">
+                {user?.fullName || "Administrator"}
+              </p>
+              <p className="mt-1 text-sm text-red-100">
+                Manage platform data, moderation, access, and system settings.
+              </p>
+            </div>
+          </div>
+          <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4">
+            <p className="text-sm font-medium text-slate-600">Navigation</p>
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-red-500"
-              onClick={() => setSidebarOpen(false)}
+              className="text-slate-600 hover:bg-slate-100"
+              onClick={closeSidebar}
             >
               <X className="h-6 w-6" />
             </Button>
           </div>
-          <nav className="flex-1 px-4 py-4 space-y-2">
+          <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
             {navigation.map((item) => {
               const isActive = currentPath === item.href;
               const hasChildren = item.children && item.children.length > 0;
@@ -121,7 +142,7 @@ export const DashboardLayout: React.FC = () => {
                 <div key={item.name}>
                   <Button
                     variant={isActive || isChildActive ? "default" : "ghost"}
-                    className="w-full justify-start"
+                    className="w-full justify-start rounded-xl"
                     onClick={() => {
                       handleNavigation(item.name, item.href);
                     }}
@@ -140,10 +161,10 @@ export const DashboardLayout: React.FC = () => {
                           <Button
                             key={child.name}
                             variant={childIsActive ? "default" : "ghost"}
-                            className="w-full justify-start pl-2"
+                            className="w-full justify-start rounded-xl pl-2"
                             onClick={() => {
                               navigate(child.href);
-                              setSidebarOpen(false);
+                              closeSidebar();
                             }}
                           >
                             <ChevronRight className="mr-2 h-4 w-4" />
@@ -261,17 +282,26 @@ export const DashboardLayout: React.FC = () => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Mobile header */}
-        <div className="lg:hidden flex h-16 items-center justify-between px-4 bg-saasan-red border-b border-red-600">
+        <div className="lg:hidden border-b border-red-100 bg-white/90 px-4 py-3 backdrop-blur">
+          <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-red-500"
+            className="text-slate-700 hover:bg-slate-100"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </Button>
-          <h1 className="text-lg font-semibold text-white">Saasan Admin</h1>
+            <div className="text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-500">
+                Admin Portal
+              </p>
+              <h1 className="text-lg font-semibold text-slate-900">
+                Saasan
+              </h1>
+            </div>
           <div className="h-8 w-8" /> {/* Spacer */}
+          </div>
         </div>
 
         {/* Page content */}

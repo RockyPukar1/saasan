@@ -12,6 +12,9 @@ import {
   MessageStatus,
 } from '../entities/message.entity';
 import { UpdateMessageDto } from '../dtos/update-message.dto';
+import { MessageEntrySenderType } from '../entities/message.entity';
+import { ReportIdDto } from 'src/report/dtos/report-id.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class MessageService {
@@ -60,11 +63,30 @@ export class MessageService {
     if (!message)
       throw new GlobalHttpException('message404', HttpStatus.NOT_FOUND);
 
-    // Verify politician has access to this message
-    const hasAccess = await this.validateMessageAccess(
-      message,
-      politicianIdDto,
-    );
+    const hasAccess = await this.validateMessageAccess(message, {
+      politicianId: politicianIdDto.politicianId,
+    });
+
+    if (!hasAccess)
+      throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
+
+    return message;
+  }
+
+  async findBySourceReport(
+    reportIdDto: ReportIdDto,
+    actor: {
+      role: string;
+      userId: string;
+      politicianId?: string;
+    },
+  ) {
+    const message = await this.messageRepo.findOneBySourceReport(reportIdDto);
+
+    if (!message)
+      throw new GlobalHttpException('message404', HttpStatus.NOT_FOUND);
+
+    const hasAccess = await this.validateMessageAccess(message, actor);
 
     if (!hasAccess)
       throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
@@ -82,11 +104,9 @@ export class MessageService {
     if (!message)
       throw new GlobalHttpException('message404', HttpStatus.NOT_FOUND);
 
-    // Verify politician has access to this message
-    const hasAccess = await this.validateMessageAccess(
-      message,
-      politicianIdDto,
-    );
+    const hasAccess = await this.validateMessageAccess(message, {
+      politicianId: politicianIdDto.politicianId,
+    });
 
     if (!hasAccess)
       throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
@@ -97,23 +117,68 @@ export class MessageService {
   async addMessageToThread(
     messageIdDto: MessageIdDto,
     messageEntry: MessageEntry,
-    politicianIdDto: PoliticianIdDto,
+    actor: {
+      role: string;
+      userId: string;
+      politicianId?: string;
+    },
   ) {
     const message = await this.messageRepo.findOne(messageIdDto);
 
     if (!message)
       throw new GlobalHttpException('message404', HttpStatus.NOT_FOUND);
 
-    // Verify politician has access to this message
-    const hasAccess = await this.validateMessageAccess(
-      message,
-      politicianIdDto,
-    );
+    const hasAccess = await this.validateMessageAccess(message, actor);
 
     if (!hasAccess)
       throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
 
     return this.messageRepo.addMessageToThread(messageIdDto, messageEntry);
+  }
+
+  async addReply(
+    messageIdDto: MessageIdDto,
+    reply: {
+      content: string;
+      attachments?: Array<{
+        fileName: string;
+        fileType: string;
+        fileUrl: string;
+      }>;
+    },
+    actor: {
+      role: string;
+      userId: string;
+      politicianId?: string;
+    },
+  ) {
+    const senderType =
+      actor.role === 'politician'
+        ? MessageEntrySenderType.POLITICIAN
+        : actor.role === 'admin'
+          ? MessageEntrySenderType.STAFF
+          : MessageEntrySenderType.CITIZEN;
+
+    await this.addMessageToThread(
+      messageIdDto,
+      {
+        _id: new Types.ObjectId(),
+        senderId: new Types.ObjectId(actor.politicianId || actor.userId),
+        senderType,
+        content: reply.content,
+        attachments:
+          reply.attachments?.map((attachment) => ({
+            _id: new Types.ObjectId(),
+            ...attachment,
+            uploadedBy: actor.userId,
+            uploadedAt: new Date(),
+          })) || [],
+        isInternal: actor.role === 'admin',
+      },
+      actor,
+    );
+
+    return this.messageRepo.findOne(messageIdDto);
   }
 
   async getMessagesByJurisdiction(policianIdDto: PoliticianIdDto) {
@@ -144,8 +209,18 @@ export class MessageService {
 
   private async validateMessageAccess(
     message: MessageEntity,
-    { politicianId }: PoliticianIdDto,
+    actor: {
+      role?: string;
+      userId?: string;
+      politicianId?: string;
+    },
   ) {
-    return message.participants.politician.id.toString() === politicianId;
+    if (actor.role === 'admin') return true;
+
+    if (actor.role === 'citizen') {
+      return message.participants.citizen.id.toString() === actor.userId;
+    }
+
+    return message.participants.politician.id.toString() === actor.politicianId;
   }
 }

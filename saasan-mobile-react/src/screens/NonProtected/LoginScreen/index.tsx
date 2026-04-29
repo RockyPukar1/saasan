@@ -14,7 +14,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password);
       navigate("/");
     } catch (error) {
       // Alert.alert(
@@ -59,6 +59,7 @@ export default function LoginScreen() {
                     </p>
                   </div>
                   <Input
+                    type="email"
                     className="border-gray-300 focus:border-red-500 focus:ring-red-500 h-10"
                     placeholder="Enter your email"
                     value={email}

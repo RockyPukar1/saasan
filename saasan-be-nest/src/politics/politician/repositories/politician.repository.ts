@@ -30,7 +30,7 @@ export class PoliticianRepository {
 
       // 2. Create promises if provided
       if (politicianData.promises && politicianData.promises.length > 0) {
-        await this.model.db.collection('politician-promises').insertOne(
+        await this.model.db.collection('politician_promises').insertOne(
           {
             politicianId,
             promises: politicianData.promises,
@@ -44,7 +44,7 @@ export class PoliticianRepository {
         politicianData.achievements &&
         politicianData.achievements.length > 0
       ) {
-        await this.model.db.collection('politician-achievements').insertOne(
+        await this.model.db.collection('politician_achievements').insertOne(
           {
             politicianId,
             achievements: politicianData.achievements,
@@ -103,7 +103,7 @@ export class PoliticianRepository {
         },
         {
           $lookup: {
-            from: 'politician-promises',
+            from: 'politician_promises',
             localField: '_id',
             foreignField: 'politicianId',
             as: 'promisesData',
@@ -111,10 +111,18 @@ export class PoliticianRepository {
         },
         {
           $lookup: {
-            from: 'politician-achievements',
+            from: 'politician_achievements',
             localField: '_id',
             foreignField: 'politicianId',
             as: 'achievementsData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'accountData',
           },
         },
         {
@@ -142,6 +150,12 @@ export class PoliticianRepository {
             achievements: {
               $arrayElemAt: ['$achievementsData.achievements', 0],
             },
+            hasAccount: {
+              $gt: [{ $size: '$accountData' }, 0],
+            },
+            accountCreatedAt: {
+              $arrayElemAt: ['$accountData.createdAt', 0],
+            },
           },
         },
         {
@@ -151,6 +165,7 @@ export class PoliticianRepository {
             levelData: 0,
             promisesData: 0,
             achievementsData: 0,
+            accountData: 0,
           },
         },
       ])
@@ -196,6 +211,14 @@ export class PoliticianRepository {
           as: 'levelData',
         },
       },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'accountData',
+        },
+      },
       ...(hasFilters
         ? [
             {
@@ -228,6 +251,12 @@ export class PoliticianRepository {
               },
             },
           },
+          hasAccount: {
+            $gt: [{ $size: '$accountData' }, 0],
+          },
+          accountCreatedAt: {
+            $arrayElemAt: ['$accountData.createdAt', 0],
+          },
         },
       },
       {
@@ -235,6 +264,7 @@ export class PoliticianRepository {
           partyData: 0,
           positionData: 0,
           levelData: 0,
+          accountData: 0,
         },
       },
     ]);
@@ -246,7 +276,7 @@ export class PoliticianRepository {
 
   async findByIdAndUpdate(
     politicianId: string,
-    politicianData: UpdatePoliticianDto,
+    politicianData: UpdatePoliticianDto | Record<string, any>,
   ) {
     return await this.model.findByIdAndUpdate(politicianId, politicianData, {
       lean: true,
@@ -382,6 +412,14 @@ export class PoliticianRepository {
         },
       },
       {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'accountData',
+        },
+      },
+      {
         $addFields: {
           sourceCategories: {
             party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
@@ -400,6 +438,12 @@ export class PoliticianRepository {
               },
             },
           },
+          hasAccount: {
+            $gt: [{ $size: '$accountData' }, 0],
+          },
+          accountCreatedAt: {
+            $arrayElemAt: ['$accountData.createdAt', 0],
+          },
         },
       },
       {
@@ -407,6 +451,7 @@ export class PoliticianRepository {
           partyData: 0,
           positionData: 0,
           levelData: 0,
+          accountData: 0,
         },
       },
     ]);

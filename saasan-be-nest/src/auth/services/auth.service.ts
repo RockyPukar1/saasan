@@ -1,4 +1,4 @@
-import { Global, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { UserRepository } from 'src/user/repositories/user.repository';
 import { RegisterUserDto } from '../dtos/register.dto';
@@ -18,6 +18,12 @@ import { Types } from 'mongoose';
 import { AuthSessionSerializer } from '../serializers/auth-session.serializer';
 import { PermissionHelper } from 'src/common/helpers/permission.helper';
 import { RolePermissionService } from '../../role-permission/services/role-permission.service';
+import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
+import { UserRole } from 'src/user/entities/user.entity';
+import { CitizenRepository } from 'src/user/repositories/citizen.repository';
+import { AdminRepository } from 'src/user/repositories/admin.repository';
+import { UserSerializer } from 'src/user/serializers/user.serializer';
+import { AuthPayloadSerializer } from '../serializers/auth-payload.serializer';
 
 @Injectable()
 export class AuthService {
@@ -26,11 +32,23 @@ export class AuthService {
     private readonly redisCache: RedisCacheService,
     private readonly authSessionRepo: AuthSessionRepository,
     private readonly rolePermissionService: RolePermissionService,
+    private readonly politicianRepo: PoliticianRepository,
+    private readonly citizenRepo: CitizenRepository,
+    private readonly adminRepo: AdminRepository,
   ) {}
 
-  async register(userData: RegisterUserDto, meta?: UserMetaDto) {
+  async registerCitizen(userData: RegisterUserDto, meta?: UserMetaDto) {
+    return this.register(userData, UserRole.CITIZEN, meta);
+  }
+
+  async register(
+    userData: RegisterUserDto,
+    role: UserRole = UserRole.CITIZEN,
+    meta?: UserMetaDto,
+  ) {
+    const email = userData.email.trim().toLowerCase();
     const doesUserExists = await this.doesUserExists({
-      email: userData.email,
+      email,
     }).lean();
     if (doesUserExists) {
       throw new GlobalHttpException(
@@ -40,40 +58,93 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(userData.password, PASSWORD_SALT);
-    userData.password = hashedPassword;
+    const {
+      fullName,
+      provinceId,
+      districtId,
+      constituencyId,
+      municipalityId,
+      wardId,
+    } = userData;
 
-    const user = await this.userRepo.create(userData);
+    const user = await this.userRepo.create({
+      email,
+      password: hashedPassword,
+      role,
+    });
+
+    if (role === UserRole.CITIZEN) {
+      await this.citizenRepo.create({
+        userId: user._id,
+        fullName,
+        provinceId: new Types.ObjectId(provinceId),
+        districtId: new Types.ObjectId(districtId),
+        constituencyId: new Types.ObjectId(constituencyId),
+        municipalityId: new Types.ObjectId(municipalityId),
+        wardId: new Types.ObjectId(wardId),
+      });
+    }
 
     this.userRepo.updateLastActive(user._id.toString());
     await this.redisCache.del('users:*');
 
-    const permissions = await this.rolePermissionService.getPermissionsByRole(
-      user.role,
-    );
-    const nestedPermissions = PermissionHelper.toNestedPermissions(
-      permissions.permissions,
-    );
-
-    const tokens = await this.createSessionAndTokens(user, {
-      ipAddress: meta?.ipAddress,
-      userAgent: meta?.userAgent,
-    });
-
-    return ResponseHelper.success(
-      {
-        user,
-        permissions: permissions.permissions,
-        nestedPermissions,
-        ...tokens,
-      },
-      'User registered successfully',
-    );
+    return this.buildAuthResponse(user, meta, 'User registered successfully');
   }
 
   async login({ email, password }: LoginUserDto, meta?: UserMetaDto) {
-    const user = await this.doesUserExists({ email }).lean();
+    return this.loginForRole({ email, password }, meta);
+  }
+
+  async loginAdmin(loginData: LoginUserDto, meta?: UserMetaDto) {
+    return this.loginForRole(loginData, meta, UserRole.ADMIN);
+  }
+
+  async loginCitizen(loginData: LoginUserDto, meta?: UserMetaDto) {
+    return this.loginForRole(loginData, meta, UserRole.CITIZEN);
+  }
+
+  async loginPolitician({ email, password }: LoginUserDto, meta?: UserMetaDto) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.userRepo.findOne({ email: normalizedEmail }).lean();
+    if (!user || user.role !== UserRole.POLITICIAN)
+      throw new GlobalHttpException('invalidCredentials', HttpStatus.NOT_FOUND);
+
+    const isValidPassword = await AuthHelper.comparePassword(
+      password,
+      user.password || '',
+    );
+    if (!isValidPassword)
+      throw new GlobalHttpException('invalidCredentials', HttpStatus.NOT_FOUND);
+
+    const politician = await this.politicianRepo
+      .findOne({ userId: new Types.ObjectId(user._id.toString()) })
+      .lean();
+    if (!politician)
+      throw new GlobalHttpException('invalidCredentials', HttpStatus.NOT_FOUND);
+
+    await this.userRepo.updateLastActive(user._id.toString());
+
+    return this.buildAuthResponse(
+      { ...user, politicianId: politician._id.toString() },
+      meta,
+      'User logged in successfully',
+    );
+  }
+
+  private async loginForRole(
+    { email, password }: LoginUserDto,
+    meta?: UserMetaDto,
+    role?: UserRole,
+  ) {
+    const user = await this.doesUserExists({
+      email: email.trim().toLowerCase(),
+    }).lean();
     if (!user) {
       throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+    }
+
+    if (role && user.role !== role) {
+      throw new GlobalHttpException('invalidCredentials', HttpStatus.NOT_FOUND);
     }
 
     const isValidPassword = await AuthHelper.comparePassword(
@@ -85,28 +156,7 @@ export class AuthService {
     }
 
     this.userRepo.updateLastActive(user._id.toString());
-
-    const permissions = await this.rolePermissionService.getPermissionsByRole(
-      user.role,
-    );
-    const nestedPermissions = PermissionHelper.toNestedPermissions(
-      permissions.permissions,
-    );
-
-    const tokens = await this.createSessionAndTokens(user, {
-      ipAddress: meta?.ipAddress,
-      userAgent: meta?.userAgent,
-    });
-
-    return ResponseHelper.success(
-      {
-        user,
-        permissions: permissions.permissions,
-        nestedPermissions,
-        ...tokens,
-      },
-      'User logged in successfully',
-    );
+    return this.buildAuthResponse(user, meta, 'User logged in successfully');
   }
 
   async refreshToken({ refreshToken }: RefreshTokenDto, meta?: UserMetaDto) {
@@ -179,28 +229,46 @@ export class AuthService {
       RevokeSessionReason.REFRESH_TOKEN_ROTATED,
     );
 
-    const tokens = await this.createSessionAndTokens(user, {
-      ipAddress: session.ipAddress,
-      userAgent: session.userAgent,
-    });
-
     await this.userRepo.updateLastActive(user._id.toString());
 
+    return this.buildAuthResponse(
+      user,
+      {
+        ipAddress: meta?.ipAddress || session.ipAddress,
+        userAgent: meta?.userAgent || session.userAgent,
+      },
+      'Token refreshed successfully',
+    );
+  }
+
+  private async buildAuthResponse(
+    user: any,
+    meta?: UserMetaDto,
+    message = 'Success',
+  ) {
+    const { authUser, profile } = await this.withRoleContext(user);
     const permissions = await this.rolePermissionService.getPermissionsByRole(
-      user.role,
+      authUser.role,
     );
     const nestedPermissions = PermissionHelper.toNestedPermissions(
       permissions.permissions,
     );
 
-    return ResponseHelper.success(
+    const tokens = await this.createSessionAndTokens(authUser, {
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
+    return ResponseHelper.response(
+      AuthPayloadSerializer,
       {
-        user,
+        user: UserSerializer.toPayload(authUser, profile),
+        profile,
         permissions: permissions.permissions,
         nestedPermissions,
         ...tokens,
       },
-      'Token refreshed successfully',
+      message,
     );
   }
 
@@ -218,6 +286,7 @@ export class AuthService {
       _id: user._id.toString(),
       email: user.email,
       role: user.role,
+      politicianId: user.politicianId?.toString?.() || user.politicianId,
       sessionId: session._id.toString(),
     });
     const refreshToken = AuthHelper.generateRefreshToken({
@@ -238,6 +307,39 @@ export class AuthService {
       accessTokenExpiresIn: 15 * 60,
       refreshTokenExpiresIn: refreshExpiresAt,
     };
+  }
+
+  private async withRoleContext(user: any) {
+    const authUser =
+      typeof user.toObject === 'function' ? user.toObject() : { ...user };
+    const userId = authUser._id?.toString();
+    if (!userId) return { authUser, profile: null };
+
+    if (authUser.role === UserRole.CITIZEN) {
+      const profile = await this.citizenRepo.findByUserId({ userId }).lean();
+      return { authUser, profile };
+    }
+
+    if (authUser.role === UserRole.ADMIN) {
+      const profile = await this.adminRepo.findByUserId({ userId }).lean();
+      return { authUser, profile };
+    }
+
+    if (authUser.role === UserRole.POLITICIAN) {
+      const profile = await this.politicianRepo
+        .findOne({ userId: new Types.ObjectId(userId) })
+        .lean();
+      return {
+        authUser: {
+          ...authUser,
+          politicianId:
+            authUser.politicianId || profile?._id?.toString?.() || profile?._id,
+        },
+        profile,
+      };
+    }
+
+    return { authUser, profile: null };
   }
 
   async logoutCurrentSession(sessionIdDto: SessionIdDto) {
@@ -290,6 +392,36 @@ export class AuthService {
         RevokeSessionReason.REVOKE_ALL_SESSIONS,
       );
     }
+  }
+
+  async revokeMySession(userIdDto: UserIdDto, sessionIdDto: SessionIdDto) {
+    const session = await this.authSessionRepo.findById(sessionIdDto);
+
+    if (!session) {
+      throw new GlobalHttpException(
+        'invalidCredentials',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (session.userId.toString() !== userIdDto.userId) {
+      throw new GlobalHttpException(
+        'invalidCredentials',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (!session.isActive || session.revokedAt) {
+      throw new GlobalHttpException(
+        'invalidCredentials',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    await this.authSessionRepo.revokeSession(
+      sessionIdDto,
+      RevokeSessionReason.MANUAL_LOGOUT,
+    );
   }
 
   private doesUserExists(filter: any) {

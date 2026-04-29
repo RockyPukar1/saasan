@@ -10,13 +10,22 @@ import { FileWorkerModule } from './common/file/file.worker.module';
 import { NotificationWorkerModule } from './common/notification/notification.worker.module';
 import { AuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CacheModule } from './common/cache/cache.module';
+import { RolePermissionModule } from './role-permission/role-permission.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    JwtModule.register({
+      secret: process.env.SAASAN_JWT_SECRET,
+      global: true,
+    }),
     MongooseModule.forRoot(process.env.SAASAN_DB_URL!),
+    CacheModule,
+    RolePermissionModule,
     ScheduleModule.forRoot(),
     KafkaModule,
     JobsModule,

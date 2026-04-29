@@ -48,6 +48,9 @@ export interface IReport {
   amountInvolved?: number;
   peopleAffectedCount?: number;
   resolvedAt?: string | Date;
+  autoConvertedToMessage?: boolean;
+  targetPoliticianId?: string | null;
+  escalatedToPoliticianId?: string | null;
   sourceCategories: {
     type: string;
     visibility: string;

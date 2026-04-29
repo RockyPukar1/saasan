@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
@@ -15,8 +16,13 @@ import {
   Camera,
   EyeOff,
   Clock,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { useReports } from "@/hooks/useReports";
+import { useAuth } from "@/hooks/useAuth";
+import { PERMISSIONS } from "@/constants/permission.constants";
+import { apiService } from "@/services/api";
 import { showComingSoon } from "@/utils/coming-soon";
 import { ReportDetailSkeleton } from "@/components/ui/skeleton";
 import EvidencePicker from "@/components/EvidencePicker";
@@ -26,6 +32,7 @@ import { Input } from "@/components/ui/input";
 
 export default function ReportDetailScreen() {
   const { reportId } = useParams();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +45,7 @@ export default function ReportDetailScreen() {
     currentReport,
     loading,
   } = useReports();
+  const { hasPermission } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -46,6 +54,7 @@ export default function ReportDetailScreen() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [evidenceToDelete, setEvidenceToDelete] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [replyText, setReplyText] = useState("");
 
   useEffect(() => {
     if (reportId) {
@@ -54,6 +63,32 @@ export default function ReportDetailScreen() {
   }, [reportId, getReport]);
 
   const report = currentReport;
+  const canReplyToThread = hasPermission(PERMISSIONS.messages.reply);
+
+  const { data: threadResponse, isLoading: threadLoading } = useQuery({
+    queryKey: ["report-thread", reportId],
+    queryFn: () => apiService.getReportThread(reportId as string),
+    enabled: !!reportId && !!report?.autoConvertedToMessage,
+    retry: false,
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: (content: string) =>
+      apiService.replyToMessageThread(
+        threadResponse?.data.id as string,
+        content,
+      ),
+    onSuccess: async () => {
+      setReplyText("");
+      await queryClient.invalidateQueries({ queryKey: ["report-thread", reportId] });
+      toast.success("Reply sent successfully");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send reply",
+      );
+    },
+  });
 
   useEffect(() => {
     if (report) {
@@ -132,6 +167,14 @@ export default function ReportDetailScreen() {
 
   const handleShare = async () => {
     showComingSoon("Share");
+  };
+
+  const handleReply = async () => {
+    if (!replyText.trim() || !threadResponse?.data.id || !canReplyToThread) {
+      return;
+    }
+
+    await replyMutation.mutateAsync(replyText.trim());
   };
 
   if (loading) {
@@ -444,6 +487,97 @@ export default function ReportDetailScreen() {
           <p className="text-gray-500 text-xs mt-2">
             All evidence is encrypted and stored securely
           </p>
+
+          {report.autoConvertedToMessage && (
+            <Card className="my-4 border-blue-100">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">
+                      Report Conversation
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      This approved report is now part of a live message thread.
+                    </p>
+                  </div>
+                </div>
+
+                {threadLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-20 animate-pulse rounded-lg bg-gray-100"
+                      />
+                    ))}
+                  </div>
+                ) : threadResponse?.data ? (
+                  <>
+                    <div className="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                      Thread status: {threadResponse.data.status}
+                    </div>
+
+                    <div className="space-y-3">
+                      {threadResponse.data.messages?.map((message, index) => (
+                        <div
+                          key={message.id || message._id || index}
+                          className={`rounded-xl border p-3 ${
+                            message.senderType === "CITIZEN"
+                              ? "border-red-100 bg-red-50/70"
+                              : "border-blue-100 bg-blue-50/70"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {message.senderType === "CITIZEN"
+                                ? "You"
+                                : "Representative office"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(message.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <p className="mt-2 text-sm text-gray-700">
+                            {message.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {canReplyToThread && (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="Reply to this report conversation..."
+                          className="min-h-[100px]"
+                        />
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={handleReply}
+                            disabled={
+                              replyMutation.isPending || !replyText.trim()
+                            }
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Send className="mr-2 h-4 w-4" />
+                            Send Reply
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                    This report was converted into a message thread, but the
+                    thread could not be loaded yet.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Actions */}
           <div className="flex justify-between items-center bg-white p-4 rounded-lg mb-4">
             <Button

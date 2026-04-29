@@ -11,6 +11,7 @@ export class AuthHelper {
         id: user._id,
         email: user.email,
         role: user.role,
+        politicianId: user.politicianId,
         sessionId: user.sessionId,
         type: 'access',
       },

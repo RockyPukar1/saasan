@@ -27,6 +27,6 @@ export class AdminPoliticianController {
   @HttpCode(HttpStatus.CREATED)
   @Post(':politicianId/create-account')
   async createAccount(@Param() politicianIdDto: PoliticianIdDto) {
-    await this.politicianService.createAccount(politicianIdDto);
+    return this.politicianService.createAccount(politicianIdDto);
   }
 }

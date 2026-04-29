@@ -23,6 +23,8 @@ export class EmailConsumer implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    this.logger.log('Starting email consumer');
+
     const consumer = await this.kafkaService.createConsumer(KAFKA_GROUP_EMAIL);
 
     if (!consumer) {
@@ -35,16 +37,27 @@ export class EmailConsumer implements OnModuleInit {
       fromBeginning: false,
     });
 
+    this.logger.log(
+      `Email consumer subscribed group=${KAFKA_GROUP_EMAIL} topic=${KAFKA_TOPIC_EMAIL}`,
+    );
+
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         if (!message.value) return;
         const payload = JSON.parse(message.value.toString());
+
+        this.logger.log(
+          `Received email event jobKey=${payload.jobKey} type=${payload.type} topic=${topic} partition=${partition}`,
+        );
 
         const canProcess = await this.jobTracker.beginProcessing(
           payload.jobKey,
         );
 
         if (!canProcess) {
+          this.logger.warn(
+            `Skipping email event jobKey=${payload.jobKey} because it is already completed or in progress`,
+          );
           return;
         }
 

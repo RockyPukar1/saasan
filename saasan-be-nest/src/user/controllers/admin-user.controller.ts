@@ -54,6 +54,15 @@ export class AdminUserController {
     return this.userService.getUserById(param);
   }
 
+  @Permissions(PERMISSIONS.users.update)
+  @Put(':userId')
+  async updateUser(
+    @Param() param: UserIdDto,
+    @Body() updateData: UpdateUserDto,
+  ) {
+    return this.userService.updateUser(param, updateData);
+  }
+
   @Permissions(PERMISSIONS.users.delete)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':userId')

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { DashboardService } from '../services/dashboard.service';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
@@ -7,6 +7,7 @@ import { UserRole } from 'src/user/entities/user.entity';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PermissionGuard } from 'src/common/guards/permission.guard';
+import type { Request } from 'express';
 
 @UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
 @Roles(UserRole.POLITICIAN)
@@ -16,7 +17,10 @@ export class PoliticianDashboardController {
 
   @Permissions(PERMISSIONS.dashboard.view)
   @Get('stats')
-  async getStats() {
-    return this.dashboardService.getStats();
+  async getStats(@Req() req: Request) {
+    const requestUser = req.user as any;
+    return this.dashboardService.getPoliticianStats(
+      requestUser.politicianId || requestUser.id,
+    );
   }
 }

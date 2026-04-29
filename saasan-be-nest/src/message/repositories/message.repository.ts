@@ -11,6 +11,7 @@ import { CreateMessageDto } from '../dtos/create-message.dto';
 import { UpdateMessageDto } from '../dtos/update-message.dto';
 import { MessageIdDto } from '../dtos/message-id.dto';
 import { PoliticianIdDto } from 'src/politics/politician/dtos/politician-id.dto';
+import { ReportIdDto } from 'src/report/dtos/report-id.dto';
 
 @Injectable()
 export class MessageRepository {
@@ -57,10 +58,16 @@ export class MessageRepository {
   async findBySourceReport(politicianId: string) {
     return this.model
       .find({
-        'participants.politicianId': politicianId,
+        'participants.politician.id': {
+          $in: this.getPoliticianIdCandidates(politicianId),
+        },
         messageOrigin: 'report_converted',
       })
       .exec();
+  }
+
+  async findOneBySourceReport({ reportId }: ReportIdDto) {
+    return this.model.findOne({ sourceReportId: reportId }).exec();
   }
 
   async addMessageToThread(
@@ -76,31 +83,38 @@ export class MessageRepository {
       { _id: new Types.ObjectId(messageId) },
       {
         $push: { messages: newEntry },
-        lastMessageAt: new Date(),
+        $set: { lastMessageAt: new Date() },
       },
     );
   }
 
   async findByJurisdiction({ politicianId }: PoliticianIdDto) {
-    // const politician = await this.model.findOne({
-    //   'participants.politician.id': politicianId,
-    // });
+    return this.model
+      .find({
+        'participants.politician.id': {
+          $in: this.getPoliticianIdCandidates(politicianId),
+        },
+      })
+      .sort({ lastMessageAt: -1, updatedAt: -1 })
+      .exec();
+  }
 
-    // if (!politician) return [];
+  async findByPoliticianId(politicianId: string) {
+    return this.model
+      .find({
+        'participants.politician.id': {
+          $in: this.getPoliticianIdCandidates(politicianId),
+        },
+      })
+      .sort({ lastMessageAt: -1, updatedAt: -1 })
+      .exec();
+  }
 
-    // const jurisdictionFilter = politician.jurisdiction;
-    // return this.model.find(
-    //   {
-    //     'jurisdiction.provinceId': jurisdictionFilter.provinceId,
-    //     'jurisdiction.districtId': jurisdictionFilter.districtId,
-    //     'jurisdiction.constituencyId': jurisdictionFilter.constituencyId,
-    //     'jurisdiction.municipalityId': jurisdictionFilter.municipalityId,
-    //     'jurisdiction.wardId': jurisdictionFilter.wardId,
-    //   },
-    //   {
-    //     lastMessageAt: -1,
-    //   },
-    // );
-    return this.model.find();
+  private getPoliticianIdCandidates(politicianId: string) {
+    if (!Types.ObjectId.isValid(politicianId)) {
+      return [politicianId];
+    }
+
+    return [politicianId, new Types.ObjectId(politicianId)];
   }
 }

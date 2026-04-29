@@ -125,7 +125,7 @@ export class AuthSessionRepository {
       {
         isActive: true,
         revokedAt: null,
-        expiresAt: { $lt: now },
+        refreshExpiresAt: { $lt: now },
       },
       {
         $set: {

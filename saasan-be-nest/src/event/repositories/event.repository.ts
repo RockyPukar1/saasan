@@ -18,6 +18,29 @@ export class EventRepository {
     return await this.model.find().sort({ createdAt: -1 }).limit(5);
   }
 
+  async getCategoryBreakdown() {
+    return await this.model.aggregate([
+      {
+        $group: {
+          _id: {
+            $ifNull: ['$category', 'general'],
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          label: '$_id',
+          count: 1,
+        },
+      },
+      {
+        $sort: { count: -1, label: 1 },
+      },
+    ]);
+  }
+
   async getEventsOnThisDay() {
     const today = new Date();
     const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11

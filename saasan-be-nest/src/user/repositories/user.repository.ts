@@ -1,6 +1,5 @@
 import { Types, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { RegisterUserDto } from 'src/auth/dtos/register.dto';
 import { UserEntity, UserEntityDocument } from '../entities/user.entity';
 import { UserIdDto } from '../dtos/user-id.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
@@ -48,8 +47,19 @@ export class UserRepository {
     });
   }
 
-  async create(userData: RegisterUserDto) {
+  async create(userData: Partial<UserEntity> | Record<string, any>) {
     return await this.model.create(userData);
+  }
+
+  async findOneAndUpdate(
+    filter: any,
+    updateData: Partial<UserEntity> | Record<string, any>,
+    options: { upsert?: boolean } = {},
+  ) {
+    return this.model.findOneAndUpdate(filter, updateData, {
+      new: true,
+      ...options,
+    });
   }
 
   async deleteOne({ userId }: UserIdDto) {

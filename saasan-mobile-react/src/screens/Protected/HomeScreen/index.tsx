@@ -1,466 +1,405 @@
-import { useDashboard } from "@/hooks/useDashboard";
-import { useMemo, useState } from "react";
-import { format, differenceInDays, parseISO } from "date-fns";
+import { useState } from "react";
+import { format } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   AlertTriangle,
-  Users,
+  CheckCircle2,
   FileText,
-  Share,
   Gavel,
-  Zap,
-  Clock,
-  DollarSign,
-  TrendingUp,
+  Share,
+  Users,
+  Shield,
+  Monitor,
+  KeyRound,
 } from "lucide-react";
+import { useDashboard } from "@/hooks/useDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { apiService } from "@/services/api";
 import { showComingSoon } from "@/utils/coming-soon";
+
+const formatShortDate = (value?: string) => {
+  if (!value) return "Recently";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+
+  return format(date, "MMM dd");
+};
+
+const getStatusTone = (status?: string) => {
+  switch ((status || "").toLowerCase()) {
+    case "resolved":
+      return "bg-green-100 text-green-700";
+    case "verified":
+    case "in_progress":
+      return "bg-yellow-100 text-yellow-700";
+    default:
+      return "bg-red-100 text-red-700";
+  }
+};
 
 export default function HomeScreen() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentDate] = useState(new Date());
-  const { dashboardStats, majorCases, historicalEvents, serviceStatus } =
+  const { user, permissions, hasPermission, logout } = useAuth();
+  const { dashboardStats, myRecentReports, publicReports, historicalEvents } =
     useDashboard();
+  const currentSessionId = apiService.getCurrentSessionId();
 
-  console.log(majorCases);
+  const overview = dashboardStats?.overview;
+  const community = dashboardStats?.community;
+  const canViewSessions = hasPermission("sessions.view");
+  const canRevokeSessions = hasPermission("sessions.revoke");
 
-  // Calculate electricity status from service data
-  const electricityStats = useMemo(() => {
-    const electricityServices = serviceStatus.filter(
-      (s) => s.serviceType === "electricity",
-    );
-    const online = electricityServices.filter(
-      (s) => s.status === "online",
-    ).length;
-    const offline = electricityServices.filter(
-      (s) => s.status === "offline",
-    ).length;
+  const { data: sessionsResponse } = useQuery({
+    queryKey: ["citizen-auth-sessions"],
+    queryFn: () => apiService.getMySessions(),
+    enabled: canViewSessions,
+  });
 
-    return { online, offline, total: online + offline };
-  }, [serviceStatus]);
+  const revokeAllSessionsMutation = useMutation({
+    mutationFn: () => apiService.revokeAllOtherSessions(),
+    onSuccess: async () => {
+      toast.success("Other sessions signed out");
+      await queryClient.invalidateQueries({
+        queryKey: ["citizen-auth-sessions"],
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to sign out devices",
+      );
+    },
+  });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "unsolved":
-        return "bg-red-500";
-      case "ongoing":
-        return "bg-yellow-500";
-      case "solved":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getPriorityColor = (priority: string): string => {
-    switch (priority.toLowerCase()) {
-      case "urgent":
-        return "text-red-600";
-      case "high":
-        return "text-orange-600";
-      case "medium":
-        return "text-yellow-600";
-      case "low":
-        return "text-green-600";
-      default:
-        return "text-gray-600";
-    }
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("en-NP", {
-      style: "currency",
-      currency: "NPR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const calculateDaysSince = (dateString: string): number => {
-    return differenceInDays(new Date(), parseISO(dateString));
-  };
+  const sessions =
+    sessionsResponse?.data?.map((session) => ({
+      ...session,
+      isCurrent: session.id === currentSessionId,
+    })) || [];
+  const currentSession = currentSessionId
+    ? sessions.find((session) => session.isCurrent) || null
+    : null;
 
   const handleShareApp = () => {
     showComingSoon("Share app");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header with Language Toggle */}
+    <div className="min-h-screen bg-[#f6f8fc]">
       <PageHeader
         title={t("dashboard.welcome")}
         subtitle={t("dashboard.overview")}
         showLogout={true}
       />
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Live Stats Cards */}
-        <div className="p-4">
-          {/* Red Banner */}
-          <div className="bg-red-600 rounded-lg p-4 mb-4">
+      <div className="mx-auto flex-1 overflow-y-auto px-4 py-4 lg:max-w-7xl lg:px-8 lg:pb-10">
+        <div>
+          <div className="mb-6 rounded-3xl bg-gradient-to-r from-red-700 via-red-600 to-orange-500 p-5 shadow-lg lg:p-8">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-white text-lg font-bold mb-1">
-                  Saasan Dashboard
+                <p className="mb-1 text-lg font-bold text-white lg:text-3xl">
+                  Citizen Dashboard
                 </p>
-                <p className="text-red-100 text-sm">
-                  Monitor Corruption, Track Politician, Survey Public
+                <p className="max-w-2xl text-sm text-red-100 lg:text-base">
+                  Track your reports and stay updated on public issues
                 </p>
               </div>
-              <div className="bg-red-500 rounded-full p-2">
-                <Gavel className="text-white w-6 h-6" />
+              <div className="rounded-2xl bg-white/15 p-3 backdrop-blur lg:p-4">
+                <Gavel className="h-6 w-6 text-white lg:h-8 lg:w-8" />
               </div>
             </div>
           </div>
 
-          {/* Comprehensive Overview Dashboard */}
           <div className="mb-6">
-            <p className="text-lg font-semibold text-gray-800 mb-3">
-              System Overview
+            <p className="mb-3 text-lg font-semibold text-gray-800 lg:text-2xl">
+              Your Overview
             </p>
 
-            {/* System Status Bar */}
             <div className="flex justify-between items-center mb-4 px-2">
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
-                <p className="text-sm text-gray-600">All systems operational</p>
+                <p className="text-sm text-gray-600">Your civic feed is live</p>
               </div>
-              <div className="flex items-center">
-                <Clock className="text-gray-500 mr-1 w-4 h-4" />
-                <p className="text-sm text-gray-600">
-                  {format(currentDate, "MMM dd, yyyy")}
-                </p>
-              </div>
+              <p className="text-sm text-gray-600">
+                {format(currentDate, "MMM dd, yyyy")}
+              </p>
             </div>
 
-            <div className="flex flex-wrap justify-between gap-2">
-              {/* Reports Box */}
-              <Card className="w-[48%] mb-3 border-l-3 border-red-500 py-0">
+            <div className="grid grid-cols-2 gap-3 md:max-w-2xl">
+              <Card className="min-h-28 border-l-4 border-red-500 py-0 shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex justify-between items-center mb-2">
                     <FileText className="text-red-600 w-5 h-5" />
                     <span className="text-xl font-bold text-red-600">
-                      {dashboardStats?.overview?.totalReportsCount || 0}
+                      {overview?.myReportsCount || 0}
                     </span>
                   </div>
-                  <p className="text-gray-600 text-xs">Total Reports</p>
-                  <div className="flex justify-between text-xs mt-1 mb-2">
-                    <span className="text-green-600">
-                      ✓ {dashboardStats?.overview?.resolvedReportsCount || 0}{" "}
-                      resolved
-                    </span>
-                    <span className="text-orange-600">
-                      {(dashboardStats?.overview?.totalReportsCount || 0) -
-                        (dashboardStats?.overview?.resolvedReportsCount ||
-                          0)}{" "}
-                      pending
-                    </span>
-                  </div>
-                  <div className="w-full bg-red-200 rounded-full h-1">
-                    <div
-                      className="bg-red-600 h-1 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${dashboardStats?.overview?.reportResolutionRate || 0}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-red-600 text-xs text-center mt-1">
-                    {dashboardStats?.overview?.reportResolutionRate || 0}%
-                    resolution
+                  <p className="text-gray-700 text-xs font-semibold">My Reports</p>
+                  <p className="text-red-600 text-xs mt-2 leading-snug">
+                    {overview?.myReportResolutionRate || 0}% resolved
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Cases Box */}
-              <Card className="w-[48%] mb-3 border-l-3 border-blue-500 py-0">
+              <Card className="min-h-28 border-l-4 border-green-500 py-0 shadow-sm">
+                <CardContent className="p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <CheckCircle2 className="text-green-600 w-5 h-5" />
+                    <span className="text-xl font-bold text-green-600">
+                      {overview?.myResolvedReportsCount || 0}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 text-xs font-semibold">
+                    Resolved For Me
+                  </p>
+                  <p className="text-green-600 text-xs mt-2 leading-snug">
+                    Cases closed from your submissions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="min-h-28 border-l-4 border-blue-500 py-0 shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex justify-between items-center mb-2">
                     <AlertTriangle className="text-blue-600 w-5 h-5" />
                     <span className="text-xl font-bold text-blue-600">
-                      {dashboardStats?.overview?.totalCasesCount || 0}
+                      {overview?.totalPublicReportsCount || 0}
                     </span>
                   </div>
-                  <p className="text-gray-600 text-xs">Total Cases</p>
-                  <div className="flex justify-between text-xs mt-1 mb-2">
-                    <span className="text-green-600">
-                      ✓ {dashboardStats?.overview?.resolvedCasesCount || 0}{" "}
-                      resolved
-                    </span>
-                    <span className="text-orange-600">
-                      {(dashboardStats?.overview?.totalCasesCount || 0) -
-                        (dashboardStats?.overview?.resolvedCasesCount ||
-                          0)}{" "}
-                      pending
-                    </span>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-1">
-                    <div
-                      className="bg-blue-600 h-1 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${dashboardStats?.overview?.caseResolutionRate || 0}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-blue-600 text-xs text-center mt-1">
-                    {dashboardStats?.overview?.caseResolutionRate || 0}%
-                    resolution
+                  <p className="text-gray-700 text-xs font-semibold">
+                    Public Reports
+                  </p>
+                  <p className="text-blue-600 text-xs mt-2 leading-snug">
+                    {community?.publicReportResolutionRate || 0}% resolved
+                    platform-wide
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Politicians Box */}
-              <Card className="w-[48%] mb-3 border-l-3 border-green-500 py-0">
+              <Card className="min-h-28 border-l-4 border-orange-500 py-0 shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex justify-between items-center mb-2">
-                    <Users className="text-green-600 w-5 h-5" />
-                    <span className="text-xl font-bold text-green-600">
-                      {dashboardStats?.overview?.totalPoliticians || 0}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 text-xs">Total Politicians</p>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-green-600 text-xs">
-                      ✓ {dashboardStats?.overview?.activePoliticians || 0}{" "}
-                      active
-                    </span>
-                    <span className="text-gray-600 text-xs">
-                      {Math.round(
-                        ((dashboardStats?.overview?.activePoliticians || 0) /
-                          (dashboardStats?.overview?.totalPoliticians || 1)) *
-                          100,
-                      )}
-                      % active
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Total Activity Box */}
-              <Card className="w-[48%] mb-3 border-l-3 border-orange-500 py-0">
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <TrendingUp className="text-orange-600 w-5 h-5" />
+                    <Users className="text-orange-600 w-5 h-5" />
                     <span className="text-xl font-bold text-orange-600">
-                      {(dashboardStats?.overview?.totalReportsCount || 0) +
-                        (dashboardStats?.overview?.totalCasesCount || 0)}
+                      {overview?.activePoliticians || 0}
                     </span>
                   </div>
-                  <p className="text-gray-600 text-xs">Total Activity</p>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-orange-600 text-xs">
-                      📊 Combined reports & cases
-                    </span>
-                    <span className="text-gray-600 text-xs">
-                      {Math.round(
-                        (((dashboardStats?.overview?.resolvedReportsCount ||
-                          0) +
-                          (dashboardStats?.overview?.resolvedCasesCount || 0)) /
-                          ((dashboardStats?.overview?.totalReportsCount || 0) +
-                            (dashboardStats?.overview?.totalCasesCount || 1))) *
-                          100,
-                      )}
-                      % overall
-                    </span>
-                  </div>
+                  <p className="text-gray-700 text-xs font-semibold">
+                    Active Politicians
+                  </p>
+                  <p className="text-orange-600 text-xs mt-2 leading-snug">
+                    of {overview?.totalPoliticians || 0} listed representatives
+                  </p>
                 </CardContent>
               </Card>
             </div>
           </div>
-        </div>
-        {/* Electricity Status Card */}
-        {electricityStats.total > 0 && (
-          <div className="px-4 mb-6">
-            <Card className="border-l-4 border-yellow-500">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center">
-                    <Zap className="text-yellow-600 mr-2 w-5 h-5" />
-                    <p className="text-lg font-bold text-gray-800">
-                      Electricity Status
-                    </p>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
-                    <p className="text-green-600 text-xs font-bold">LIVE</p>
-                  </div>
+
+          <div className="mb-6 grid gap-4 lg:grid-cols-2">
+            <Card className="border border-red-100 shadow-sm">
+              <CardContent className="p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-red-600" />
+                  <p className="text-lg font-semibold text-gray-800">
+                    Access and Role
+                  </p>
                 </div>
-
-                <div className="mb-3">
-                  <div className="flex justify-between mb-2">
-                    <p className="text-green-600 text-sm font-medium">
-                      Online: {electricityStats.online}
-                    </p>
-                    <p className="text-red-600 text-sm font-medium">
-                      Offline: {electricityStats.offline}
-                    </p>
-                  </div>
-
-                  <div className="bg-red-200 h-6 rounded-full overflow-hidden">
-                    <div
-                      className="bg-green-500 h-6 rounded-full transition-all duration-1000"
-                      style={{
-                        width: `${
-                          (electricityStats.online / electricityStats.total) *
-                          100
-                        }%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex justify-between mt-1">
-                    <p className="text-xs text-gray-500">0%</p>
-                    <p className="text-xs text-gray-500">
-                      {Math.round(
-                        (electricityStats.online / electricityStats.total) *
-                          100,
-                      )}
-                      % Online
-                    </p>
-                    <p className="text-xs text-gray-500">100%</p>
-                  </div>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p className="font-medium text-gray-900">
+                    {user?.fullName || user?.email || "Citizen account"}
+                  </p>
+                  <p>Role: {user?.role || "citizen"}</p>
+                  <p>Granted permissions: {permissions.length}</p>
+                  <p>
+                    Reports:{" "}
+                    {hasPermission("reports.create") ? "Can submit" : "View only"}
+                  </p>
+                  <p>
+                    Polls: {hasPermission("polls.vote") ? "Can vote" : "Read only"}
+                  </p>
                 </div>
+              </CardContent>
+            </Card>
 
-                <p className="text-xs text-gray-600 text-center">
-                  Total Areas: {electricityStats.total}
-                </p>
+            <Card className="border border-blue-100 shadow-sm">
+              <CardContent className="p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  <Monitor className="h-5 w-5 text-blue-600" />
+                  <p className="text-lg font-semibold text-gray-800">
+                    Session Security
+                  </p>
+                </div>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p>
+                    Active sessions: {canViewSessions ? sessions.length : "Hidden"}
+                  </p>
+                  <p>
+                    This device:{" "}
+                    {currentSession?.userAgent || "Current browser not identified yet"}
+                  </p>
+                  <p>
+                    Last used:{" "}
+                    {currentSession?.lastUsedAt
+                      ? formatShortDate(currentSession.lastUsedAt)
+                      : "Recently"}
+                  </p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {canRevokeSessions && (
+                    <Button
+                      variant="outline"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                      onClick={() => revokeAllSessionsMutation.mutate()}
+                      disabled={
+                        revokeAllSessionsMutation.isPending || sessions.length <= 1
+                      }
+                    >
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      Sign Out Other Devices
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="border-gray-200"
+                    onClick={() => logout()}
+                  >
+                    Sign Out Here
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
-        )}
+        </div>
 
-        {/* Major Cases Tracker */}
-        <div className="px-4 mb-6">
-          <p className="text-xl font-bold text-gray-800 mb-4">
-            Major Cases Tracker
-          </p>
-          {majorCases.length === 0 ? (
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-gray-500 text-center">
-                  No major cases to display
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            majorCases.map((caseItem) => (
-              <div
-                key={caseItem.id}
-                onClick={() => navigate(`/report/${caseItem.id}`)}
-                className="cursor-pointer"
-              >
-                <Card className="mb-3">
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1 mr-2">
-                        <p className="text-base font-bold text-gray-800 mb-1">
-                          {caseItem.title}
+        <div className="mb-6 grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
+          <div>
+            <p className="mb-4 text-xl font-bold text-gray-800">
+              Your Recent Reports
+            </p>
+            {myRecentReports.length === 0 ? (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-center text-gray-500">
+                    You have not submitted any reports yet
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              myRecentReports.map((report) => (
+                <Card
+                  key={report.id}
+                  className="mb-3 cursor-pointer shadow-sm"
+                  onClick={() => navigate("/reports")}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <p className="mb-1 text-base font-bold text-gray-800">
+                          {report.title}
                         </p>
-                        <p className="text-gray-600 text-xs mb-2">
-                          {caseItem.description}
+                        <p className="mb-2 text-sm text-gray-600 line-clamp-2">
+                          {report.description}
                         </p>
-                        {caseItem.amountInvolved &&
-                          caseItem.amountInvolved > 0 && (
-                            <div className="flex items-center mb-1">
-                              <DollarSign className="text-red-500 mr-1 w-3 h-3" />
-                              <p className="text-red-600 text-xs font-bold">
-                                {formatCurrency(caseItem.amountInvolved)}
-                              </p>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>
+                            {report.referenceNumber || "No reference yet"}
+                          </span>
+                          <span>•</span>
+                          <span>{formatShortDate(report.createdAt)}</span>
+                        </div>
                       </div>
-                      <div
-                        className={`px-2 py-1 rounded ${getStatusColor(
-                          caseItem.status,
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-semibold ${getStatusTone(
+                          report.status,
                         )}`}
                       >
-                        <p className="text-white text-xs font-bold uppercase">
-                          {caseItem.status.replace("_", " ")}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Compact Days Counter */}
-                    <div className="bg-gray-100 p-2 rounded mb-2">
-                      <p className="text-lg font-bold text-red-600 text-center">
-                        {caseItem.createdAt
-                          ? calculateDaysSince(caseItem.createdAt)
-                          : 0}{" "}
-                        DAYS
-                      </p>
-                      <p className="text-gray-600 text-center text-xs">
-                        since reported
-                      </p>
-                    </div>
-
-                    {/* Compact Engagement Stats */}
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                      <div className="flex items-center">
-                        <TrendingUp className="text-green-600 mr-1 w-3 h-3" />
-                        <p className="text-green-600 text-xs font-bold">
-                          {caseItem.upvotesCount || 0}
-                        </p>
-                      </div>
-                      <div className="flex items-center">
-                        <FileText className="text-blue-600 mr-1 w-3 h-3" />
-                        <p className="text-blue-600 text-xs">
-                          {caseItem.referenceNumber}
-                        </p>
-                      </div>
-                      <p
-                        className={`text-xs font-bold ${getPriorityColor(
-                          caseItem.priority,
-                        )}`}
-                      >
-                        {caseItem.priority?.toUpperCase() || "MEDIUM"}
-                      </p>
+                        {report.status || "pending"}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
+
+          <div>
+            <p className="mb-4 text-xl font-bold text-gray-800">
+              Community Feed
+            </p>
+            {publicReports.length === 0 ? (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-center text-gray-500">
+                    No recent public reports to display
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              publicReports.slice(0, 5).map((report) => (
+                <Card key={report.id} className="mb-3 shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="mb-1 text-base font-bold text-gray-800">
+                          {report.title}
+                        </p>
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {report.description}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {formatShortDate(report.createdAt)}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Historical Events */}
-        <div className="px-4 mb-6">
-          <p className="text-xl font-bold text-gray-800 mb-4">
-            Historical Events - On This Day
-          </p>
-          {historicalEvents?.length === 0 ? (
+        <div className="mb-6">
+          <p className="mb-4 text-xl font-bold text-gray-800">On This Day</p>
+          {historicalEvents.length === 0 ? (
             <Card>
               <CardContent className="p-4">
-                <p className="text-gray-500 text-center">
-                  No historical events to display
+                <p className="text-center text-gray-500">
+                  No historical events to display today
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <>
+            <div className="grid gap-4 md:grid-cols-2">
               {historicalEvents.map((event) => (
-                <Card key={event.id} className="mb-4">
+                <Card key={event.id} className="shadow-sm">
                   <CardContent className="p-4">
-                    {/* <p className="text-red-600 font-bold text-sm mb-1">
-                      {event.date}
-                    </p> */}
-                    <p className="text-lg font-bold text-gray-800 mb-2">
+                    <p className="mb-2 text-lg font-bold text-gray-800">
                       {event.title}
                     </p>
-                    <p className="text-gray-600 text-sm">{event.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {event.description}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
-            </>
+            </div>
           )}
         </div>
-        {/* Quick Actions */}
-        <div className="px-4 mb-8">
-          <p className="text-xl font-bold text-gray-800 mb-4">Take Action</p>
-          <div className="flex justify-around">
+
+        <div className="mb-8">
+          <p className="mb-4 text-xl font-bold text-gray-800">Take Action</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Link className="flex flex-col items-center p-4" to={"/reports"}>
-              <div className="bg-red-100 p-3 rounded-full mb-2">
+              <div className="mb-2 rounded-full bg-red-100 p-3">
                 <AlertTriangle className="text-red-600 w-6 h-6" />
               </div>
               <p className="text-gray-700 text-sm font-medium">Report Issue</p>
@@ -468,19 +407,19 @@ export default function HomeScreen() {
 
             <Link
               className="flex flex-col items-center p-4"
-              to={"/politicians"}
+              to={"/politics/politicians"}
             >
-              <div className="bg-blue-100 p-3 rounded-full mb-2">
+              <div className="mb-2 rounded-full bg-blue-100 p-3">
                 <Users className="text-blue-600 w-6 h-6" />
               </div>
-              <p className="text-gray-700 text-sm font-medium">Rate MP</p>
+              <p className="text-gray-700 text-sm font-medium">Find Leaders</p>
             </Link>
 
             <div
               className="flex flex-col items-center p-4"
               onClick={handleShareApp}
             >
-              <div className="bg-green-100 p-3 rounded-full mb-2">
+              <div className="mb-2 rounded-full bg-green-100 p-3">
                 <Share className="text-green-600 w-6 h-6" />
               </div>
               <p className="text-gray-700 text-sm font-medium">Share App</p>
@@ -488,32 +427,33 @@ export default function HomeScreen() {
           </div>
         </div>
 
-        {/* Daily Reminder Banner */}
-        <div className="px-4 mb-6">
+        <div className="mb-6">
           <Card className="bg-red-500 border-red-500">
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center">
-                <p className="text-white font-bold text-center mb-2">
-                  📢 Daily Reminder
-                </p>
-                <p className="text-white text-sm text-center mb-3">
-                  Call your local MP today and ask: "What have you done for our
-                  constituency this week?"
-                </p>
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex flex-col items-center lg:flex-row lg:justify-between lg:gap-8">
+                <div className="text-center lg:text-left">
+                  <p className="text-white font-bold text-center mb-2 lg:text-left">
+                  Daily Reminder
+                  </p>
+                  <p className="text-white text-sm text-center mb-3 lg:mb-0 lg:text-left">
+                  Keep reporting issues that affect your ward and follow up on
+                  the progress from your dashboard.
+                  </p>
+                </div>
                 <Button
                   className="bg-white px-6 py-3 rounded-lg"
-                  onClick={() => navigate("/politicians")}
+                  onClick={() => navigate("/reports")}
                 >
                   <p className="text-red-600 font-bold text-center">
-                    Find My MP
+                    View My Reports
                   </p>
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
-        {/* Last Updated Info */}
-        <div className="px-4 pb-6">
+
+        <div className="pb-6">
           <p className="text-center text-gray-500 text-xs">
             Last updated: {format(currentDate, "PPpp")}
           </p>

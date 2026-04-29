@@ -29,14 +29,47 @@ export interface ICategoryStat {
 
 export interface IDashboardStats {
   overview: {
-    totalReports: number;
-    resolvedReports: number;
+    totalReportsCount: number;
+    resolvedReportsCount: number;
+    totalCasesCount: number;
+    resolvedCasesCount: number;
     totalPoliticians: number;
     activePoliticians: number;
-    resolutionRate: number;
+    reportResolutionRate: number;
+    caseResolutionRate: number;
   };
-  categoryBreakdown: ICategoryStat[];
-  recentActivity: import("./case").IMajorCase[];
+  aggregations?: {
+    reportLevelBreakdown: Array<{
+      label: string;
+      count: number;
+    }>;
+    reportStatusBreakdown: Array<{
+      label: string;
+      count: number;
+    }>;
+    reportVolumeTrend: Array<{
+      date: string;
+      count: number;
+    }>;
+    caseVolumeTrend: Array<{
+      date: string;
+      count: number;
+    }>;
+    combinedVolumeTrend: Array<{
+      date: string;
+      reports: number;
+      cases: number;
+      total: number;
+    }>;
+    eventCategoryBreakdown: Array<{
+      label: string;
+      count: number;
+    }>;
+  };
+  recentReports: any[];
+  recentCases: any[];
+  recentEvents: any[];
+  eventsOnThisDay: any[];
 }
 
 // Service types

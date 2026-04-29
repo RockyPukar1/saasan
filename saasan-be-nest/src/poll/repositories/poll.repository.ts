@@ -18,7 +18,7 @@ export class PollRepository {
       },
       {
         $lookup: {
-          from: 'poll-options',
+          from: 'poll_options',
           localField: '_id',
           foreignField: 'pollId',
           as: 'options',
@@ -26,7 +26,7 @@ export class PollRepository {
       },
       {
         $lookup: {
-          from: 'poll-votes',
+          from: 'poll_votes',
           foreignField: 'pollId',
           localField: '_id',
           as: 'allVotes',
@@ -101,7 +101,7 @@ export class PollRepository {
       },
       {
         $lookup: {
-          from: 'poll-options',
+          from: 'poll_options',
           localField: '_id',
           foreignField: 'pollId',
           as: 'options',
@@ -109,7 +109,7 @@ export class PollRepository {
       },
       {
         $lookup: {
-          from: 'poll-votes',
+          from: 'poll_votes',
           foreignField: 'pollId',
           localField: '_id',
           as: 'allVotes',

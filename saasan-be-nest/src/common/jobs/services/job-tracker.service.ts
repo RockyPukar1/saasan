@@ -55,6 +55,10 @@ export class JobTrackerService {
     return this.jobRepo.findDueRetries();
   }
 
+  async getStalePendingJobs() {
+    return this.jobRepo.findStalePending();
+  }
+
   async markPendingForRetry(jobIdDto: JobIdDto) {
     await this.jobRepo.markPendingForRetry(jobIdDto);
   }

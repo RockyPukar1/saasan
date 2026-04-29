@@ -22,24 +22,6 @@ export class UserEntity {
   @Prop({ type: String, required: true })
   password: string;
 
-  @Prop({ type: String, required: true })
-  fullName: string;
-
-  @Prop({ type: Types.ObjectId, ref: 'ProvinceEntity' })
-  provinceId?: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'DistrictEntity' })
-  districtId?: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'MunicipalityEntity' })
-  municipalityId?: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'WardEntity' })
-  wardId?: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'ConstituencyEntity' })
-  constituencyId?: Types.ObjectId;
-
   @Prop({
     type: String,
     enum: UserRole,

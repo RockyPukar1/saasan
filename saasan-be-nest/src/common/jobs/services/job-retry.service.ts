@@ -30,4 +30,23 @@ export class JobRetryService {
       }
     }
   }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async republishStalePendingJobs() {
+    const jobs = await this.jobTracker.getStalePendingJobs();
+
+    for (const job of jobs) {
+      try {
+        this.logger.warn(
+          `Republishing stale pending job ${job.jobKey} topic=${job.topic}`,
+        );
+        await this.kafkaService.emit(job.topic, job.payload);
+      } catch (error) {
+        this.logger.error(
+          `Failed to republish stale pending job ${job.jobKey}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+  }
 }

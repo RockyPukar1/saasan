@@ -2,6 +2,7 @@
 export const UserRole = {
   CITIZEN: "citizen",
   ADMIN: "admin",
+  POLITICIAN: "politician",
   MODERATOR: "moderator",
   INVESTIGATOR: "investigator",
 } as const;

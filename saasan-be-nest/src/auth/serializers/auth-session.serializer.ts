@@ -3,7 +3,6 @@ import { Expose, Transform } from 'class-transformer';
 export class AuthSessionSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
 
-  @Expose() refreshTokenHash: string;
   @Expose() refreshExpiresAt: Date;
   @Expose() revokedAt?: Date;
   @Expose() revokedReason: string;

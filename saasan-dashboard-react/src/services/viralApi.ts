@@ -1,5 +1,3 @@
-import api from "./api";
-
 // Types for viral features
 export interface ShareData {
   id: string;
@@ -184,13 +182,15 @@ export interface ViralMetrics {
   }>;
 }
 
+const viralBackendUnavailable = () =>
+  new Error("Viral backend routes are not implemented yet.");
+
 // Viral API functions for dashboard
 export const viralApi = {
   // Analytics and metrics
   getViralMetrics: async (): Promise<ViralMetrics> => {
     try {
-      const response = await api.get("/viral/metrics");
-      return response.data;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching viral metrics:", error);
       return {
@@ -212,10 +212,9 @@ export const viralApi = {
     period: "week" | "month" | "all_time"
   ): Promise<LeaderboardEntry[]> => {
     try {
-      const response = await api.get("/viral/leaderboard", {
-        params: { type, period },
-      });
-      return response.data;
+      void type;
+      void period;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
       return [];
@@ -225,10 +224,8 @@ export const viralApi = {
   // Trending polls
   getTrendingPolls: async (limit: number = 10): Promise<TrendingPoll[]> => {
     try {
-      const response = await api.get("/viral/trending-polls", {
-        params: { limit },
-      });
-      return response.data;
+      void limit;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching trending polls:", error);
       return [];
@@ -241,10 +238,9 @@ export const viralApi = {
     offset: number = 0
   ): Promise<FeedItem[]> => {
     try {
-      const response = await api.get("/viral/transparency-feed", {
-        params: { limit, offset },
-      });
-      return response.data;
+      void limit;
+      void offset;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching transparency feed:", error);
       return [];
@@ -254,8 +250,7 @@ export const viralApi = {
   // Badges management
   getAllBadges: async (): Promise<Badge[]> => {
     try {
-      const response = await api.get("/viral/badges");
-      return response.data;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching badges:", error);
       return [];
@@ -270,8 +265,8 @@ export const viralApi = {
     maxProgress: number;
   }): Promise<Badge> => {
     try {
-      const response = await api.post("/viral/badges", badgeData);
-      return response.data;
+      void badgeData;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error creating badge:", error);
       throw error;
@@ -283,8 +278,9 @@ export const viralApi = {
     badgeData: Partial<Badge>
   ): Promise<Badge> => {
     try {
-      const response = await api.put(`/viral/badges/${badgeId}`, badgeData);
-      return response.data;
+      void badgeId;
+      void badgeData;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error updating badge:", error);
       throw error;
@@ -293,7 +289,8 @@ export const viralApi = {
 
   deleteBadge: async (badgeId: string): Promise<void> => {
     try {
-      await api.delete(`/viral/badges/${badgeId}`);
+      void badgeId;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error deleting badge:", error);
       throw error;
@@ -303,10 +300,8 @@ export const viralApi = {
   // User badges management
   getUserBadges: async (userId?: string): Promise<Badge[]> => {
     try {
-      const response = await api.get("/viral/badges", {
-        params: userId ? { userId } : {},
-      });
-      return response.data;
+      void userId;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching user badges:", error);
       return [];
@@ -319,10 +314,9 @@ export const viralApi = {
     itemType?: string
   ): Promise<Comment[]> => {
     try {
-      const response = await api.get("/viral/comments", {
-        params: { itemId, itemType },
-      });
-      return response.data;
+      void itemId;
+      void itemType;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching comments:", error);
       return [];
@@ -331,7 +325,8 @@ export const viralApi = {
 
   deleteComment: async (commentId: string): Promise<void> => {
     try {
-      await api.delete(`/viral/comments/${commentId}`);
+      void commentId;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error deleting comment:", error);
       throw error;
@@ -343,7 +338,9 @@ export const viralApi = {
     action: "approve" | "reject" | "hide"
   ): Promise<void> => {
     try {
-      await api.post(`/viral/comments/${commentId}/moderate`, { action });
+      void commentId;
+      void action;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error moderating comment:", error);
       throw error;
@@ -363,8 +360,7 @@ export const viralApi = {
     }>
   > => {
     try {
-      const response = await api.get("/viral/verification/queue");
-      return response.data;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching verification queue:", error);
       return [];
@@ -378,12 +374,11 @@ export const viralApi = {
     notes?: string
   ): Promise<void> => {
     try {
-      await api.post("/viral/verification/update", {
-        itemId,
-        itemType,
-        status,
-        notes,
-      });
+      void itemId;
+      void itemType;
+      void status;
+      void notes;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error updating verification status:", error);
       throw error;
@@ -393,8 +388,7 @@ export const viralApi = {
   // Election management
   getElectionData: async (): Promise<ElectionData> => {
     try {
-      const response = await api.get("/viral/election-data");
-      return response.data;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching election data:", error);
       return {
@@ -415,8 +409,8 @@ export const viralApi = {
     electionData: Partial<ElectionData>
   ): Promise<ElectionData> => {
     try {
-      const response = await api.put("/viral/election-data", electionData);
-      return response.data;
+      void electionData;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error updating election data:", error);
       throw error;
@@ -426,10 +420,8 @@ export const viralApi = {
   // Candidates management
   getCandidates: async (constituency?: string): Promise<Candidate[]> => {
     try {
-      const response = await api.get("/viral/candidates", {
-        params: constituency ? { constituency } : {},
-      });
-      return response.data;
+      void constituency;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching candidates:", error);
       return [];
@@ -440,8 +432,8 @@ export const viralApi = {
     candidateData: Partial<Candidate>
   ): Promise<Candidate> => {
     try {
-      const response = await api.post("/viral/candidates", candidateData);
-      return response.data;
+      void candidateData;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error creating candidate:", error);
       throw error;
@@ -453,11 +445,9 @@ export const viralApi = {
     candidateData: Partial<Candidate>
   ): Promise<Candidate> => {
     try {
-      const response = await api.put(
-        `/viral/candidates/${candidateId}`,
-        candidateData
-      );
-      return response.data;
+      void candidateId;
+      void candidateData;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error updating candidate:", error);
       throw error;
@@ -466,7 +456,8 @@ export const viralApi = {
 
   deleteCandidate: async (candidateId: string): Promise<void> => {
     try {
-      await api.delete(`/viral/candidates/${candidateId}`);
+      void candidateId;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error deleting candidate:", error);
       throw error;
@@ -487,10 +478,8 @@ export const viralApi = {
     }>
   > => {
     try {
-      const response = await api.get("/viral/top-shared", {
-        params: { limit },
-      });
-      return response.data;
+      void limit;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching top shared content:", error);
       return [];
@@ -509,10 +498,8 @@ export const viralApi = {
     }>
   > => {
     try {
-      const response = await api.get("/viral/trends", {
-        params: { days },
-      });
-      return response.data;
+      void days;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching viral trends:", error);
       return [];
@@ -527,7 +514,8 @@ export const viralApi = {
     shareRewards: Record<string, number>;
   }): Promise<void> => {
     try {
-      await api.post("/viral/settings", settings);
+      void settings;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error updating viral settings:", error);
       throw error;
@@ -536,8 +524,7 @@ export const viralApi = {
 
   getViralSettings: async (): Promise<any> => {
     try {
-      const response = await api.get("/viral/settings");
-      return response.data;
+      throw viralBackendUnavailable();
     } catch (error) {
       console.error("Error fetching viral settings:", error);
       return {};

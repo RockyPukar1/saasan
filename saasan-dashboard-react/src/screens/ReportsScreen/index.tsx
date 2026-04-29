@@ -16,6 +16,8 @@ import {
   Edit,
   Filter,
   X,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +36,14 @@ import {
   reportStatusesApi,
   reportTypesApi,
   reportVisibilitiesApi,
+  messageThreadApi,
 } from "@/services/api";
 import type { IReport } from "@/types/report";
 import ReportEditForm from "@/components/reports/ReportEditForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { PERMISSIONS } from "@/constants/permission.constants";
 import { PermissionGate } from "@/components/PermissionGate";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface IReportFilter {
   status: string[];
@@ -59,6 +63,8 @@ export default function ReportsScreen() {
   const { hasPermission } = useAuth();
 
   const canResolveReports = hasPermission(PERMISSIONS.reports.resolve);
+  const canViewMessages = hasPermission(PERMISSIONS.messages.view);
+  const canReplyMessages = hasPermission(PERMISSIONS.messages.reply);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
@@ -66,6 +72,7 @@ export default function ReportsScreen() {
   const [showDetails, setShowDetails] = useState<IReport | null>(null);
   const [showActivities, setShowActivities] = useState<string | null>(null);
   const [editingReport, setEditingReport] = useState<IReport | null>(null);
+  const [threadReply, setThreadReply] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -165,6 +172,38 @@ export default function ReportsScreen() {
       return reportsApi.getActivities(showActivities, 1, 50);
     },
     enabled: !!showActivities,
+  });
+
+  const { data: reportThreadResponse, isLoading: reportThreadLoading } = useQuery(
+    {
+      queryKey: ["report-thread-admin", showDetails?.id],
+      queryFn: () => messageThreadApi.getByReportId(showDetails!.id),
+      enabled:
+        !!showDetails?.id &&
+        !!showDetails?.autoConvertedToMessage &&
+        canViewMessages,
+      retry: false,
+    },
+  );
+
+  const replyToThreadMutation = useMutation({
+    mutationFn: ({
+      messageId,
+      content,
+    }: {
+      messageId: string;
+      content: string;
+    }) => messageThreadApi.addReply(messageId, content),
+    onSuccess: async () => {
+      setThreadReply("");
+      await queryClient.invalidateQueries({
+        queryKey: ["report-thread-admin", showDetails?.id],
+      });
+      toast.success("Reply added to thread");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to send reply");
+    },
   });
 
   // Approve report mutation
@@ -681,6 +720,107 @@ export default function ReportsScreen() {
                   </div>
                 </div>
               </div>
+
+              {showDetails.autoConvertedToMessage && (
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                    <h4 className="font-medium text-gray-900">
+                      Converted Message Thread
+                    </h4>
+                  </div>
+                  {!canViewMessages ? (
+                    <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      You do not have permission to monitor message threads.
+                    </div>
+                  ) : reportThreadLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, index) => (
+                        <div
+                          key={index}
+                          className="h-20 animate-pulse rounded-lg bg-gray-100"
+                        />
+                      ))}
+                    </div>
+                  ) : reportThreadResponse?.data ? (
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                        Status: {reportThreadResponse.data.status} • Citizen:{" "}
+                        {reportThreadResponse.data.participants.citizen.name ||
+                          "Citizen"}{" "}
+                        • Politician:{" "}
+                        {reportThreadResponse.data.participants.politician.name ||
+                          "Representative"}
+                      </div>
+
+                      <div className="space-y-3">
+                        {reportThreadResponse.data.messages?.map(
+                          (message, index) => (
+                            <div
+                              key={message.id || message._id || index}
+                              className={`rounded-lg border p-3 ${
+                                message.senderType === "STAFF"
+                                  ? "border-purple-100 bg-purple-50/70"
+                                  : message.senderType === "POLITICIAN"
+                                    ? "border-blue-100 bg-blue-50/70"
+                                    : "border-red-100 bg-red-50/70"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {message.senderType === "STAFF"
+                                    ? "Admin / Staff"
+                                    : message.senderType === "POLITICIAN"
+                                      ? "Politician"
+                                      : "Citizen"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(message.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                              <p className="mt-2 text-sm text-gray-700">
+                                {message.content}
+                              </p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+
+                      {canReplyMessages && (
+                        <div className="space-y-3">
+                          <Textarea
+                            value={threadReply}
+                            onChange={(e) => setThreadReply(e.target.value)}
+                            placeholder="Add an admin note or reply into this thread..."
+                            className="min-h-[100px]"
+                          />
+                          <div className="flex justify-end">
+                            <Button
+                              onClick={() =>
+                                replyToThreadMutation.mutate({
+                                  messageId: reportThreadResponse.data.id,
+                                  content: threadReply.trim(),
+                                })
+                              }
+                              disabled={
+                                replyToThreadMutation.isPending ||
+                                !threadReply.trim()
+                              }
+                            >
+                              <Send className="mr-2 h-4 w-4" />
+                              Reply to Thread
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      No converted thread was found for this report yet.
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setShowDetails(null)}>

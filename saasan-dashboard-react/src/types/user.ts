@@ -18,6 +18,12 @@ export interface IUser {
   municipalityId?: string;
   wardId?: string;
   constituencyId?: string;
+  phone?: string;
+  avatarUrl?: string;
+  designation?: string;
+  department?: string;
+  politicianId?: string;
+  profile?: Record<string, unknown>;
   lastActiveAt?: Date | string;
   createdAt: Date | string;
   updatedAt: Date | string;

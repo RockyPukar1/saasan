@@ -43,6 +43,7 @@ export interface AchievementDto {
 // Politician data as sent by backend serializer
 export interface PoliticianDto {
   id: string;
+  userId?: string;
   fullName: string;
   biography: string;
   contact: ContactDto;
@@ -55,6 +56,8 @@ export interface PoliticianDto {
   totalReports: number;
   totalVotes: number;
   verifiedReports: number;
+  hasAccount?: boolean;
+  accountCreatedAt?: string;
   sourceCategories: SourceCategoriesDto;
   promises?: PromiseDto[];
   achievements?: AchievementDto[];
@@ -126,6 +129,12 @@ export interface UserDto {
   municipalityId?: string;
   wardId?: string;
   constituencyId?: string;
+  phone?: string;
+  avatarUrl?: string;
+  designation?: string;
+  department?: string;
+  politicianId?: string;
+  profile?: Record<string, unknown>;
   isActive: boolean;
   isVerified: boolean;
   lastActiveAt?: string;

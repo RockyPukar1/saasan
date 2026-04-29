@@ -1,5 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -42,16 +47,7 @@ function App() {
           <div className="min-h-screen bg-background">
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/sessions"
-                element={
-                  <ProtectedRoute
-                    requiredPermission={PERMISSIONS.sessions.view}
-                  >
-                    <SessionsPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route
                 path="/"
                 element={
@@ -60,6 +56,16 @@ function App() {
                   </ProtectedRoute>
                 }
               >
+                <Route
+                  path="sessions"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.sessions.view}
+                    >
+                      <SessionsPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="role-permissions"
                   element={

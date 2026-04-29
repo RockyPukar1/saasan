@@ -5,7 +5,7 @@ import { AccessDeniedState } from "@/components/AccessDeniedState";
 
 export default function ProtectedLayout() {
   const { isAuthenticated, loading, canAccessCitizenApp } = useAuthContext();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -28,11 +28,13 @@ export default function ProtectedLayout() {
   }
 
   return (
-    <>
-      <div className="pb-20">
-        <Outlet />
-      </div>
+    <div className="min-h-screen bg-[#f6f8fc] lg:flex">
       <Tabs />
-    </>
+      <div className="min-h-screen flex-1 lg:overflow-x-hidden">
+        <div className="pb-20 lg:min-h-screen lg:pb-0">
+          <Outlet />
+        </div>
+      </div>
+    </div>
   );
 };

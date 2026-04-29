@@ -213,7 +213,10 @@ export function usePolling() {
       setLoading(true);
       setError(null);
       try {
-        const response = await pollingApi.createCategory({ name, name_nepali });
+        const response: any = await pollingApi.createCategory({
+          name,
+          name_nepali,
+        });
         // Add the new category to the local state immediately
         setCategories((prev) => {
           const newCategory = response.data.name;
@@ -237,7 +240,7 @@ export function usePolling() {
     setLoading(true);
     setError(null);
     try {
-      const response = await pollingApi.createType({ name, name_nepali });
+      const response: any = await pollingApi.createType({ name, name_nepali });
       // Add the new type to the local state immediately
       setTypes((prev) => {
         const newType = response.data.name;

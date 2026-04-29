@@ -78,7 +78,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     <div className="mb-6">
       <p className="text-lg font-bold text-gray-800 mb-3">Report Category</p>
 
-      <div className="flex flex-wrap">
+      <div className="grid grid-cols-2 gap-3">
         {reportCategories.map((category) => {
           const Icon = category.icon;
           const isSelected = selectedCategory === category.id;
@@ -87,7 +87,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
             <div
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`w-[48%] mb-3 mr-[2%] p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+              className={`min-h-36 p-3 rounded-lg border-2 cursor-pointer transition-colors sm:p-4 ${
                 isSelected
                   ? "border-red-500 bg-red-50"
                   : "border-gray-200 bg-white hover:bg-gray-50"
@@ -100,7 +100,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               </div>
 
               <p
-                className={`font-bold text-sm ${
+                className={`font-bold text-sm leading-snug ${
                   isSelected ? "text-red-800" : "text-gray-800"
                 }`}
               >
@@ -108,7 +108,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               </p>
 
               <p
-                className={`text-xs mt-1 ${
+                className={`text-xs mt-1 leading-snug ${
                   isSelected ? "text-red-600" : "text-gray-600"
                 }`}
               >

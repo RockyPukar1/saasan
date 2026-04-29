@@ -20,10 +20,14 @@ export class FileConsumer implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    this.logger.log('Starting file consumer');
+
     const consumer = await this.kafkaService.createConsumer(KAFKA_GROUP_FILE);
 
     if (!consumer) {
-      this.logger.warn('File consumer not started because Kafka is unavailable');
+      this.logger.warn(
+        'File consumer not started because Kafka is unavailable',
+      );
       return;
     }
 
@@ -31,6 +35,10 @@ export class FileConsumer implements OnModuleInit {
       topic: KAFKA_TOPIC_FILE,
       fromBeginning: false,
     });
+
+    this.logger.log(
+      `Email consumer subscribed group=${KAFKA_GROUP_FILE} topic=${KAFKA_TOPIC_FILE}`,
+    );
 
     await consumer.run({
       eachMessage: async ({ topic, message }) => {

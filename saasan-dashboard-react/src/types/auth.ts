@@ -6,17 +6,19 @@ export interface NestedPermissions {
 
 export interface AuthPayload {
   user: IUser;
+  profile?: Record<string, unknown>;
   permissions: string[];
   nestedPermissions: NestedPermissions;
   accessToken: string;
   refreshToken: string;
   sessionId?: string;
   accessTokenExpiresIn?: number;
-  refreshTokenExpiresAt?: string;
+  refreshTokenExpiresIn?: string | Date;
 }
 
 export interface ProfilePayload {
   user: IUser;
+  profile?: Record<string, unknown>;
   permissions: string[];
   nestedPermissions: NestedPermissions;
 }

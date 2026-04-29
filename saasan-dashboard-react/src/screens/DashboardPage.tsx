@@ -4,7 +4,6 @@ import {
   Users,
   FileText,
   AlertTriangle,
-  TrendingUp,
   Settings,
   Shield,
   BarChart3,
@@ -13,11 +12,28 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  BarChart as RechartsBarChart,
+  Bar,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { dashboardApi, reportsApi, politicsApi } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+
+const CHART_COLORS = ["#2563eb", "#16a34a", "#ea580c", "#7c3aed", "#dc2626"];
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -65,15 +81,27 @@ export const DashboardPage: React.FC = () => {
   }
 
   const overview = stats?.data?.overview || {
-    totalReports: 0,
-    resolvedReports: 0,
+    totalReportsCount: 0,
+    resolvedReportsCount: 0,
+    totalCasesCount: 0,
+    resolvedCasesCount: 0,
     totalPoliticians: 0,
     activePoliticians: 0,
-    resolutionRate: 0,
+    reportResolutionRate: 0,
+    caseResolutionRate: 0,
   };
 
   const recentReports = reports?.slice(0, 5) || [];
   const recentPoliticians = politicians?.data?.slice(0, 5) || [];
+  const aggregations = stats?.data?.aggregations;
+  const reportMix = aggregations?.reportLevelBreakdown || [];
+  const reportStatusMix = aggregations?.reportStatusBreakdown || [];
+  const activityTrend =
+    aggregations?.combinedVolumeTrend?.map((item) => ({
+      ...item,
+      day: format(new Date(item.date), "MMM dd"),
+    })) || [];
+  const eventMix = aggregations?.eventCategoryBreakdown || [];
 
   // const statCards = [
   //   {
@@ -140,7 +168,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <FileText className="text-blue-600" size={24} />
                 <span className="text-2xl font-bold text-blue-600">
-                  {overview.totalReports}
+                  {overview.totalReportsCount}
                 </span>
               </div>
               <p className="text-gray-600 text-sm mt-2">Total Reports</p>
@@ -171,9 +199,11 @@ export const DashboardPage: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <BarChart3 className="text-purple-600" size={24} />
-                <span className="text-2xl font-bold text-purple-600">0</span>
+                <span className="text-2xl font-bold text-purple-600">
+                  {overview.totalCasesCount}
+                </span>
               </div>
-              <p className="text-gray-600 text-sm mt-2">Active Polls</p>
+              <p className="text-gray-600 text-sm mt-2">Tracked Cases</p>
               <p className="text-purple-500 text-xs mt-1">Click to manage</p>
             </CardContent>
           </Card>
@@ -196,7 +226,7 @@ export const DashboardPage: React.FC = () => {
 
           <Card
             className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/sessions")}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -205,8 +235,132 @@ export const DashboardPage: React.FC = () => {
                   <Settings className="inline" size={20} />
                 </span>
               </div>
-              <p className="text-gray-600 text-sm mt-2">System Settings</p>
-              <p className="text-orange-500 text-xs mt-1">Click to configure</p>
+              <p className="text-gray-600 text-sm mt-2">Session Security</p>
+              <p className="text-orange-500 text-xs mt-1">Review active access</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="px-4 mb-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Trend</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={activityTrend}>
+                  <defs>
+                    <linearGradient id="reportsFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.32} />
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0.04} />
+                    </linearGradient>
+                    <linearGradient id="casesFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#16a34a" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#16a34a" stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="day" tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="reports"
+                    name="Reports"
+                    stroke="#2563eb"
+                    fill="url(#reportsFill)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="cases"
+                    name="Cases"
+                    stroke="#16a34a"
+                    fill="url(#casesFill)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Status Split</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart>
+                  <Pie
+                    data={reportStatusMix}
+                    dataKey="count"
+                    nameKey="label"
+                    innerRadius={72}
+                    outerRadius={108}
+                    paddingAngle={4}
+                  >
+                    {reportStatusMix.map((entry, index) => (
+                      <Cell
+                        key={entry.label}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="px-4 mb-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reports By Level</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={reportMix}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#2563eb" />
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Event Categories</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart
+                  data={eventMix}
+                  layout="vertical"
+                  margin={{ left: 12, right: 12 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
+                  <YAxis
+                    dataKey="label"
+                    type="category"
+                    tickLine={false}
+                    axisLine={false}
+                    width={88}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="count" radius={[0, 10, 10, 0]} fill="#7c3aed" />
+                </RechartsBarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
@@ -420,12 +574,12 @@ export const DashboardPage: React.FC = () => {
 
           <Button
             className="flex items-center justify-center gap-2 p-4 h-auto"
-            onClick={() => navigate("/viral-management")}
+            onClick={() => navigate("/role-permissions")}
           >
-            <TrendingUp className="h-6 w-6" />
+            <Shield className="h-6 w-6" />
             <div className="text-left">
-              <div className="font-semibold">Viral Management</div>
-              <div className="text-sm opacity-90">Monitor engagement</div>
+              <div className="font-semibold">Role Permissions</div>
+              <div className="text-sm opacity-90">Manage access control</div>
             </div>
           </Button>
         </div>
@@ -443,8 +597,8 @@ export const DashboardPage: React.FC = () => {
           <Button className="bg-white" onClick={() => navigate("/reports")}>
             <span className="text-blue-600 font-bold">Review Reports</span>
           </Button>
-          <Button className="bg-white" onClick={() => navigate("/settings")}>
-            <span className="text-blue-600 font-bold">System Settings</span>
+          <Button className="bg-white" onClick={() => navigate("/sessions")}>
+            <span className="text-blue-600 font-bold">Session Security</span>
           </Button>
         </div>
       </div>

@@ -90,6 +90,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       localStorage.setItem("accessToken", response.data.accessToken);
       localStorage.setItem("refreshToken", response.data.refreshToken);
+      if (response.data.sessionId) {
+        localStorage.setItem("sessionId", response.data.sessionId);
+      }
     }
   };
 

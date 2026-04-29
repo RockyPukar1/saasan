@@ -59,6 +59,13 @@ export class ReportSerializer {
   )
   activities?: any[];
   @Expose() sharesCount: number;
+  @Expose() autoConvertedToMessage?: boolean;
+  @Expose()
+  @Transform(({ obj }) => obj.targetPoliticianId?.toString?.() || null)
+  targetPoliticianId?: string | null;
+  @Expose()
+  @Transform(({ obj }) => obj.escalatedToPoliticianId?.toString?.() || null)
+  escalatedToPoliticianId?: string | null;
   @Expose()
   @Type(() => SourceCategories)
   sourceCategories: SourceCategories;

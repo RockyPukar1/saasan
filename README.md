@@ -129,7 +129,7 @@ Current root helper commands:
 
 - `pnpm install:all` installs dependencies for the root, backend, and dashboard
 - `pnpm setup:env` copies example env files
-- `pnpm dev:all` starts backend, dashboard, and mobile together
+- `pnpm dev:all` starts the backend API, backend worker, dashboard, mobile, and politician apps together
 
 ## Backend Modules
 

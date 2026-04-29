@@ -436,7 +436,7 @@ const PoliticianCard = ({ politician }: { politician: IPolitician }) => {
             </Button>
             <Button
               className="flex-1 bg-gray-200 py-2 rounded"
-              onClick={() => navigate(`/politician/${politician.id}`)}
+              onClick={() => navigate(`/politics/politician/${politician.id}`)}
             >
               <p className="text-gray-700 font-medium text-center text-xs">
                 View Details

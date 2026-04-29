@@ -29,6 +29,7 @@ import { GlobalHttpException } from 'src/common/exceptions/global-http.exception
 import { Logger } from '@nestjs/common';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 import { ReportToMessageService } from './report-to-message.service';
+import { AdminRepository } from 'src/user/repositories/admin.repository';
 
 @Injectable()
 export class ReportService {
@@ -41,6 +42,7 @@ export class ReportService {
     private tx: TransactionRunner,
     private readonly reportToMessageService: ReportToMessageService,
     private readonly userRepo: UserRepository,
+    private readonly adminRepo: AdminRepository,
     private readonly reportActivityRepo: ReportActivityRepository,
     private readonly reportTypeRepo: ReportTypeRepository,
     private readonly reportStatusRepo: ReportStatusRepository,
@@ -183,6 +185,9 @@ export class ReportService {
 
     const user = await this.userRepo.findById({ userId: modifiedById });
     if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+    const adminProfile = await this.adminRepo
+      .findByUserId({ userId: modifiedById })
+      .lean();
 
     let category: Record<string, Record<string, string>> = {};
     if (updateData?.typeId) {
@@ -237,7 +242,7 @@ export class ReportService {
           comment: updateData.comment,
           modifiedBy: {
             id: modifiedById,
-            fullName: user.fullName,
+            fullName: adminProfile?.fullName || user.email,
           },
           oldValue: value.oldValue,
           newValue: value.newValue,

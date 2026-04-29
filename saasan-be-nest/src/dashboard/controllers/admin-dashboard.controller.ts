@@ -17,6 +17,6 @@ export class AdminDashboardController {
   @Permissions(PERMISSIONS.dashboard.view)
   @Get('stats')
   async getStats() {
-    return this.dashboardService.getStats();
+    return this.dashboardService.getAdminStats();
   }
 }

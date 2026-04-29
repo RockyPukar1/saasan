@@ -1,6 +1,5 @@
 export interface IAuthSession {
   id: string;
-  userId: string;
   refreshExpiresAt: string;
   revokedAt?: string;
   revokedReason?: string;

@@ -14,7 +14,7 @@ enum PoliticianAchievementCategory {
   collection: PoliticianAchievementEntity.collection,
 })
 export class PoliticianAchievementEntity {
-  static readonly collection = 'politician-achievements';
+  static readonly collection = 'politician_achievements';
   _id: Types.ObjectId;
   createdAt: Date;
   updated: Date;

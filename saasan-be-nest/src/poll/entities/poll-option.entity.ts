@@ -4,7 +4,7 @@ import { PollEntity } from './poll.entity';
 
 @Schema({ timestamps: true, collection: PollOptionEntity.collection })
 export class PollOptionEntity {
-  static readonly collection = 'poll-options';
+  static readonly collection = 'poll_options';
   _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

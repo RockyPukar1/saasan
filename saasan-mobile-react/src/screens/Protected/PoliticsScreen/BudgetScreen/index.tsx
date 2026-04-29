@@ -1,54 +1,32 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Search,
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  X,
-} from "lucide-react";
+import { Search, DollarSign, TrendingUp, Calendar, X } from "lucide-react";
 import Loading from "@/components/Loading";
 import Error from "@/components/Error";
 import { Input } from "@/components/ui/input";
 import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
-
-// Mock data for budget (since it's not implemented yet)
-const mockBudgetData = [
-  {
-    id: "1",
-    title: "Infrastructure Development",
-    amount: 500000000,
-    department: "Ministry of Infrastructure",
-    year: 2024,
-    status: "approved",
-  },
-  {
-    id: "2",
-    title: "Education Sector Enhancement",
-    amount: 300000000,
-    department: "Ministry of Education",
-    year: 2024,
-    status: "pending",
-  },
-  {
-    id: "3",
-    title: "Healthcare System Upgrade",
-    amount: 450000000,
-    department: "Ministry of Health",
-    year: 2024,
-    status: "approved",
-  },
-];
+import { apiService } from "@/services/api";
 
 export default function BudgetScreen() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["budgets"],
+    queryFn: () => apiService.getBudgets(),
+    staleTime: 2 * 60 * 1000,
+  });
 
-  const filteredBudgetItems = mockBudgetData.filter(
-    (item) =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.department.toLowerCase().includes(searchQuery.toLowerCase()),
+  const budgetItems = data?.data || [];
+
+  const filteredBudgetItems = useMemo(
+    () =>
+      budgetItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.category || "").toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [budgetItems, searchQuery],
   );
 
   const formatAmount = (amount: number) => {
@@ -70,17 +48,24 @@ export default function BudgetScreen() {
         return "bg-yellow-100 text-yellow-800";
       case "rejected":
         return "bg-red-100 text-red-800";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <Loading />;
   }
 
   if (error) {
-    return <Error error={error} refresh={() => {}} />;
+    return (
+      <Error
+        error={error instanceof Error ? error.message : "Failed to load budget"}
+        refresh={() => refetch()}
+      />
+    );
   }
 
   return (
@@ -89,7 +74,6 @@ export default function BudgetScreen() {
       showBackButton={true}
       subHeader={
         <>
-          {/* Search Bar */}
           <div className="bg-white border-b border-gray-200 p-4">
             <div className="relative">
               <Search
@@ -113,7 +97,6 @@ export default function BudgetScreen() {
             </div>
           </div>
 
-          {/* Budget Summary */}
           <div className="bg-white border-b border-gray-200 p-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
@@ -121,10 +104,7 @@ export default function BudgetScreen() {
                   <DollarSign size={20} />
                   <span className="text-lg font-bold">
                     {formatAmount(
-                      mockBudgetData.reduce(
-                        (sum, item) => sum + item.amount,
-                        0,
-                      ),
+                      budgetItems.reduce((sum, item) => sum + item.amount, 0),
                     )}
                   </span>
                 </div>
@@ -133,9 +113,7 @@ export default function BudgetScreen() {
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-2 text-blue-600">
                   <TrendingUp size={20} />
-                  <span className="text-lg font-bold">
-                    {mockBudgetData.length}
-                  </span>
+                  <span className="text-lg font-bold">{budgetItems.length}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Budget Items</p>
               </div>
@@ -165,6 +143,11 @@ export default function BudgetScreen() {
                         {item.title}
                       </h3>
                       <p className="text-sm text-gray-600">{item.department}</p>
+                      {item.description && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {item.description}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-green-600">
@@ -173,15 +156,21 @@ export default function BudgetScreen() {
                       <span
                         className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}
                       >
-                        {item.status.charAt(0).toUpperCase() +
-                          item.status.slice(1)}
+                        {item.status.replace("_", " ")}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center text-xs text-gray-400">
-                    <Calendar size={14} className="mr-1" />
-                    <span>Fiscal Year {item.year}</span>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <div className="flex items-center">
+                      <Calendar size={14} className="mr-1" />
+                      <span>Fiscal Year {item.year}</span>
+                    </div>
+                    {item.category && (
+                      <span className="uppercase tracking-wide text-gray-500">
+                        {item.category.replace("_", " ")}
+                      </span>
+                    )}
                   </div>
                 </CardContent>
               </Card>

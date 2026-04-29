@@ -175,42 +175,57 @@ export default function PollsScreen() {
   }
 
   return (
-    <div className="flex-1 bg-gray-50">
-      {/* Tab Selector */}
-      <TabSelector
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        tabs={[
-          {
-            label: t("polling.activePolls"),
-            value: "all",
-          },
-          {
-            label: t("polling.myPolls"),
-            value: "my-votes",
-          },
-        ]}
-      />
+    <div className="min-h-screen bg-[#f6f8fc] px-4 py-6 lg:px-8 lg:py-8">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/70 lg:p-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-red-500">
+            Citizen Polling
+          </p>
+          <h1 className="mb-2 text-3xl font-bold text-gray-900 lg:text-4xl">
+            Polls
+          </h1>
+          <p className="text-sm text-gray-600 lg:text-base">
+            Vote on public questions and review community sentiment in one
+            place.
+          </p>
+        </div>
 
-      {/* Poll List */}
-      <div className="flex-1 px-4 py-4">
-        {loading && polls.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <p>{t("polling.loadingPolls")}</p>
+        <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/70">
+          <TabSelector
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            tabs={[
+              {
+                label: t("polling.activePolls"),
+                value: "all",
+              },
+              {
+                label: t("polling.myPolls"),
+                value: "my-votes",
+              },
+            ]}
+          />
+
+          <div className="flex-1 px-4 py-4 lg:px-6">
+            {loading && polls.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <p>{t("polling.loadingPolls")}</p>
+              </div>
+            ) : polls.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-gray-600">{t("polling.noPolls")}</p>
+              </div>
+            ) : (
+              polls
+                .filter((poll) =>
+                  activeTab === "my-votes"
+                    ? poll.options.some((o) => o.isVoted)
+                    : true,
+                )
+                .map(renderPollCard)
+            )}
           </div>
-        ) : polls.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-gray-600">{t("polling.noPolls")}</p>
-          </div>
-        ) : (
-          polls
-            .filter((poll) =>
-              activeTab === "my-votes"
-                ? poll.options.some((o) => o.isVoted)
-                : true,
-            )
-            .map(renderPollCard)
-        )}
+        </div>
       </div>
     </div>
   );

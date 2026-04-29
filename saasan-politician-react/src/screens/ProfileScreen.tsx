@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 import {
   User,
   Edit,
@@ -20,45 +21,82 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { dummyPolitician } from "@/data/dummy-data";
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import type { AchievementDto, PromiseDto } from "@/types/api";
+
+const getEditData = (politician: typeof dummyPolitician) => ({
+  fullName: politician.fullName || "",
+  biography: politician.biography || "",
+  email: politician.contact?.email || "",
+  phone: politician.contact?.phone || "",
+  website: politician.contact?.website || "",
+  facebook: politician.socialMedia?.facebook || "",
+  twitter: politician.socialMedia?.twitter || "",
+  instagram: politician.socialMedia?.instagram || "",
+  education: politician.education || "",
+  experienceYears: politician.experienceYears || 0,
+  profession: politician.profession || "",
+});
 
 export const ProfileScreen: React.FC = () => {
+  const { data: profilePayload, isLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const politician = useMemo(
+    () => ({ ...dummyPolitician, ...(profilePayload?.profile as any) }),
+    [profilePayload],
+  );
   const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    fullName: dummyPolitician.fullName,
-    biography: dummyPolitician.biography,
-    email: dummyPolitician.contact.email,
-    phone: dummyPolitician.contact.phone,
-    website: dummyPolitician.contact.website,
-    facebook: dummyPolitician.socialMedia.facebook,
-    twitter: dummyPolitician.socialMedia.twitter,
-    instagram: dummyPolitician.socialMedia.instagram,
-    education: dummyPolitician.education,
-    experienceYears: dummyPolitician.experienceYears,
-    profession: dummyPolitician.profession,
-  });
+  const [editData, setEditData] = useState(() => getEditData(politician));
 
-  const handleSave = () => {
-    // TODO: Call API to save profile
-    console.log("Saving profile:", editData);
-    setIsEditing(false);
+  useEffect(() => {
+    if (!isEditing) {
+      setEditData(getEditData(politician));
+    }
+  }, [isEditing, politician]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile.mutateAsync({
+        fullName: editData.fullName,
+        biography: editData.biography,
+        contact: {
+          email: editData.email,
+          phone: editData.phone,
+          website: editData.website,
+        },
+        socialMedia: {
+          facebook: editData.facebook,
+          twitter: editData.twitter,
+          instagram: editData.instagram,
+        },
+        education: editData.education,
+        experienceYears: Number(editData.experienceYears) || 0,
+        profession: editData.profession,
+      });
+      toast.success("Profile updated successfully");
+      setIsEditing(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update profile");
+    }
   };
 
   const handleCancel = () => {
-    setEditData({
-      fullName: dummyPolitician.fullName,
-      biography: dummyPolitician.biography,
-      email: dummyPolitician.contact.email,
-      phone: dummyPolitician.contact.phone,
-      website: dummyPolitician.contact.website,
-      facebook: dummyPolitician.socialMedia.facebook,
-      twitter: dummyPolitician.socialMedia.twitter,
-      instagram: dummyPolitician.socialMedia.instagram,
-      education: dummyPolitician.education,
-      experienceYears: dummyPolitician.experienceYears,
-      profession: dummyPolitician.profession,
-    });
+    setEditData(getEditData(politician));
     setIsEditing(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="h-32 rounded-lg bg-gray-200 animate-pulse mb-6" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, index) => (
+            <div key={index} className="h-28 rounded-lg bg-gray-200 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,7 +125,7 @@ export const ProfileScreen: React.FC = () => {
                   <Briefcase className="text-white" size={20} />
                 </div>
                 <span className="text-2xl font-bold text-indigo-600">
-                  {dummyPolitician.experienceYears}
+                  {politician.experienceYears}
                 </span>
               </div>
               <p className="text-gray-700 text-sm mt-3 font-medium">
@@ -104,7 +142,7 @@ export const ProfileScreen: React.FC = () => {
                   <Award className="text-white" size={20} />
                 </div>
                 <span className="text-2xl font-bold text-orange-600">
-                  {dummyPolitician.achievements?.length || 0}
+                  {politician.achievements?.length || 0}
                 </span>
               </div>
               <p className="text-gray-700 text-sm mt-3 font-medium">
@@ -121,7 +159,7 @@ export const ProfileScreen: React.FC = () => {
                   <GraduationCap className="text-white" size={20} />
                 </div>
                 <span className="text-2xl font-bold text-blue-600">
-                  {dummyPolitician.education?.length || 0}
+                  {politician.education?.length || 0}
                 </span>
               </div>
               <p className="text-gray-700 text-sm mt-3 font-medium">
@@ -244,10 +282,11 @@ export const ProfileScreen: React.FC = () => {
                       </Button>
                       <Button
                         onClick={handleSave}
+                        disabled={updateProfile.isPending}
                         className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-md"
                       >
                         <Save className="h-4 w-4 mr-1" />
-                        Save Changes
+                        {updateProfile.isPending ? "Saving..." : "Save Changes"}
                       </Button>
                     </div>
                   </div>
@@ -259,10 +298,10 @@ export const ProfileScreen: React.FC = () => {
                       </div>
                       <div className="flex-1">
                         <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                          {dummyPolitician.fullName}
+                          {politician.fullName}
                         </h3>
                         <p className="text-gray-600 text-lg mb-3">
-                          {dummyPolitician.profession}
+                          {politician.profession}
                         </p>
                         <div className="flex items-center space-x-3">
                           <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-sm">
@@ -283,7 +322,7 @@ export const ProfileScreen: React.FC = () => {
                         Biography
                       </h4>
                       <p className="text-gray-700 leading-relaxed">
-                        {dummyPolitician.biography}
+                        {politician.biography}
                       </p>
                     </div>
                   </div>
@@ -312,7 +351,7 @@ export const ProfileScreen: React.FC = () => {
                       />
                     ) : (
                       <p className="text-sm">
-                        {dummyPolitician.socialMedia.facebook}
+                        {politician.socialMedia.facebook}
                       </p>
                     )}
                   </div>
@@ -327,7 +366,7 @@ export const ProfileScreen: React.FC = () => {
                       />
                     ) : (
                       <p className="text-sm">
-                        {dummyPolitician.socialMedia.twitter}
+                        {politician.socialMedia.twitter}
                       </p>
                     )}
                   </div>
@@ -345,7 +384,7 @@ export const ProfileScreen: React.FC = () => {
                       />
                     ) : (
                       <p className="text-sm">
-                        {dummyPolitician.socialMedia.instagram}
+                        {politician.socialMedia.instagram}
                       </p>
                     )}
                   </div>
@@ -362,7 +401,7 @@ export const ProfileScreen: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {dummyPolitician.achievements?.map((achievement) => (
+                {politician.achievements?.map((achievement: AchievementDto) => (
                   <div
                     key={achievement.id}
                     className="p-4 border border-gray-200 rounded-lg"
@@ -397,7 +436,7 @@ export const ProfileScreen: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {dummyPolitician.promises?.map((promise) => (
+                {politician.promises?.map((promise: PromiseDto) => (
                   <div
                     key={promise.id}
                     className="p-4 border border-gray-200 rounded-lg"
@@ -449,7 +488,7 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Email</p>
                     <p className="text-sm text-gray-600">
-                      {dummyPolitician.contact.email}
+                      {politician.contact.email}
                     </p>
                   </div>
                 </div>
@@ -458,7 +497,7 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Phone</p>
                     <p className="text-sm text-gray-600">
-                      {dummyPolitician.contact.phone}
+                      {politician.contact.phone}
                     </p>
                   </div>
                 </div>
@@ -467,7 +506,7 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Website</p>
                     <p className="text-sm text-gray-600">
-                      {dummyPolitician.contact.website}
+                      {politician.contact.website}
                     </p>
                   </div>
                 </div>
@@ -487,14 +526,14 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Party</p>
                     <p className="text-sm text-gray-600">
-                      {dummyPolitician.sourceCategories.party}
+                      {politician.sourceCategories.party}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Positions</p>
                     <div className="space-y-1">
-                      {dummyPolitician.sourceCategories.positions.map(
-                        (position, index) => (
+                      {politician.sourceCategories.positions.map(
+                        (position: string, index: number) => (
                           <p key={index} className="text-sm text-gray-600">
                             • {position}
                           </p>
@@ -505,8 +544,8 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Levels</p>
                     <div className="space-y-1">
-                      {dummyPolitician.sourceCategories.levels.map(
-                        (level, index) => (
+                      {politician.sourceCategories.levels.map(
+                        (level: string, index: number) => (
                           <p key={index} className="text-sm text-gray-600">
                             • {level}
                           </p>

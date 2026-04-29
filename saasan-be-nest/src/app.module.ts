@@ -24,6 +24,7 @@ import { RolePermissionModule } from './role-permission/role-permission.module';
 import { KafkaModule } from './common/kafka/kafka.module';
 import { JobsModule } from './common/jobs/jobs.module';
 import { NotificationModule } from './common/notification/notification.module';
+import { BudgetModule } from './budget/budget.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { NotificationModule } from './common/notification/notification.module';
     KafkaModule,
     JobsModule,
     NotificationModule,
+    BudgetModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

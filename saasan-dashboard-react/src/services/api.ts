@@ -46,6 +46,38 @@ import type {
   IUpdateRolePermissionPayload,
 } from "@/types/role-permission";
 
+export interface IMessageThread {
+  id: string;
+  subject: string;
+  content: string;
+  category: string;
+  urgency: string;
+  status: string;
+  participants: {
+    citizen: {
+      id: string;
+      name: string;
+      email: string;
+    };
+    politician: {
+      id: string;
+      name: string;
+    };
+  };
+  messages: Array<{
+    id?: string;
+    _id?: string;
+    senderId: string;
+    senderType: string;
+    content: string;
+    createdAt: string;
+  }>;
+  sourceReportId?: string;
+  messageOrigin?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     _retry?: boolean;
@@ -57,15 +89,16 @@ const transformPolitician = (politician: IPolitician) => ({
   id: politician.id,
   fullName: politician.fullName,
   experienceYears: politician.experienceYears,
-  party: politician.isIndependent ? "Independent" : politician.party,
-  constituency: politician.constituencyNumber,
+  party: politician.isIndependent
+    ? "Independent"
+    : politician.sourceCategories?.party || "",
+  constituencyNumber: politician.constituencyNumber,
   rating: politician.rating || 0,
   createdAt: politician.createdAt,
   updatedAt: politician.updatedAt,
   isIndependent: politician.isIndependent,
   totalReports: politician.totalReports,
   verifiedReports: politician.verifiedReports,
-  sourceCategories: politician.sourceCategories,
   // Add missing fields
   biography: politician.biography,
   education: politician.education,
@@ -76,52 +109,49 @@ const transformPolitician = (politician: IPolitician) => ({
   totalVotes: politician.totalVotes,
   isActive: politician.isActive,
   photoUrl: politician.photoUrl,
-  dateOfBirth: politician.dateOfBirth,
-  totalVotesReceived: politician.totalVotesReceived,
-  termStartDate: politician.termStartDate,
-  termEndDate: politician.termEndDate,
-  profileImageUrl: politician.profileImageUrl,
-  officialWebsite: politician.officialWebsite,
   partyId: politician.partyId,
-  positionId: politician.positionId,
   constituencyId: politician.constituencyId,
   status: politician.status,
+  joinedDate: politician.joinedDate,
   experiences: politician.experiences,
   promises: politician.promises,
   achievements: politician.achievements,
+  sourceCategories: politician.sourceCategories,
+  hasAccount: politician.hasAccount,
+  accountCreatedAt: politician.accountCreatedAt,
 });
 
-// Utility function to transform camelCase to snake_case for API requests
+// Keep the admin client aligned with the backend DTO contract.
 const transformPoliticianForApi = (data: Partial<IPolitician> | any) => {
   const transformed: any = {
-    full_name: data.fullName,
-    position_id: data.positionId,
-    party_id: data.partyId,
+    fullName: data.fullName,
+    partyId: data.partyId,
     biography: data.biography,
     education: data.education,
-    experience_years: data.experienceYears,
-    date_of_birth: data.dateOfBirth,
-    profile_image_url: data.profileImageUrl,
-    contact_phone: data.contactPhone,
-    contact_email: data.contactEmail,
-    official_website: data.officialWebsite,
-    social_media_links: data.socialMediaLinks,
+    experienceYears: data.experienceYears,
     status: data.status,
-    term_start_date: data.termStartDate,
-    term_end_date: data.termEndDate,
-    total_votes_received: data.totalVotesReceived,
+    profession: data.profession,
+    age: data.age,
+    totalVotes: data.totalVotes,
+    isActive: data.isActive,
+    photoUrl: data.photoUrl,
+    joinedDate: data.joinedDate,
+    constituencyId: data.constituencyId,
+    isIndependent: data.isIndependent,
   };
 
   // Handle contact object
   if (data.contact) {
-    transformed.contact_email = data.contact.email;
-    transformed.contact_phone = data.contact.phone;
-    transformed.official_website = data.contact.website;
+    transformed.contact = {
+      email: data.contact.email,
+      phone: data.contact.phone,
+      website: data.contact.website,
+    };
   }
 
   // Handle social media object
   if (data.socialMedia) {
-    transformed.social_media_links = {
+    transformed.socialMedia = {
       facebook: data.socialMedia.facebook,
       twitter: data.socialMedia.twitter,
       instagram: data.socialMedia.instagram,
@@ -130,11 +160,11 @@ const transformPoliticianForApi = (data: Partial<IPolitician> | any) => {
 
   // Handle position and level arrays
   if (data.positionIds && Array.isArray(data.positionIds)) {
-    transformed.position_ids = data.positionIds;
+    transformed.positionIds = data.positionIds;
   }
 
   if (data.levelIds && Array.isArray(data.levelIds)) {
-    transformed.level_ids = data.levelIds;
+    transformed.levelIds = data.levelIds;
   }
 
   // Handle promises
@@ -200,15 +230,30 @@ let refreshPromise: Promise<string | null> | null = null;
 
 const getAccessToken = () => localStorage.getItem("accessToken");
 const getRefreshToken = () => localStorage.getItem("refreshToken");
+const getCurrentSessionId = () => localStorage.getItem("sessionId");
 
-const setTokens = (accessToken: string, refreshToken: string) => {
+const setTokens = (
+  accessToken: string,
+  refreshToken: string,
+  sessionId?: string,
+) => {
   localStorage.setItem("accessToken", accessToken);
   localStorage.setItem("refreshToken", refreshToken);
+  if (sessionId) {
+    localStorage.setItem("sessionId", sessionId);
+  }
 };
 
 const clearTokens = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("sessionId");
+};
+
+const unsupportedRoute = <T>(feature: string): Promise<T> => {
+  return Promise.reject(
+    new Error(`${feature} is not implemented in the backend yet.`),
+  );
 };
 
 const normalizePermissions = (permissions: unknown): string[] => {
@@ -227,6 +272,33 @@ const normalizePermissions = (permissions: unknown): string[] => {
   return [];
 };
 
+const normalizeAuthResponse = <T extends AuthPayload | ProfilePayload>(
+  response: ApiResponse<T>,
+): ApiResponse<T> => ({
+  ...response,
+  data: {
+    ...response.data,
+    permissions: normalizePermissions(response.data?.permissions),
+  },
+});
+
+const unwrapResponseData = <T>(response: {
+  data: T | ApiResponse<T>;
+}): T => {
+  const payload = response.data as T | ApiResponse<T>;
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "success" in payload &&
+    "data" in payload
+  ) {
+    return (payload as ApiResponse<T>).data;
+  }
+
+  return payload as T;
+};
+
 const refreshAccessToken = async () => {
   const refreshToken = getRefreshToken();
 
@@ -241,8 +313,9 @@ const refreshAccessToken = async () => {
     if (response.data?.success) {
       const newAccessToken = response.data.data.accessToken;
       const newRefreshToken = response.data.data.refreshToken;
+      const newSessionId = response.data.data.sessionId;
 
-      setTokens(newAccessToken, newRefreshToken);
+      setTokens(newAccessToken, newRefreshToken, newSessionId);
       return newAccessToken;
     }
 
@@ -282,6 +355,7 @@ api.interceptors.response.use(
       error.response.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/admin/auth/login") &&
       !originalRequest.url?.includes("/auth/refresh-token")
     ) {
       originalRequest._retry = true;
@@ -324,15 +398,18 @@ export const authApi = {
     email: string,
     password: string,
   ): Promise<ApiResponse<AuthPayload>> => {
-    const response = await api.post("/auth/login", { email, password });
-    return response.data;
+    const response = await api.post("/admin/auth/login", {
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    return normalizeAuthResponse(response.data);
   },
 
   refreshToken: async (
     refreshToken: string,
   ): Promise<ApiResponse<AuthPayload>> => {
     const response = await api.post("/auth/refresh-token", { refreshToken });
-    return response.data;
+    return normalizeAuthResponse(response.data);
   },
 
   register: async (userData: {
@@ -350,13 +427,7 @@ export const authApi = {
 
   getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.get("/admin/user/profile");
-    return {
-      ...response.data,
-      data: {
-        ...response.data.data,
-        permissions: normalizePermissions(response.data.data?.permissions),
-      },
-    };
+    return normalizeAuthResponse(response.data);
   },
 
   logout: async () => {
@@ -410,6 +481,24 @@ export const sessionApi = {
     const response = await api.post("/auth/logout");
     return response.data;
   },
+
+  getCurrentSessionId,
+};
+
+export const messageThreadApi = {
+  getByReportId: async (reportId: string): Promise<ApiResponse<IMessageThread>> => {
+    void reportId;
+    return unsupportedRoute("Report-linked message threads");
+  },
+
+  addReply: async (
+    messageId: string,
+    content: string,
+  ): Promise<ApiResponse<IMessageThread>> => {
+    void messageId;
+    void content;
+    return unsupportedRoute("Message thread replies");
+  },
 };
 
 // Dashboard API
@@ -420,13 +509,11 @@ export const dashboardApi = {
   },
 
   getMajorCases: async (): Promise<ApiResponse<IMajorCase[]>> => {
-    const response = await api.get("/dashboard/major-cases");
-    return response.data;
+    return unsupportedRoute("Major cases");
   },
 
   getLiveServices: async (): Promise<ApiResponse<IServiceStatus[]>> => {
-    const response = await api.get("/dashboard/live-services");
-    return response.data;
+    return unsupportedRoute("Live service status");
   },
 };
 
@@ -455,7 +542,7 @@ export const politicsApi = {
     level: string,
     params?: Partial<IPolitician>,
   ): Promise<PaginatedResponse<IPolitician>> => {
-    const response = await api.get(`/politicians/level/${level}`, { params });
+    const response = await api.get(`/politician/level/${level}`, { params });
     const transformedData = response.data.data?.map(transformPolitician) || [];
     return {
       ...response.data,
@@ -513,40 +600,24 @@ export const politicsApi = {
 
   // Update individual sections
   updatePromises: async (
-    id: string,
-    promises: any[],
+    _id: string,
+    _promises: any[],
   ): Promise<ApiResponse<IPolitician>> => {
-    const response = await api.put(`/politician/${id}/promises`, { promises });
-    return {
-      ...response.data,
-      data: transformPolitician(response.data.data),
-    };
+    return unsupportedRoute("Politician promise updates");
   },
 
   updateAchievements: async (
-    id: string,
-    achievements: any[],
+    _id: string,
+    _achievements: any[],
   ): Promise<ApiResponse<IPolitician>> => {
-    const response = await api.put(`/politician/${id}/achievements`, {
-      achievements,
-    });
-    return {
-      ...response.data,
-      data: transformPolitician(response.data.data),
-    };
+    return unsupportedRoute("Politician achievement updates");
   },
 
   updateExperiences: async (
-    id: string,
-    experiences: any[],
+    _id: string,
+    _experiences: any[],
   ): Promise<ApiResponse<IPolitician>> => {
-    const response = await api.put(`/politician/${id}/experiences`, {
-      experiences,
-    });
-    return {
-      ...response.data,
-      data: transformPolitician(response.data.data),
-    };
+    return unsupportedRoute("Politician experience updates");
   },
 };
 
@@ -604,16 +675,16 @@ export const geographicApi = {
 
   getProvince: async (provinceId: string): Promise<{ data: IProvince }> => {
     const response = await api.get(`/province/${provinceId}`);
-    return response.data;
+    return { data: unwrapResponseData<IProvince>(response) };
   },
 
   getProvinceById: async (provinceId: string): Promise<{ data: IProvince }> => {
     const response = await api.get(`/province/${provinceId}`);
-    return response.data.data;
+    return { data: unwrapResponseData<IProvince>(response) };
   },
 
   createProvince: async (provinceData: any): Promise<{ data: IProvince }> => {
-    const response = await api.post("/province", provinceData);
+    const response = await api.post("/admin/province", provinceData);
     return response.data;
   },
 
@@ -643,11 +714,11 @@ export const geographicApi = {
 
   getDistrictById: async (districtId: string): Promise<{ data: IDistrict }> => {
     const response = await api.get(`/district/${districtId}`);
-    return response.data;
+    return { data: unwrapResponseData<IDistrict>(response) };
   },
 
   createDistrict: async (districtData: any): Promise<{ data: IDistrict }> => {
-    const response = await api.post("/district", districtData);
+    const response = await api.post("/admin/district", districtData);
     return response.data;
   },
 
@@ -741,11 +812,11 @@ export const geographicApi = {
 
   getWardById: async (wardId: string): Promise<{ data: IWard }> => {
     const response = await api.get(`/ward/${wardId}`);
-    return response.data;
+    return { data: unwrapResponseData<IWard>(response) };
   },
 
   createWard: async (wardData: any): Promise<{ data: IWard }> => {
-    const response = await api.post("/ward", wardData);
+    const response = await api.post("/admin/ward", wardData);
     return response.data;
   },
 
@@ -792,15 +863,14 @@ export const geographicApi = {
     wardId: string,
   ): Promise<{ data: IConstituency }> => {
     const response = await api.get(`/constituency/ward/${wardId}`);
-    console.log(response);
-    return response.data;
+    return { data: unwrapResponseData<IConstituency>(response) };
   },
 
   getConstituencyById: async (
     constituencyId: string,
   ): Promise<{ data: IConstituency }> => {
     const response = await api.get(`/constituency/${constituencyId}`);
-    return response.data;
+    return { data: unwrapResponseData<IConstituency>(response) };
   },
 
   getConstituenciesByDistrict: async (
@@ -810,8 +880,8 @@ export const geographicApi = {
   ): Promise<PaginatedResponse<IConstituency>> => {
     const url =
       page && limit
-        ? `/district/${districtId}/constituency?page=${page}&limit=${limit}`
-        : `/district/${districtId}/constituency`;
+        ? `/constituency/district/${districtId}?page=${page}&limit=${limit}`
+        : `/constituency/district/${districtId}`;
     const response = await api.get(url);
     return response.data.data;
   },
@@ -819,20 +889,20 @@ export const geographicApi = {
   createConstituency: async (
     constituencyData: any,
   ): Promise<{ data: IConstituency }> => {
-    const response = await api.post("/constituency", constituencyData);
+    const response = await api.post("/admin/constituency", constituencyData);
     return response.data;
   },
 };
 
 // Reports API
 export const reportsApi = {
-  getAll: async (params?: {
+  getAll: async (_params?: {
     status?: string[];
     priority?: string[];
     visibility?: string[];
     type?: string[];
   }): Promise<IReport[]> => {
-    const response = await api.post("/admin/report/filter", params || {});
+    const response = await api.post("/admin/report/filter", _params || {});
     return response.data.data;
   },
 
@@ -857,18 +927,11 @@ export const reportsApi = {
   },
 
   updateStatus: async (
-    id: string,
-    status: string,
-    comment?: string,
+    _id: string,
+    _status: string,
+    _comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    const response = await api.put(`/report/${id}/status`, {
-      status,
-      comment,
-    });
-    return {
-      ...response.data,
-      data: transformReport(response.data.data),
-    };
+    return unsupportedRoute("Report status updates");
   },
 
   approve: async (
@@ -887,85 +950,58 @@ export const reportsApi = {
   },
 
   reject: async (
-    id: string,
-    comment?: string,
+    _id: string,
+    _comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    return reportsApi.updateStatus(id, "dismissed", comment);
+    return unsupportedRoute("Report rejection");
   },
 
   resolve: async (
-    id: string,
-    comment?: string,
+    _id: string,
+    _comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    return reportsApi.updateStatus(id, "resolved", comment);
+    return unsupportedRoute("Report resolution");
   },
 
   delete: async (id: string) => {
-    const response = await api.put(`/report/${id}`);
+    const response = await api.delete(`/report/${id}`);
     return response;
   },
 
   getActivities: async (
-    id: string,
-    page?: number,
-    limit?: number,
+    _id: string,
+    _page?: number,
+    _limit?: number,
   ): Promise<PaginatedResponse<any>> => {
-    const response = await api.get(`/report/${id}/activities`, {
-      params: { page, limit },
-    });
-    return response.data;
+    return unsupportedRoute("Report activity history");
   },
 
-  getRecentActivities: async (limit?: number): Promise<any[]> => {
-    const response = await api.get(`/report/activities/recent`, {
-      params: { limit },
-    });
-    return response.data;
+  getRecentActivities: async (_limit?: number): Promise<any[]> => {
+    return unsupportedRoute("Recent report activity");
   },
 
   updatePriority: async (
-    id: string,
-    priority: string,
-    comment?: string,
+    _id: string,
+    _priority: string,
+    _comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    const response = await api.put(`/reports/${id}/priority`, {
-      priority,
-      comment,
-    });
-    return {
-      ...response.data,
-      data: transformReport(response.data.data),
-    };
+    return unsupportedRoute("Report priority updates");
   },
 
   updateVisibility: async (
-    id: string,
-    publicVisibility: string,
-    comment?: string,
+    _id: string,
+    _publicVisibility: string,
+    _comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    const response = await api.put(`/reports/${id}/visibility`, {
-      publicVisibility,
-      comment,
-    });
-    return {
-      ...response.data,
-      data: transformReport(response.data.data),
-    };
+    return unsupportedRoute("Report visibility updates");
   },
 
   updateReportType: async (
-    id: string,
-    reportType: string,
-    comment?: string,
+    _id: string,
+    _reportType: string,
+    _comment?: string,
   ): Promise<ApiResponse<IReport>> => {
-    const response = await api.put(`/reports/${id}/type`, {
-      reportType,
-      comment,
-    });
-    return {
-      ...response.data,
-      data: transformReport(response.data.data),
-    };
+    return unsupportedRoute("Report type updates");
   },
 };
 
@@ -1094,78 +1130,76 @@ export const historicalEventsApi = {
     limit?: number;
   }): Promise<PaginatedResponse<IHistoricalEvent>> => {
     const response = await api.get("/event", { params });
-    return response.data;
+    const data = unwrapResponseData<IHistoricalEvent[]>(response) || [];
+    return {
+      data,
+      total: data.length,
+      page: params?.page || 1,
+      limit: params?.limit || data.length,
+      totalPages: 1,
+    };
   },
 
-  getById: async (id: string): Promise<ApiResponse<IHistoricalEvent>> => {
-    const response = await api.get(`/event/${id}`);
-    return response.data;
+  getById: async (_id: string): Promise<ApiResponse<IHistoricalEvent>> => {
+    return unsupportedRoute("Historical event details");
   },
 
   create: async (
-    eventData: Partial<IHistoricalEvent>,
+    _eventData: Partial<IHistoricalEvent>,
   ): Promise<ApiResponse<IHistoricalEvent>> => {
-    const response = await api.post("/event", eventData);
-    return response.data;
+    return unsupportedRoute("Historical event creation");
   },
 
   update: async (
-    id: string,
-    eventData: Partial<IHistoricalEvent>,
+    _id: string,
+    _eventData: Partial<IHistoricalEvent>,
   ): Promise<ApiResponse<IHistoricalEvent>> => {
-    const response = await api.put(`/event/${id}`, eventData);
-    return response.data;
+    return unsupportedRoute("Historical event updates");
   },
 
-  delete: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/event/${id}`);
-    return response.data;
+  delete: async (_id: string): Promise<ApiResponse<void>> => {
+    return unsupportedRoute("Historical event deletion");
   },
 };
 
 // Major Cases API
 export const majorCasesApi = {
-  getAll: async (params?: {
+  getAll: async (_params?: {
+    // retained for call-site compatibility until backend support exists
     status?: string;
     priority?: string;
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<IMajorCase>> => {
-    const response = await api.get("/major-cases", { params });
-    return response.data;
+    return unsupportedRoute("Major cases");
   },
 
-  getById: async (id: string): Promise<ApiResponse<IMajorCase>> => {
-    const response = await api.get(`/major-cases/${id}`);
-    return response.data;
+  getById: async (_id: string): Promise<ApiResponse<IMajorCase>> => {
+    return unsupportedRoute("Major case details");
   },
 
   create: async (
-    caseData: Partial<IMajorCase>,
+    _caseData: Partial<IMajorCase>,
   ): Promise<ApiResponse<IMajorCase>> => {
-    const response = await api.post("/major-cases", caseData);
-    return response.data;
+    return unsupportedRoute("Major case creation");
   },
 
   update: async (
-    id: string,
-    caseData: Partial<IMajorCase>,
+    _id: string,
+    _caseData: Partial<IMajorCase>,
   ): Promise<ApiResponse<IMajorCase>> => {
-    const response = await api.put(`/major-cases/${id}`, caseData);
-    return response.data;
+    return unsupportedRoute("Major case updates");
   },
 
-  delete: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/major-cases/${id}`);
-    return response.data;
+  delete: async (_id: string): Promise<ApiResponse<void>> => {
+    return unsupportedRoute("Major case deletion");
   },
 
   updateStatus: async (
-    id: string,
-    status: string,
+    _id: string,
+    _status: string,
   ): Promise<ApiResponse<IMajorCase>> => {
-    const response = await api.put(`/major-cases/${id}/status`, { status });
-    return response.data;
+    return unsupportedRoute("Major case status updates");
   },
 };
 
@@ -1181,9 +1215,8 @@ export const pollingApi = {
     return response.data;
   },
 
-  getStats: async (id: string): Promise<ApiResponse<IPollAnalytics>> => {
-    const response = await api.get(`/poll/${id}/stats`);
-    return response.data;
+  getStats: async (_id: string): Promise<ApiResponse<IPollAnalytics>> => {
+    return unsupportedRoute("Poll stats");
   },
 
   create: async (pollData: ICreatePollData): Promise<ApiResponse<IPoll>> => {
@@ -1192,24 +1225,21 @@ export const pollingApi = {
   },
 
   update: async (
-    id: string,
-    pollData: IUpdatePollData,
+    _id: string,
+    _pollData: IUpdatePollData,
   ): Promise<ApiResponse<IPoll>> => {
-    const response = await api.put(`/poll/${id}`, pollData);
-    return response.data;
+    return unsupportedRoute("Poll updates");
   },
 
-  delete: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/poll/${id}`);
-    return response.data;
+  delete: async (_id: string): Promise<ApiResponse<void>> => {
+    return unsupportedRoute("Poll deletion");
   },
 
   addOption: async (
-    id: string,
-    option: { option: string },
+    _id: string,
+    _option: { option: string },
   ): Promise<ApiResponse<IPollOption>> => {
-    const response = await api.post(`/poll/${id}/options`, option);
-    return response.data;
+    return unsupportedRoute("Poll option creation");
   },
 
   vote: async (
@@ -1226,19 +1256,15 @@ export const pollingApi = {
   },
 
   getPoliticianComparison: async (
-    politicianId: string,
+    _politicianId: string,
   ): Promise<ApiResponse<IPollComparison[]>> => {
-    const response = await api.get(
-      `/poll/politician/${politicianId}/comparison`,
-    );
-    return response.data;
+    return unsupportedRoute("Poll politician comparison");
   },
 
   getPartyComparison: async (
-    partyId: string,
+    _partyId: string,
   ): Promise<ApiResponse<IPollComparison[]>> => {
-    const response = await api.get(`/poll/party/${partyId}/comparison`);
-    return response.data;
+    return unsupportedRoute("Poll party comparison");
   },
 
   getCategories: async () => {
@@ -1256,9 +1282,8 @@ export const pollingApi = {
     return response.data;
   },
 
-  createCategory: async (data: { name: string; name_nepali?: string }) => {
-    const response = await api.post("/poll/categories", data);
-    return response.data;
+  createCategory: async (_data: { name: string; name_nepali?: string }) => {
+    return unsupportedRoute("Poll category creation");
   },
 
   createPoliticianAccount: async (
@@ -1272,9 +1297,8 @@ export const pollingApi = {
     return response.data;
   },
 
-  createType: async (data: { name: string; name_nepali?: string }) => {
-    const response = await api.post("/poll/types", data);
-    return response.data;
+  createType: async (_data: { name: string; name_nepali?: string }) => {
+    return unsupportedRoute("Poll type creation");
   },
 };
 
@@ -1310,16 +1334,16 @@ export const userApi = {
     return response.data;
   },
 
-  getProfile: async (): Promise<ApiResponse<IUser>> => {
+  getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.get("/admin/user/profile");
-    return response.data;
+    return normalizeAuthResponse(response.data);
   },
 
   updateProfile: async (
     userData: Partial<IUser>,
-  ): Promise<ApiResponse<IUser>> => {
+  ): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.put("/admin/user/profile", userData);
-    return response.data;
+    return normalizeAuthResponse(response.data);
   },
 };
 

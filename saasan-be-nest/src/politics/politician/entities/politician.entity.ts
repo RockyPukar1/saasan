@@ -3,6 +3,7 @@ import { Types, Schema as MongooseSchema, Document } from 'mongoose';
 import { ConstituencyEntity } from 'src/location/constituency/entities/constituency.entity';
 import { PartyEntity } from 'src/politics/party/entities/party.entity';
 import { PositionEntity } from 'src/politics/position/entities/position.entity';
+import { UserEntity } from 'src/user/entities/user.entity';
 
 interface IExperience {
   category: string;
@@ -22,6 +23,14 @@ export class PoliticianEntity {
   // Personal information
   @Prop({ type: String, required: true })
   fullName: string;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: UserEntity.name,
+    unique: true,
+    sparse: true,
+  })
+  userId?: Types.ObjectId;
 
   @Prop({ type: Number })
   age?: number;

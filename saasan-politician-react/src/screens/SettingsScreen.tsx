@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import {
   User,
   Bell,
@@ -6,7 +8,6 @@ import {
   Palette,
   Globe,
   Lock,
-  Key,
   Smartphone,
   Mail,
   Download,
@@ -31,8 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { dummyPolitician } from "@/data/dummy-data";
+import { sessionApi } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSIONS } from "@/constants/permission.constants";
 
 export const SettingsScreen: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { user, permissions, hasPermission, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [showPassword, setShowPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -66,6 +72,59 @@ export const SettingsScreen: React.FC = () => {
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "privacy", label: "Privacy", icon: Lock },
     { id: "advanced", label: "Advanced", icon: Settings },
+  ];
+
+  const currentSessionId = sessionApi.getCurrentSessionId();
+  const canViewSessions = hasPermission(PERMISSIONS.sessions.view);
+  const canRevokeSessions = hasPermission(PERMISSIONS.sessions.revoke);
+  const { data: sessionsResponse, isLoading: sessionsLoading } = useQuery({
+    queryKey: ["politician-auth-sessions"],
+    queryFn: () => sessionApi.getMySessions(),
+    enabled: canViewSessions,
+  });
+
+  const revokeSessionMutation = useMutation({
+    mutationFn: (sessionId: string) => sessionApi.revokeSession(sessionId),
+    onSuccess: () => {
+      toast.success("Session revoked");
+      queryClient.invalidateQueries({ queryKey: ["politician-auth-sessions"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to revoke session");
+    },
+  });
+
+  const revokeAllMutation = useMutation({
+    mutationFn: () => sessionApi.revokeAllOtherSessions(),
+    onSuccess: () => {
+      toast.success("Other sessions revoked");
+      queryClient.invalidateQueries({ queryKey: ["politician-auth-sessions"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to revoke sessions");
+    },
+  });
+
+  const sessions = (sessionsResponse?.data || []).map((session) => ({
+    ...session,
+    current: session.id === currentSessionId,
+  }));
+  const currentSession = currentSessionId
+    ? sessions.find((session) => session.current) || null
+    : null;
+  const securityHighlights = [
+    {
+      label: "Role",
+      value: user?.role || "politician",
+    },
+    {
+      label: "Permissions",
+      value: String(permissions.length),
+    },
+    {
+      label: "Session access",
+      value: canViewSessions ? "Enabled" : "Hidden",
+    },
   ];
 
   return (
@@ -367,6 +426,63 @@ export const SettingsScreen: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
+                      <Shield className="h-5 w-5" />
+                      <span>Role and Access</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {securityHighlights.map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-4"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                            {item.label}
+                          </p>
+                          <p className="mt-2 text-lg font-semibold text-slate-900">
+                            {item.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-900">
+                        Signed in as {user?.fullName || user?.email || "Politician"}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Your current access is enforced by backend role
+                        permissions. What you can see in this portal is based on
+                        your live permission set, not hardcoded frontend access.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-900">
+                        Active permissions
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {permissions.length > 0 ? (
+                          permissions.map((permission) => (
+                            <Badge key={permission} variant="secondary">
+                              {permission}
+                            </Badge>
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-600">
+                            No explicit permissions were returned for this
+                            account.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
                       <Lock className="h-5 w-5" />
                       <span>Change Password</span>
                     </CardTitle>
@@ -445,85 +561,111 @@ export const SettingsScreen: React.FC = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Key className="h-5 w-5" />
-                      <span>Two-Factor Authentication</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium">Enable 2FA</h4>
-                        <p className="text-sm text-gray-600">
-                          Add an extra layer of security to your account
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
-                      >
-                        Enable
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Active Sessions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      {[
-                        {
-                          device: "Chrome on Windows",
-                          location: "Kathmandu, Nepal",
-                          time: "2 hours ago",
-                          current: true,
-                        },
-                        {
-                          device: "Safari on iPhone",
-                          location: "Pokhara, Nepal",
-                          time: "1 day ago",
-                          current: false,
-                        },
-                        {
-                          device: "Firefox on Mac",
-                          location: "Biratnagar, Nepal",
-                          time: "3 days ago",
-                          current: false,
-                        },
-                      ].map((session, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                    <div className="flex items-center justify-between gap-4">
+                      <CardTitle>Active Sessions</CardTitle>
+                      {canRevokeSessions && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => revokeAllMutation.mutate()}
+                          disabled={
+                            revokeAllMutation.isPending || sessions.length <= 1
+                          }
                         >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                              <Monitor className="h-5 w-5 text-gray-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{session.device}</p>
-                              <p className="text-sm text-gray-600">
-                                {session.location} • {session.time}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {session.current && (
-                              <Badge variant="secondary">Current</Badge>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
-                            >
-                              Sign Out
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                          Sign Out Other Devices
+                        </Button>
+                      )}
                     </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {!canViewSessions ? (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                        Your current role does not include permission to view
+                        session details.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                          <p className="text-sm font-medium text-slate-900">
+                            Current device
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {currentSession?.userAgent ||
+                              "This browser has not been matched to a saved session id yet."}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Active sessions: {sessions.length}
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          {sessionsLoading ? (
+                        [...Array(3)].map((_, index) => (
+                          <div
+                            key={index}
+                            className="h-20 rounded-lg bg-gray-100 animate-pulse"
+                          />
+                        ))
+                          ) : sessions.length === 0 ? (
+                            <p className="text-sm text-gray-600">
+                              No active sessions found.
+                            </p>
+                          ) : (
+                            sessions.map((session) => (
+                              <div
+                                key={session.id}
+                                className={`flex items-center justify-between p-3 border rounded-lg ${
+                                  session.current
+                                    ? "border-indigo-200 bg-indigo-50/60"
+                                    : "border-gray-200"
+                                }`}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <Monitor className="h-5 w-5 text-gray-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">
+                                      {session.userAgent || "Unknown device"}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      {session.ipAddress || "Unknown IP"} • Last used{" "}
+                                      {session.lastUsedAt
+                                        ? new Date(
+                                            session.lastUsedAt,
+                                          ).toLocaleString()
+                                        : "recently"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  {session.current && (
+                                    <Badge variant="secondary">Current</Badge>
+                                  )}
+                                  {(session.current || canRevokeSessions) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-red-600 border-red-200 hover:bg-red-50"
+                                      onClick={() =>
+                                        session.current
+                                          ? logout()
+                                          : revokeSessionMutation.mutate(
+                                              session.id,
+                                            )
+                                      }
+                                      disabled={revokeSessionMutation.isPending}
+                                    >
+                                      {session.current ? "Sign Out" : "Revoke"}
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </>

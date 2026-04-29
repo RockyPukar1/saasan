@@ -29,7 +29,7 @@ export class AuthController {
     @Req() req: Request,
     @Ip() ipAddress: string,
   ) {
-    return this.authService.register(userData, {
+    return this.authService.register(userData, undefined, {
       ipAddress,
       userAgent: req.headers['user-agent'],
     });
@@ -63,7 +63,7 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout')
   async logout(@Req() req: Request) {
-    this.authService.logoutCurrentSession({
+    await this.authService.logoutCurrentSession({
       sessionId: req.user.sessionId!,
     });
   }
@@ -83,7 +83,7 @@ export class AuthController {
     @Req() req: Request,
     @Param() sessionIdDto: SessionIdDto,
   ) {
-    await this.authService.revokeAllMySessions(
+    await this.authService.revokeMySession(
       { userId: req.user.id },
       sessionIdDto,
     );

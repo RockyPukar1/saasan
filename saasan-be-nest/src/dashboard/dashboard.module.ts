@@ -7,9 +7,16 @@ import { ReportModule } from 'src/report/report.module';
 import { PoliticsModule } from 'src/politics/politics.module';
 import { EventModule } from 'src/event/event.module';
 import { CaseModule } from 'src/case/case.module';
+import { MessageModule } from 'src/message/message.module';
 
 @Module({
-  imports: [ReportModule, EventModule, PoliticsModule, CaseModule],
+  imports: [
+    ReportModule,
+    EventModule,
+    PoliticsModule,
+    CaseModule,
+    MessageModule,
+  ],
   controllers: [
     AdminDashboardController,
     CitizenDashboardController,

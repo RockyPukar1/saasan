@@ -20,6 +20,12 @@ const api = axios.create({
   },
 });
 
+const unsupportedRoute = <T>(feature: string): Promise<T> => {
+  return Promise.reject(
+    new Error(`${feature} is not implemented in the backend yet.`),
+  );
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
@@ -43,6 +49,7 @@ api.interceptors.response.use(
       error.response.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/politician/auth/login") &&
       !originalRequest.url?.includes("/auth/refresh-token")
     ) {
       originalRequest._retry = true;
@@ -84,15 +91,24 @@ let refreshPromise: Promise<string | null> | null = null;
 
 const getAccessToken = () => localStorage.getItem("accessToken");
 const getRefreshToken = () => localStorage.getItem("refreshToken");
+const getCurrentSessionId = () => localStorage.getItem("sessionId");
 
-const setTokens = (accessToken: string, refreshToken: string) => {
+const setTokens = (
+  accessToken: string,
+  refreshToken: string,
+  sessionId?: string,
+) => {
   localStorage.setItem("accessToken", accessToken);
   localStorage.setItem("refreshToken", refreshToken);
+  if (sessionId) {
+    localStorage.setItem("sessionId", sessionId);
+  }
 };
 
 const clearTokens = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("sessionId");
 };
 
 const refreshAccessToken = async (): Promise<string | null> => {
@@ -109,8 +125,9 @@ const refreshAccessToken = async (): Promise<string | null> => {
     if (response.data?.success) {
       const newAccessToken = response.data.data.accessToken;
       const newRefreshToken = response.data.data.refreshToken;
+      const newSessionId = response.data.data.sessionId;
 
-      setTokens(newAccessToken, newRefreshToken);
+      setTokens(newAccessToken, newRefreshToken, newSessionId);
       return newAccessToken;
     }
 
@@ -129,9 +146,51 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+const normalizePermissions = (permissions: unknown): string[] => {
+  if (Array.isArray(permissions)) {
+    return permissions;
+  }
+
+  if (
+    permissions &&
+    typeof permissions === "object" &&
+    Array.isArray((permissions as { permissions?: unknown }).permissions)
+  ) {
+    return (permissions as { permissions: string[] }).permissions;
+  }
+
+  return [];
+};
+
+const normalizeAuthResponse = <T extends AuthPayload | ProfilePayload>(
+  payload: ApiResponse<T>,
+): ApiResponse<T> => ({
+  ...payload,
+  data: {
+    ...payload.data,
+    permissions: normalizePermissions(payload.data?.permissions),
+  },
+});
+
+const unwrapResponseData = <T>(response: { data: T | ApiResponse<T> }): T => {
+  const payload = response.data as T | ApiResponse<T>;
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "success" in payload &&
+    "data" in payload
+  ) {
+    return (payload as ApiResponse<T>).data;
+  }
+
+  return payload as T;
+};
+
 // Message Types
 export interface MessageThread {
   id: string;
+  _id?: string;
   subject: string;
   content: string;
   category: "complaint" | "suggestion" | "question" | "request";
@@ -248,35 +307,34 @@ export interface MessageQueryParams {
 // Dashboard API
 export const dashboardApi = {
   getStats: async (): Promise<ApiResponse<any>> => {
-    const response = await api.get("/dashboard/stats");
+    const response = await api.get("/politician/dashboard/stats");
     return response.data;
   },
 };
 
 // Messages API - Updated to match backend implementation
 export const messagesApi = {
-  // GET /message - Get all messages
+  // Backend currently exposes jurisdiction-scoped fetches for politicians.
   getAll: async (): Promise<MessageThread[]> => {
-    const response = await api.get("/message");
-    return response.data;
+    const response = await api.get("/message/jurisdiction");
+    return unwrapResponseData(response);
   },
 
   // GET /message/jurisdiction - Get messages in politician's jurisdiction
   getJurisdictionMessages: async (): Promise<MessageThread[]> => {
     const response = await api.get("/message/jurisdiction");
-    return response.data;
+    return unwrapResponseData(response);
   },
 
   // GET /message/:messageId - Get single message
   getById: async (messageId: string): Promise<MessageThread> => {
     const response = await api.get(`/message/${messageId}`);
-    return response.data;
+    return unwrapResponseData(response);
   },
 
   // POST /message - Create new message (for citizens, but included for completeness)
-  create: async (data: CreateMessageData): Promise<MessageThread> => {
-    const response = await api.post("/message", data);
-    return response.data;
+  create: async (_data: CreateMessageData): Promise<MessageThread> => {
+    return unsupportedRoute("Politician-created message threads");
   },
 
   // PUT /message/:messageId - Update message
@@ -284,8 +342,8 @@ export const messagesApi = {
     messageId: string,
     data: Partial<CreateMessageData>,
   ): Promise<MessageThread> => {
-    const response = await api.put(`/message/${messageId}`, data);
-    return response.data;
+    await api.put(`/message/${messageId}`, data);
+    return messagesApi.getById(messageId);
   },
 
   // POST /message/:messageId/reply - Add reply to message thread
@@ -294,11 +352,10 @@ export const messagesApi = {
     content: string,
     attachments?: any[],
   ): Promise<MessageThread> => {
-    const response = await api.post(`/message/${messageId}/reply`, {
-      content,
-      attachments,
-    });
-    return response.data;
+    void messageId;
+    void content;
+    void attachments;
+    return unsupportedRoute("Politician message replies");
   },
 
   // PUT /message/:messageId - Update message status (using update endpoint with status)
@@ -306,50 +363,42 @@ export const messagesApi = {
     messageId: string,
     status: "pending" | "in_progress" | "resolved" | "closed",
   ): Promise<MessageThread> => {
-    const response = await api.put(`/message/${messageId}`, { status });
-    return response.data;
+    await api.put(`/message/${messageId}`, { status });
+    return messagesApi.getById(messageId);
   },
 
   // POST /message/:messageId/upvote - Upvote a message
-  upvoteMessage: async (messageId: string): Promise<void> => {
-    const response = await api.post(`/message/${messageId}/upvote`);
-    return response.data;
+  upvoteMessage: async (_messageId: string): Promise<void> => {
+    return unsupportedRoute("Message upvotes");
   },
 
   // POST /message/:messageId/downvote - Downvote a message
-  downvoteMessage: async (messageId: string): Promise<void> => {
-    const response = await api.post(`/message/${messageId}/downvote`);
-    return response.data;
+  downvoteMessage: async (_messageId: string): Promise<void> => {
+    return unsupportedRoute("Message downvotes");
   },
 };
 
 export const promisesApi = {
   getAll: async (): Promise<any[]> => {
-    const response = await api.get("/promises");
-    return response.data;
+    return unsupportedRoute("Politician promises");
   },
-  update: async (id: string, data: any): Promise<any> => {
-    const response = await api.put(`/promises/${id}`, data);
-    return response.data;
+  update: async (_id: string, _data: any): Promise<any> => {
+    return unsupportedRoute("Politician promise updates");
   },
-  create: async (data: any): Promise<any> => {
-    const response = await api.post("/promises", data);
-    return response.data;
+  create: async (_data: any): Promise<any> => {
+    return unsupportedRoute("Politician promise creation");
   },
 };
 
 export const announcementsApi = {
   getAll: async (): Promise<any[]> => {
-    const response = await api.get("/announcements");
-    return response.data;
+    return unsupportedRoute("Announcements");
   },
-  create: async (data: any): Promise<any> => {
-    const response = await api.post("/announcements", data);
-    return response.data;
+  create: async (_data: any): Promise<any> => {
+    return unsupportedRoute("Announcement creation");
   },
-  update: async (id: string, data: any): Promise<any> => {
-    const response = await api.put(`/announcements/${id}`, data);
-    return response.data;
+  update: async (_id: string, _data: any): Promise<any> => {
+    return unsupportedRoute("Announcement updates");
   },
 };
 
@@ -359,27 +408,69 @@ export const authApi = {
     email: string,
     password: string,
   ): Promise<ApiResponse<AuthPayload>> => {
-    const response = await api.post("/auth/login", { email, password });
-    return response.data;
+    const response = await api.post("/politician/auth/login", {
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    return normalizeAuthResponse(response.data);
   },
 
   getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
-    const response = await api.get("/user/profile");
-    return response.data;
+    const response = await api.get("/politician/user/profile");
+    return normalizeAuthResponse(response.data);
   },
 
   logout: () => {
-    clearTokens();
+    void sessionApi.logoutCurrentSession().finally(() => {
+      clearTokens();
+    });
   },
 };
 
-export const profileApi = {
-  get: async (): Promise<any> => {
-    const response = await api.get("/profile");
+export interface AuthSessionDto {
+  id: string;
+  refreshExpiresAt: string;
+  revokedAt?: string;
+  revokedReason?: string;
+  lastUsedAt?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const sessionApi = {
+  getMySessions: async (): Promise<ApiResponse<AuthSessionDto[]>> => {
+    const response = await api.get("/auth/sessions");
     return response.data;
   },
-  update: async (data: any): Promise<any> => {
-    const response = await api.put("/profile", data);
+
+  revokeSession: async (sessionId: string): Promise<ApiResponse<null>> => {
+    const response = await api.delete(`/auth/sessions/${sessionId}`);
     return response.data;
+  },
+
+  revokeAllOtherSessions: async (): Promise<ApiResponse<null>> => {
+    const response = await api.post("/auth/sessions/revoke-all");
+    return response.data;
+  },
+
+  logoutCurrentSession: async (): Promise<ApiResponse<null>> => {
+    const response = await api.post("/auth/logout");
+    return response.data;
+  },
+
+  getCurrentSessionId,
+};
+
+export const profileApi = {
+  get: async (): Promise<ProfilePayload> => {
+    const response = await api.get("/politician/user/profile");
+    return normalizeAuthResponse(response.data).data;
+  },
+  update: async (data: any): Promise<ProfilePayload> => {
+    const response = await api.put("/politician/user/profile", data);
+    return normalizeAuthResponse(response.data).data;
   },
 };

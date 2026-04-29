@@ -20,18 +20,14 @@ export const useDashboard = () => {
     [dashboardData],
   );
 
-  const majorCases = useMemo(() => {
-    if (!dashboardData?.data?.recentCases.length) return [];
-    return dashboardData.data.recentCases.map((item: any) => ({
+  const myRecentReports = useMemo(() => {
+    if (!dashboardData?.data?.myRecentReports?.length) return [];
+    return dashboardData.data.myRecentReports.map((item: any) => ({
       id: item._id,
       referenceNumber: item.reference_number,
       title: item.title,
       description: item.description,
-      status: (item.status === "verified"
-        ? "ongoing"
-        : item.status === "resolved"
-          ? "solved"
-          : "unsolved") as "unsolved" | "ongoing" | "solved",
+      status: item.status,
       priority: item.priority,
       amountInvolved: parseFloat(item.amount_involved) || 0,
       upvotesCount: item.upvotes_count || 0,
@@ -39,9 +35,28 @@ export const useDashboard = () => {
     }));
   }, [dashboardData]);
 
+  const publicReports = useMemo(() => {
+    if (!dashboardData?.data?.publicFeed?.recentReports?.length) return [];
+    return dashboardData.data.publicFeed.recentReports.map((item: any) => ({
+      id: item._id,
+      referenceNumber: item.referenceNumber || item.reference_number,
+      title: item.title,
+      description: item.description,
+      status: item.status,
+      priority: item.priority,
+      amountInvolved: parseFloat(item.amountInvolved || item.amount_involved) || 0,
+      upvotesCount: item.upvotesCount || item.upvotes_count || 0,
+      createdAt: item.createdAt || item.created_at,
+    }));
+  }, [dashboardData]);
+
   const historicalEvents = useMemo(() => {
-    if (!dashboardData?.data?.recentEvents) return [];
-    return dashboardData.data.recentEvents.map((item: any) => ({
+    const events =
+      dashboardData?.data?.publicFeed?.eventsOnThisDay ||
+      dashboardData?.data?.publicFeed?.recentEvents ||
+      [];
+    if (!events.length) return [];
+    return events.map((item: any) => ({
       id: item._id,
       title: item.title,
       description: item.description,
@@ -58,7 +73,8 @@ export const useDashboard = () => {
 
   return {
     dashboardStats,
-    majorCases,
+    myRecentReports,
+    publicReports,
     historicalEvents,
     serviceStatus,
     loading,

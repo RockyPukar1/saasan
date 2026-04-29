@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true, collection: PollVoteEntity.collection })
 export class PollVoteEntity {
-  static readonly collection = 'poll-votes';
+  static readonly collection = 'poll_votes';
   _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

@@ -104,6 +104,14 @@ export class MessageEntity {
   urgency: MessageUrgency;
 
   @Prop({
+    type: String,
+    required: true,
+    enum: MessageStatus,
+    default: MessageStatus.PENDING,
+  })
+  status: MessageStatus;
+
+  @Prop({
     type: MongooseSchema.Types.Mixed,
     required: true,
   })
