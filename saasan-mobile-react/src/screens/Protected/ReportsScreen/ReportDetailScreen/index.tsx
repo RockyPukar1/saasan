@@ -47,7 +47,7 @@ export default function ReportDetailScreen() {
     currentReport,
     loading,
   } = useReports();
-  const { hasPermission } = useAuthContext();
+  const { hasPermission, user } = useAuthContext();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -82,11 +82,15 @@ export default function ReportDetailScreen() {
   const backTo = "/reports?tab=all_reports";
   const canEditReport = displayReport?.canEdit === true;
   const canShowDiscussion = !!displayReport?.autoConvertedToMessage;
+  const canShowPrivateThread =
+    !!displayReport?.autoConvertedToMessage &&
+    !!displayReport?.reporterId &&
+    displayReport.reporterId === user?.id;
 
   const { data: threadResponse, isLoading: threadLoading } = useQuery({
     queryKey: ["report-thread", reportId],
     queryFn: () => apiService.getReportThread(reportId as string),
-    enabled: !!reportId && !!displayReport?.autoConvertedToMessage,
+    enabled: !!reportId && canShowPrivateThread,
     retry: false,
   });
 
@@ -108,7 +112,11 @@ export default function ReportDetailScreen() {
     },
   });
 
-  const { data: discussionResponse, isLoading: discussionLoading } = useQuery({
+  const {
+    data: discussionResponse,
+    isLoading: discussionLoading,
+    isError: discussionError,
+  } = useQuery({
     queryKey: ["report-discussion", reportId],
     queryFn: () => apiService.getReportDiscussion(reportId as string),
     enabled: !!reportId && discussionOpen && canShowDiscussion,
@@ -777,7 +785,7 @@ export default function ReportDetailScreen() {
             All evidence is encrypted and stored securely
           </p>
 
-          {displayReport.autoConvertedToMessage && (
+          {canShowPrivateThread && (
             <Card className="my-4 border-blue-100">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
@@ -941,9 +949,14 @@ export default function ReportDetailScreen() {
                       </div>
                     )}
                   </>
+                ) : discussionOpen && discussionError ? (
+                  <div className="rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                    Discussion could not be loaded yet. Please try joining again.
+                  </div>
                 ) : (
                   <div className="rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
-                    Discussion is available after this report is approved.
+                    This report is approved. Join the thread to open the public
+                    discussion.
                   </div>
                 )}
               </CardContent>
