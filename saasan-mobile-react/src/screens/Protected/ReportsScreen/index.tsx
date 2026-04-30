@@ -385,6 +385,21 @@ const MyReportsTab: React.FC = () => {
                   </div>
                 )}
               </div>
+              {report.autoConvertedToMessage && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/reports/${report.id}?from=my_reports&discussion=1`,
+                      );
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Join Discussion
+                  </Button>
+                </div>
+              )}
 
               {/* Share Button */}
               {/* <div className="mt-3 pt-3 border-t border-gray-100">
@@ -454,6 +469,21 @@ const AllReportsTab: React.FC = () => {
                   </div>
                 )}
               </div>
+              {report.autoConvertedToMessage && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/reports/${report.id}?from=all_reports&discussion=1`,
+                      );
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Join Discussion
+                  </Button>
+                </div>
+              )}
 
               {/* Share Button */}
               {/* <div className="mt-3 pt-3 border-t border-gray-100">

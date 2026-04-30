@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsIn,
   IsEnum,
   IsISO8601,
   IsMongoId,
@@ -58,4 +59,16 @@ export class CreateReportDto {
   @IsOptional()
   @IsNumber()
   peopleAffectedCount?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([
+    'ward',
+    'municipality',
+    'constituency',
+    'district',
+    'province',
+    'federal',
+  ])
+  reportLevel?: string;
 }

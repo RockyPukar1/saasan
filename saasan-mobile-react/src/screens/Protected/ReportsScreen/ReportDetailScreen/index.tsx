@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layout";
 import {
-  ThumbsUp,
-  ThumbsDown,
+  ArrowBigUp,
+  ArrowBigDown,
   Edit,
   X,
   Save,
@@ -28,9 +28,11 @@ import toast from "react-hot-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import type { IReport } from "@/types/reports";
+import type { ReportDiscussionComment } from "@/services/api";
 
 export default function ReportDetailScreen() {
   const { reportId } = useParams();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +57,15 @@ export default function ReportDetailScreen() {
   const [evidenceToDelete, setEvidenceToDelete] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [discussionOpen, setDiscussionOpen] = useState(
+    searchParams.get("discussion") === "1",
+  );
+  const [discussionDraft, setDiscussionDraft] = useState("");
+  const [activeReplyTargetId, setActiveReplyTargetId] = useState<string | null>(
+    null,
+  );
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [didAutoJoinDiscussion, setDidAutoJoinDiscussion] = useState(false);
   const [lastResolvedReport, setLastResolvedReport] = useState<IReport | null>(
     null,
   );
@@ -70,6 +81,7 @@ export default function ReportDetailScreen() {
   const canReplyToThread = hasPermission(PERMISSIONS.messages.reply);
   const backTo = "/reports?tab=all_reports";
   const canEditReport = displayReport?.canEdit === true;
+  const canShowDiscussion = !!displayReport?.autoConvertedToMessage;
 
   const { data: threadResponse, isLoading: threadLoading } = useQuery({
     queryKey: ["report-thread", reportId],
@@ -96,6 +108,97 @@ export default function ReportDetailScreen() {
     },
   });
 
+  const { data: discussionResponse, isLoading: discussionLoading } = useQuery({
+    queryKey: ["report-discussion", reportId],
+    queryFn: () => apiService.getReportDiscussion(reportId as string),
+    enabled: !!reportId && discussionOpen && canShowDiscussion,
+    retry: false,
+  });
+
+  const joinDiscussionMutation = useMutation({
+    mutationFn: () => apiService.joinReportDiscussion(reportId as string),
+    onSuccess: async () => {
+      setDiscussionOpen(true);
+      await queryClient.invalidateQueries({
+        queryKey: ["report-discussion", reportId],
+      });
+      toast.success("Joined the discussion");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to join discussion",
+      );
+    },
+  });
+
+  const discussionCommentMutation = useMutation({
+    mutationFn: (content: string) =>
+      apiService.addReportDiscussionComment(reportId as string, content),
+    onSuccess: async () => {
+      setDiscussionDraft("");
+      await queryClient.invalidateQueries({
+        queryKey: ["report-discussion", reportId],
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to post comment",
+      );
+    },
+  });
+
+  const discussionReplyMutation = useMutation({
+    mutationFn: ({
+      commentId,
+      content,
+    }: {
+      commentId: string;
+      content: string;
+    }) =>
+      apiService.replyToReportDiscussionComment(
+        reportId as string,
+        commentId,
+        content,
+      ),
+    onSuccess: async (_, variables) => {
+      setReplyDrafts((prev) => ({ ...prev, [variables.commentId]: "" }));
+      setActiveReplyTargetId(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["report-discussion", reportId],
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send reply",
+      );
+    },
+  });
+
+  const discussionVoteMutation = useMutation({
+    mutationFn: ({
+      commentId,
+      direction,
+    }: {
+      commentId: string;
+      direction: "up" | "down";
+    }) =>
+      apiService.voteOnReportDiscussionComment(
+        reportId as string,
+        commentId,
+        direction,
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["report-discussion", reportId],
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to record vote",
+      );
+    },
+  });
+
   useEffect(() => {
     if (report) {
       setLastResolvedReport(report);
@@ -105,6 +208,24 @@ export default function ReportDetailScreen() {
       });
     }
   }, [report]);
+
+  useEffect(() => {
+    if (
+      !didAutoJoinDiscussion &&
+      reportId &&
+      canShowDiscussion &&
+      searchParams.get("discussion") === "1"
+    ) {
+      setDidAutoJoinDiscussion(true);
+      joinDiscussionMutation.mutate();
+    }
+  }, [
+    canShowDiscussion,
+    didAutoJoinDiscussion,
+    joinDiscussionMutation,
+    reportId,
+    searchParams,
+  ]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -194,6 +315,151 @@ export default function ReportDetailScreen() {
 
     await replyMutation.mutateAsync(replyText.trim());
   };
+
+  const handleJoinDiscussion = async () => {
+    if (!canShowDiscussion || !reportId) {
+      return;
+    }
+
+    await joinDiscussionMutation.mutateAsync();
+  };
+
+  const handleAddDiscussionComment = async () => {
+    if (!discussionDraft.trim()) {
+      return;
+    }
+
+    await discussionCommentMutation.mutateAsync(discussionDraft.trim());
+  };
+
+  const handleReplyToComment = async (commentId: string) => {
+    const content = replyDrafts[commentId]?.trim();
+
+    if (!content) {
+      return;
+    }
+
+    await discussionReplyMutation.mutateAsync({ commentId, content });
+  };
+
+  const handleVoteOnComment = async (
+    commentId: string,
+    direction: "up" | "down",
+  ) => {
+    await discussionVoteMutation.mutateAsync({ commentId, direction });
+  };
+
+  const renderDiscussionComments = (
+    comments: ReportDiscussionComment[],
+    level = 0,
+  ): ReactNode =>
+    comments.map((comment) => (
+      <div
+        key={comment.id}
+        className={`space-y-3 ${level > 0 ? "ml-4 border-l border-gray-200 pl-4" : ""}`}
+      >
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {comment.author.isReportOwner
+                  ? `${comment.author.displayName} • Report Creator`
+                  : comment.author.displayName}
+              </p>
+              <p className="text-xs text-gray-500">
+                {new Date(comment.createdAt).toLocaleString()}
+              </p>
+            </div>
+            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 capitalize">
+              {comment.author.role}
+            </span>
+          </div>
+          <p className="mt-3 text-sm text-gray-700">{comment.content}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1 rounded-full bg-gray-50 px-1 py-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 ${
+                  comment.currentUserVote === "up"
+                    ? "text-orange-600"
+                    : "text-gray-500"
+                }`}
+                onClick={() => handleVoteOnComment(comment.id, "up")}
+                disabled={discussionVoteMutation.isPending}
+              >
+                <ArrowBigUp className="h-4 w-4" />
+              </Button>
+              <span className="min-w-8 text-center text-xs font-semibold text-gray-700">
+                {comment.upvotesCount - comment.downvotesCount}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 ${
+                  comment.currentUserVote === "down"
+                    ? "text-blue-600"
+                    : "text-gray-500"
+                }`}
+                onClick={() => handleVoteOnComment(comment.id, "down")}
+                disabled={discussionVoteMutation.isPending}
+              >
+                <ArrowBigDown className="h-4 w-4" />
+              </Button>
+            </div>
+            <span className="text-xs text-gray-500">
+              {comment.upvotesCount} upvotes • {comment.downvotesCount} downvotes
+            </span>
+            {comment.canReply && (
+              <Button
+                variant="ghost"
+                className="px-0 text-sm text-blue-600 hover:text-blue-700"
+                onClick={() =>
+                  setActiveReplyTargetId((current) =>
+                    current === comment.id ? null : comment.id,
+                  )
+                }
+              >
+                Reply
+              </Button>
+            )}
+          </div>
+          {activeReplyTargetId === comment.id && (
+            <div className="mt-3 space-y-2">
+              <Textarea
+                value={replyDrafts[comment.id] || ""}
+                onChange={(e) =>
+                  setReplyDrafts((prev) => ({
+                    ...prev,
+                    [comment.id]: e.target.value,
+                  }))
+                }
+                placeholder="Write a reply..."
+                className="min-h-[90px]"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveReplyTargetId(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleReplyToComment(comment.id)}
+                  disabled={
+                    discussionReplyMutation.isPending ||
+                    !(replyDrafts[comment.id] || "").trim()
+                  }
+                >
+                  Reply
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+        {comment.replies?.length > 0 && renderDiscussionComments(comment.replies, level + 1)}
+      </div>
+    ));
 
   if (loading && !displayReport) {
     return <ReportDetailSkeleton />;
@@ -601,46 +867,133 @@ export default function ReportDetailScreen() {
             </Card>
           )}
 
+          {canShowDiscussion && (
+            <Card className="my-4 border-emerald-100">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-emerald-600" />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">
+                        Community Discussion
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Join the public discussion for this approved report.
+                      </p>
+                    </div>
+                  </div>
+                  {!discussionResponse?.data?.hasJoined && (
+                    <Button
+                      onClick={handleJoinDiscussion}
+                      disabled={joinDiscussionMutation.isPending}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      Join Thread
+                    </Button>
+                  )}
+                </div>
+
+                {discussionLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-16 animate-pulse rounded-lg bg-gray-100"
+                      />
+                    ))}
+                  </div>
+                ) : discussionResponse?.data ? (
+                  <>
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                      {discussionResponse.data.participantCount} participants
+                      joined this discussion.
+                    </div>
+
+                    <div className="space-y-3">
+                      <Textarea
+                        value={discussionDraft}
+                        onChange={(e) => setDiscussionDraft(e.target.value)}
+                        placeholder="Add a top-level comment to the discussion..."
+                        className="min-h-[100px]"
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleAddDiscussionComment}
+                          disabled={
+                            discussionCommentMutation.isPending ||
+                            !discussionDraft.trim()
+                          }
+                          className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                          Comment
+                        </Button>
+                      </div>
+                    </div>
+
+                    {discussionResponse.data.comments.length > 0 ? (
+                      <div className="space-y-4">
+                        {renderDiscussionComments(discussionResponse.data.comments)}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-gray-50 px-3 py-4 text-sm text-gray-600">
+                        No discussion comments yet. Start the thread with a
+                        top-level comment.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                    Discussion is available after this report is approved.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Actions */}
-          <div className="flex items-center gap-3 bg-white p-4 rounded-lg mb-4">
-            <Button
-              onClick={() => handleVote("up")}
-              variant="ghost"
-              className={`flex items-center rounded-full px-4 py-2 transition-colors ${
-                displayReport.userVote === "up"
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-              }`}
-            >
-              <ThumbsUp
-                className={
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-white p-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                Community Vote
+              </p>
+              <p className="text-xs text-gray-500">
+                Upvote or downvote this report Reddit-style.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-2 py-1">
+              <Button
+                onClick={() => handleVote("up")}
+                variant="ghost"
+                size="sm"
+                className={`h-9 w-9 p-0 ${
                   displayReport.userVote === "up"
-                    ? "text-white"
+                    ? "text-orange-600"
                     : "text-gray-500"
-                }
-                size={20}
-              />
-              <span className="ml-2">{displayReport.upvotesCount}</span>
-            </Button>
-            <Button
-              onClick={() => handleVote("down")}
-              variant="ghost"
-              className={`flex items-center rounded-full px-4 py-2 transition-colors ${
-                displayReport.userVote === "down"
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-              }`}
-            >
-              <ThumbsDown
-                className={
+                }`}
+              >
+                <ArrowBigUp className="h-5 w-5" />
+              </Button>
+              <div className="min-w-16 text-center">
+                <p className="text-sm font-bold text-gray-900">
+                  {displayReport.upvotesCount - displayReport.downvotesCount}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  {displayReport.upvotesCount} up • {displayReport.downvotesCount} down
+                </p>
+              </div>
+              <Button
+                onClick={() => handleVote("down")}
+                variant="ghost"
+                size="sm"
+                className={`h-9 w-9 p-0 ${
                   displayReport.userVote === "down"
-                    ? "text-white"
+                    ? "text-blue-600"
                     : "text-gray-500"
-                }
-                size={20}
-              />
-              <span className="ml-2">{displayReport.downvotesCount}</span>
-            </Button>
+                }`}
+              >
+                <ArrowBigDown className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Status Updates */}

@@ -59,9 +59,18 @@ export class ReportRepository {
             },
           },
           {
+            $lookup: {
+              from: 'messages',
+              localField: '_id',
+              foreignField: 'sourceReportId',
+              as: 'discussionThreadData',
+            },
+          },
+          {
             $addFields: {
               evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
               activities: { $arrayElemAt: ['$activityData.activities', 0] },
+              discussionThread: { $arrayElemAt: ['$discussionThreadData', 0] },
               currentUserVote: requesterId
                 ? {
                     $first: {
@@ -87,6 +96,24 @@ export class ReportRepository {
                   false,
                 ],
               },
+              politicianReplyCount: {
+                $size: {
+                  $filter: {
+                    input: { $ifNull: ['$discussionThread.messages', []] },
+                    as: 'message',
+                    cond: {
+                      $eq: ['$$message.senderType', 'POLITICIAN'],
+                    },
+                  },
+                },
+              },
+              awaitingPoliticianReply: {
+                $cond: [
+                  '$autoConvertedToMessage',
+                  { $eq: ['$politicianReplyCount', 0] },
+                  false,
+                ],
+              },
             },
           },
           {
@@ -95,6 +122,9 @@ export class ReportRepository {
               activityData: 0,
               voteData: 0,
               currentUserVote: 0,
+              discussionThreadData: 0,
+              discussionThread: 0,
+              politicianReplyCount: 0,
             },
           },
         ])
@@ -181,6 +211,14 @@ export class ReportRepository {
           as: 'voteData',
         },
       },
+      {
+        $lookup: {
+          from: 'messages',
+          localField: '_id',
+          foreignField: 'sourceReportId',
+          as: 'discussionThreadData',
+        },
+      },
       ...(hasFilters
         ? [
             {
@@ -198,6 +236,7 @@ export class ReportRepository {
       {
         $addFields: {
           evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
+          discussionThread: { $arrayElemAt: ['$discussionThreadData', 0] },
           sourceCategories: {
             type: { $arrayElemAt: ['$typeData.title', 0] },
             visibility: { $arrayElemAt: ['$visibilityData.title', 0] },
@@ -225,6 +264,24 @@ export class ReportRepository {
           hasVoted: {
             $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
           },
+          politicianReplyCount: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$discussionThread.messages', []] },
+                as: 'message',
+                cond: {
+                  $eq: ['$$message.senderType', 'POLITICIAN'],
+                },
+              },
+            },
+          },
+          awaitingPoliticianReply: {
+            $cond: [
+              '$autoConvertedToMessage',
+              { $eq: ['$politicianReplyCount', 0] },
+              false,
+            ],
+          },
         },
       },
       {
@@ -236,6 +293,9 @@ export class ReportRepository {
           evidenceData: 0,
           voteData: 0,
           currentUserVote: 0,
+          discussionThreadData: 0,
+          discussionThread: 0,
+          politicianReplyCount: 0,
         },
       },
     ]);
@@ -265,8 +325,17 @@ export class ReportRepository {
         },
       },
       {
+        $lookup: {
+          from: 'messages',
+          localField: '_id',
+          foreignField: 'sourceReportId',
+          as: 'discussionThreadData',
+        },
+      },
+      {
         $addFields: {
           evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
+          discussionThread: { $arrayElemAt: ['$discussionThreadData', 0] },
           currentUserVote: requesterId
             ? {
                 $first: {
@@ -288,6 +357,24 @@ export class ReportRepository {
           hasVoted: {
             $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
           },
+          politicianReplyCount: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$discussionThread.messages', []] },
+                as: 'message',
+                cond: {
+                  $eq: ['$$message.senderType', 'POLITICIAN'],
+                },
+              },
+            },
+          },
+          awaitingPoliticianReply: {
+            $cond: [
+              '$autoConvertedToMessage',
+              { $eq: ['$politicianReplyCount', 0] },
+              false,
+            ],
+          },
         },
       },
       {
@@ -295,6 +382,9 @@ export class ReportRepository {
           evidenceData: 0,
           voteData: 0,
           currentUserVote: 0,
+          discussionThreadData: 0,
+          discussionThread: 0,
+          politicianReplyCount: 0,
         },
       },
       {

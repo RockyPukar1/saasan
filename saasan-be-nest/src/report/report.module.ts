@@ -48,6 +48,22 @@ import {
   ReportVoteEntitySchema,
 } from './entities/report-vote.entity';
 import { ReportVoteRepository } from './repositories/report-vote.repository';
+import {
+  ReportDiscussionCommentEntity,
+  ReportDiscussionCommentEntitySchema,
+} from './entities/report-discussion-comment.entity';
+import {
+  ReportDiscussionParticipantEntity,
+  ReportDiscussionParticipantEntitySchema,
+} from './entities/report-discussion-participant.entity';
+import {
+  ReportDiscussionCommentVoteEntity,
+  ReportDiscussionCommentVoteEntitySchema,
+} from './entities/report-discussion-comment-vote.entity';
+import { ReportDiscussionCommentRepository } from './repositories/report-discussion-comment.repository';
+import { ReportDiscussionParticipantRepository } from './repositories/report-discussion-participant.repository';
+import { ReportDiscussionCommentVoteRepository } from './repositories/report-discussion-comment-vote.repository';
+import { ReportDiscussionService } from './services/report-discussion.service';
 
 @Module({
   imports: [
@@ -63,6 +79,18 @@ import { ReportVoteRepository } from './repositories/report-vote.repository';
         schema: ReportVisibilityEntitySchema,
       },
       { name: ReportVoteEntity.name, schema: ReportVoteEntitySchema },
+      {
+        name: ReportDiscussionCommentEntity.name,
+        schema: ReportDiscussionCommentEntitySchema,
+      },
+      {
+        name: ReportDiscussionParticipantEntity.name,
+        schema: ReportDiscussionParticipantEntitySchema,
+      },
+      {
+        name: ReportDiscussionCommentVoteEntity.name,
+        schema: ReportDiscussionCommentVoteEntitySchema,
+      },
     ]),
     CloudinaryModule,
     TransactionModule,
@@ -87,6 +115,10 @@ import { ReportVoteRepository } from './repositories/report-vote.repository';
     ReportVisibilityRepository,
     ReportVoteRepository,
     ReportToMessageService,
+    ReportDiscussionCommentRepository,
+    ReportDiscussionParticipantRepository,
+    ReportDiscussionCommentVoteRepository,
+    ReportDiscussionService,
   ],
   exports: [
     ReportRepository,

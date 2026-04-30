@@ -24,6 +24,15 @@ import { type Request } from 'express';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { ReportFilterDto } from '../dtos/report-filter.dto';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { PermissionGuard } from 'src/common/guards/permission.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Permissions } from 'src/common/decorators/permissions.decorator';
+import { UserRole } from 'src/user/entities/user.entity';
+import { PERMISSIONS } from 'src/common/constants/permission.constants';
+import { ApproveReportDto } from '../dtos/approve-report.dto';
+import { CreateReportDiscussionCommentDto } from '../dtos/create-report-discussion-comment.dto';
+import { VoteReportDiscussionCommentDto } from '../dtos/vote-report-discussion-comment.dto';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('report')
@@ -115,12 +124,15 @@ export class ReportController {
   @Post(':reportId/resolve')
   async resolve() {}
 
-  @HttpCode(204)
+  @UseGuards(RoleGuard, PermissionGuard)
+  @Roles(UserRole.ADMIN)
+  @Permissions(PERMISSIONS.reports.resolve)
+  @HttpCode(HttpStatus.OK)
   @Post(':reportId/approve')
   async approveReport(
     @Param() param: ReportIdDto,
     @Req() req: Request,
-    @Body() approvalData: { escalateToHigher?: boolean; notes?: string },
+    @Body() approvalData: ApproveReportDto,
   ) {
     return await this.reportService.approveReport(param.reportId, {
       approvedBy: req.user.id,
@@ -137,6 +149,88 @@ export class ReportController {
     return await this.reportService.escalateReport(
       param.reportId,
       escalationData,
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':reportId/discussion/join')
+  async joinDiscussion(@Param() param: ReportIdDto, @Req() req: Request) {
+    const requestUser = req.user as any;
+    return await this.reportService.joinDiscussionThread(param.reportId, {
+      role: requestUser.role,
+      userId: requestUser.id,
+      politicianId: requestUser.politicianId || requestUser.id,
+    });
+  }
+
+  @Get(':reportId/discussion')
+  async getDiscussion(@Param() param: ReportIdDto, @Req() req: Request) {
+    const requestUser = req.user as any;
+    return await this.reportService.getDiscussionThread(param.reportId, {
+      role: requestUser.role,
+      userId: requestUser.id,
+      politicianId: requestUser.politicianId || requestUser.id,
+    });
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':reportId/discussion/comments')
+  async addDiscussionComment(
+    @Param() param: ReportIdDto,
+    @Body() body: CreateReportDiscussionCommentDto,
+    @Req() req: Request,
+  ) {
+    const requestUser = req.user as any;
+    return await this.reportService.addDiscussionComment(
+      param.reportId,
+      body.content,
+      {
+        role: requestUser.role,
+        userId: requestUser.id,
+        politicianId: requestUser.politicianId || requestUser.id,
+      },
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':reportId/discussion/comments/:commentId/reply')
+  async replyToDiscussionComment(
+    @Param() param: ReportIdDto,
+    @Param('commentId') commentId: string,
+    @Body() body: CreateReportDiscussionCommentDto,
+    @Req() req: Request,
+  ) {
+    const requestUser = req.user as any;
+    return await this.reportService.replyToDiscussionComment(
+      param.reportId,
+      commentId,
+      body.content,
+      {
+        role: requestUser.role,
+        userId: requestUser.id,
+        politicianId: requestUser.politicianId || requestUser.id,
+      },
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Put(':reportId/discussion/comments/:commentId/vote')
+  async voteOnDiscussionComment(
+    @Param() param: ReportIdDto,
+    @Param('commentId') commentId: string,
+    @Body() body: VoteReportDiscussionCommentDto,
+    @Req() req: Request,
+  ) {
+    const requestUser = req.user as any;
+    return await this.reportService.voteOnDiscussionComment(
+      param.reportId,
+      commentId,
+      body.direction || 'up',
+      {
+        role: requestUser.role,
+        userId: requestUser.id,
+        politicianId: requestUser.politicianId || requestUser.id,
+      },
     );
   }
 }

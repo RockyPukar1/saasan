@@ -26,6 +26,12 @@ export class ReportStatusRepository {
     return await this.reportStatusModel.findById(id);
   }
 
+  async findByTitle(title: string) {
+    return await this.reportStatusModel.findOne({
+      title: { $regex: new RegExp(`^${title}$`, 'i') },
+    });
+  }
+
   async update(id: string, updateData: any) {
     return await this.reportStatusModel
       .findByIdAndUpdate(id, updateData, { new: true })

@@ -63,6 +63,10 @@ export interface IMessageThread {
       id: string;
       name: string;
     };
+    politicians?: Array<{
+      id: string;
+      name: string;
+    }>;
   };
   messages: Array<{
     id?: string;
@@ -77,6 +81,12 @@ export interface IMessageThread {
   createdAt: string;
   updatedAt: string;
 }
+
+type ApprovalSuggestionsResponse = {
+  reportId: string;
+  hasJurisdictionPolitician: boolean;
+  suggestedPoliticians: IPolitician[];
+};
 
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
@@ -209,10 +219,17 @@ const transformReport = (data: any) => ({
   upvotesCount: data.upvotesCount,
   downvotesCount: data.downvotesCount,
   viewsCount: data.viewsCount,
+  sharesCount: data.sharesCount,
+  autoConvertedToMessage: data.autoConvertedToMessage,
+  awaitingPoliticianReply: data.awaitingPoliticianReply,
+  targetPoliticianId: data.targetPoliticianId,
+  assignedPoliticianIds: data.assignedPoliticianIds || [],
+  escalatedToPoliticianId: data.escalatedToPoliticianId,
   resolvedAt: data.resolvedAt,
   createdAt: data.createdAt,
   updatedAt: data.updatedAt,
   statusUpdates: data.statusUpdates,
+  sourceCategories: data.sourceCategories,
 });
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -298,6 +315,54 @@ const unwrapResponseData = <T>(response: {
 
   return payload as T;
 };
+
+const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
+  if (
+    rawPayload &&
+    typeof rawPayload === "object" &&
+    "success" in rawPayload &&
+    "data" in rawPayload
+  ) {
+    return {
+      ...(rawPayload as ApiResponse<T>),
+      data,
+    };
+  }
+
+  return {
+    success: true,
+    data,
+    message: "Success",
+  };
+};
+
+const normalizeMessageThread = (thread: any): IMessageThread => ({
+  ...thread,
+  id: thread?.id || thread?._id,
+  participants: {
+    ...thread?.participants,
+    politician: {
+      id:
+        thread?.participants?.politician?.id ||
+        thread?.participants?.politicians?.[0]?.id ||
+        "",
+      name:
+        thread?.participants?.politician?.name ||
+        thread?.participants?.politicians?.[0]?.name ||
+        "Representative",
+    },
+    politicians:
+      thread?.participants?.politicians ||
+      (thread?.participants?.politician
+        ? [thread.participants.politician]
+        : []),
+  },
+  messages:
+    thread?.messages?.map((message: any) => ({
+      ...message,
+      id: message?.id || message?._id,
+    })) || [],
+});
 
 const refreshAccessToken = async () => {
   const refreshToken = getRefreshToken();
@@ -487,17 +552,22 @@ export const sessionApi = {
 
 export const messageThreadApi = {
   getByReportId: async (reportId: string): Promise<ApiResponse<IMessageThread>> => {
-    void reportId;
-    return unsupportedRoute("Report-linked message threads");
+    const response = await api.get(`/message/report/${reportId}`);
+    return toApiResponse(
+      response.data,
+      normalizeMessageThread(unwrapResponseData(response)),
+    );
   },
 
   addReply: async (
     messageId: string,
     content: string,
   ): Promise<ApiResponse<IMessageThread>> => {
-    void messageId;
-    void content;
-    return unsupportedRoute("Message thread replies");
+    const response = await api.post(`/message/${messageId}/reply`, { content });
+    return toApiResponse(
+      response.data,
+      normalizeMessageThread(unwrapResponseData(response)),
+    );
   },
 };
 
@@ -914,7 +984,7 @@ export const reportsApi = {
       typeId?: string;
       statusId?: string;
       visibilityId?: string;
-      comment: string;
+      comment?: string;
     },
   ) => {
     const response = await api.put(`/admin/report/${id}`, data);
@@ -936,16 +1006,38 @@ export const reportsApi = {
 
   approve: async (
     id: string,
+    politicianIds: string[],
     comment?: string,
     escalateToHigher?: boolean,
   ): Promise<ApiResponse<IReport>> => {
     const response = await api.post(`/report/${id}/approve`, {
+      politicianIds,
       escalateToHigher: escalateToHigher || false,
       notes: comment,
     });
+    const approvedReport =
+      response.data?.report ||
+      response.data?.data?.report ||
+      response.data?.data ||
+      response.data;
+    return toApiResponse(response.data, transformReport(approvedReport));
+  },
+
+  getApprovalSuggestions: async (
+    id: string,
+  ): Promise<ApiResponse<ApprovalSuggestionsResponse>> => {
+    const response = await api.get(
+      `/admin/report/${id}/politician-suggestions`,
+    );
+
     return {
       ...response.data,
-      data: transformReport(response.data.data),
+      data: {
+        ...response.data.data,
+        suggestedPoliticians:
+          response.data.data?.suggestedPoliticians?.map(transformPolitician) ||
+          [],
+      },
     };
   },
 

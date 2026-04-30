@@ -479,6 +479,31 @@ export class PoliticianRepository {
     return politicians[0] || null;
   }
 
+  async findAllByJurisdiction(locationFilters: any) {
+    const filter: any = {};
+    if (locationFilters.wardId) filter.wardId = locationFilters.wardId;
+    if (locationFilters.municipalityId)
+      filter.municipalityId = locationFilters.municipalityId;
+    if (locationFilters.constituencyId)
+      filter.constituencyId = locationFilters.constituencyId;
+    if (locationFilters.districtId)
+      filter.districtId = locationFilters.districtId;
+    if (locationFilters.provinceId)
+      filter.provinceId = locationFilters.provinceId;
+
+    return await this.model.find(filter).exec();
+  }
+
+  async findManyByIds(politicianIds: string[]) {
+    return await this.model
+      .find({
+        _id: {
+          $in: politicianIds.map((politicianId) => new Types.ObjectId(politicianId)),
+        },
+      })
+      .exec();
+  }
+
   async findHighestLevelPolitician() {
     const politicians = await this.model.find().sort({ level: -1 }).exec();
     return politicians[0] || null;

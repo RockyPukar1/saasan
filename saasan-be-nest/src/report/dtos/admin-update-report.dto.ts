@@ -17,6 +17,7 @@ export class AdminUpdateReportDto {
   @IsMongoId()
   visibilityId?: string;
 
+  @IsOptional()
   @IsString()
-  comment: string;
+  comment?: string;
 }

@@ -66,6 +66,15 @@ export class ReportSerializer {
   activities?: any[];
   @Expose() sharesCount: number;
   @Expose() autoConvertedToMessage?: boolean;
+  @Expose() awaitingPoliticianReply?: boolean;
+  @Expose()
+  @Transform(
+    ({ obj }) =>
+      obj.assignedPoliticianIds?.map?.((politicianId: any) =>
+        politicianId?.toString?.() || politicianId,
+      ) || [],
+  )
+  assignedPoliticianIds?: string[];
   @Expose()
   @Transform(({ obj }) => obj.targetPoliticianId?.toString?.() || null)
   targetPoliticianId?: string | null;

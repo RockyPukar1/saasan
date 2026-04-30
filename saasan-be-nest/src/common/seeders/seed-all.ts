@@ -27,6 +27,12 @@ import { PollOptionEntity } from '../../poll/entities/poll-option.entity';
 import { PollVoteEntity } from '../../poll/entities/poll-vote.entity';
 import { PollEntity } from '../../poll/entities/poll.entity';
 import { ReportEntity } from '../../report/entities/report.entity';
+import {
+  ReportDiscussionAuthorRole,
+  ReportDiscussionCommentEntity,
+} from '../../report/entities/report-discussion-comment.entity';
+import { ReportDiscussionCommentVoteEntity } from '../../report/entities/report-discussion-comment-vote.entity';
+import { ReportDiscussionParticipantEntity } from '../../report/entities/report-discussion-participant.entity';
 import { ReportVoteEntity } from '../../report/entities/report-vote.entity';
 import {
   PASSWORD_SALT,
@@ -84,6 +90,15 @@ async function bootstrap() {
     const reportModel = app.get<Model<any>>(getModelToken(ReportEntity.name));
     const reportVoteModel = app.get<Model<any>>(
       getModelToken(ReportVoteEntity.name),
+    );
+    const reportDiscussionCommentModel = app.get<Model<any>>(
+      getModelToken(ReportDiscussionCommentEntity.name),
+    );
+    const reportDiscussionParticipantModel = app.get<Model<any>>(
+      getModelToken(ReportDiscussionParticipantEntity.name),
+    );
+    const reportDiscussionCommentVoteModel = app.get<Model<any>>(
+      getModelToken(ReportDiscussionCommentVoteEntity.name),
     );
     const caseModel = app.get<Model<any>>(getModelToken(CaseEntity.name));
     const eventModel = app.get<Model<any>>(getModelToken(EventEntity.name));
@@ -158,6 +173,9 @@ async function bootstrap() {
         : Promise.resolve(),
       userModel.deleteMany({ email: new RegExp(`@${SEEDED_DOMAIN}$`) }),
       reportModel.deleteMany({ tags: 'seeded' }),
+      reportDiscussionCommentModel.deleteMany({}),
+      reportDiscussionCommentVoteModel.deleteMany({}),
+      reportDiscussionParticipantModel.deleteMany({}),
       caseModel.deleteMany({ title: /^\[Seeded\]/ }),
       eventModel.deleteMany({ title: /^\[Seeded\]/ }),
       budgetModel.deleteMany({ isSeeded: true }),
@@ -493,6 +511,11 @@ async function bootstrap() {
     }
 
     const messageDocs: any[] = [];
+    const approvedReportUpdates: Array<{
+      reportId: any;
+      primaryPoliticianId: any;
+      assignedPoliticianIds: any[];
+    }> = [];
     for (
       let index = 0;
       index < Math.min(createdReports.length, politicianUsers.length * 3);
@@ -501,6 +524,17 @@ async function bootstrap() {
       const report = createdReports[index];
       const citizen = citizenUsers[index % citizenUsers.length];
       const politician = politicianUsers[index % politicianUsers.length];
+      const secondaryPolitician =
+        politicianUsers[(index + 1) % politicianUsers.length];
+      const assignedPoliticianIds = [
+        politician.politicianId || politician._id,
+        ...(index % 2 === 0 &&
+        secondaryPolitician &&
+        secondaryPolitician.politicianId?.toString() !==
+          (politician.politicianId || politician._id)?.toString()
+          ? [secondaryPolitician.politicianId || secondaryPolitician._id]
+          : []),
+      ];
 
       messageDocs.push({
         subject: `Seeded report follow-up ${index + 1}`,
@@ -545,6 +579,13 @@ async function bootstrap() {
             id: politician.politicianId || politician._id,
             name: politician.fullName,
           },
+          politicians: assignedPoliticianIds.map((assignedPoliticianId, assignedIndex) => ({
+            id: assignedPoliticianId,
+            name:
+              assignedIndex === 0
+                ? politician.fullName
+                : secondaryPolitician?.fullName || politician.fullName,
+          })),
         },
         messages: [
           {
@@ -554,6 +595,17 @@ async function bootstrap() {
             isInternal: false,
             createdAt: new Date(),
           },
+          ...(index % 3 !== 0
+            ? [
+                {
+                  senderId: politician._id,
+                  senderType: MessageEntrySenderType.POLITICIAN,
+                  content: `Seeded politician response for report ${index + 1}.`,
+                  isInternal: false,
+                  createdAt: new Date(),
+                },
+              ]
+            : []),
         ],
         lastMessageAt: new Date(),
         upvotesCount: index % 9,
@@ -565,8 +617,215 @@ async function bootstrap() {
         messageOrigin: 'report_converted',
         isAnonymous: report.isAnonymous,
       });
+
+      approvedReportUpdates.push({
+        reportId: report._id,
+        primaryPoliticianId: politician.politicianId || politician._id,
+        assignedPoliticianIds,
+      });
     }
     await messageModel.insertMany(messageDocs);
+
+    if (approvedReportUpdates.length) {
+      await reportModel.bulkWrite(
+        approvedReportUpdates.map((item) => ({
+          updateOne: {
+            filter: { _id: item.reportId },
+            update: {
+              $set: {
+                autoConvertedToMessage: true,
+                targetPoliticianId: item.primaryPoliticianId,
+                assignedPoliticianIds: item.assignedPoliticianIds,
+                verificationNotes: 'Seeded approved report for discussion flows',
+                verifiedAt: new Date(),
+              },
+            },
+          },
+        })),
+      );
+    }
+
+    const discussionParticipantDocs: any[] = [];
+    const discussionCommentDocs: any[] = [];
+    const discussionCommentVoteDocs: any[] = [];
+
+    approvedReportUpdates.slice(0, 8).forEach((approvedReport, index) => {
+      const report = createdReports.find(
+        (createdReport) =>
+          createdReport._id.toString() === approvedReport.reportId.toString(),
+      );
+      const reportOwner = citizenUsers.find(
+        (citizen) =>
+          citizen._id.toString() === report?.reporterId?.toString?.(),
+      );
+      const joiningCitizen =
+        citizenUsers[(index + 4) % Math.max(citizenUsers.length, 1)];
+      const politicianUser =
+        politicianUsers[index % Math.max(politicianUsers.length, 1)];
+      const adminUser =
+        createdUsers.find((user) => user.role === UserRole.ADMIN) || createdUsers[0];
+
+      if (!report || !reportOwner || !joiningCitizen || !politicianUser || !adminUser) {
+        return;
+      }
+
+      discussionParticipantDocs.push(
+        {
+          reportId: approvedReport.reportId,
+          userId: reportOwner._id,
+          joinedAt: new Date(),
+          lastCommentAt: new Date(),
+        },
+        {
+          reportId: approvedReport.reportId,
+          userId: joiningCitizen._id,
+          joinedAt: new Date(),
+          lastCommentAt: new Date(),
+        },
+      );
+
+      const topLevelCommentId = new Types.ObjectId();
+      const politicianReplyId = new Types.ObjectId();
+      const reportOwnerReplyId = new Types.ObjectId();
+      const adminCommentId = new Types.ObjectId();
+
+      discussionCommentDocs.push(
+        {
+          _id: topLevelCommentId,
+          reportId: approvedReport.reportId,
+          authorId: joiningCitizen._id,
+          authorRole: ReportDiscussionAuthorRole.CITIZEN,
+          authorDisplayName: joiningCitizen.fullName,
+          isReportOwner: false,
+          content: `Seeded public discussion comment ${index + 1}.`,
+          upvotesCount: 3,
+          downvotesCount: 1,
+          depth: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          _id: politicianReplyId,
+          reportId: approvedReport.reportId,
+          authorId: politicianUser._id,
+          authorRole: ReportDiscussionAuthorRole.POLITICIAN,
+          authorDisplayName: politicianUser.fullName,
+          isReportOwner: false,
+          content: `Seeded politician reply in public discussion ${index + 1}.`,
+          upvotesCount: 3,
+          downvotesCount: 0,
+          parentCommentId: topLevelCommentId,
+          threadRootCommentId: topLevelCommentId,
+          depth: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          _id: reportOwnerReplyId,
+          reportId: approvedReport.reportId,
+          authorId: reportOwner._id,
+          authorRole: ReportDiscussionAuthorRole.CITIZEN,
+          authorDisplayName: reportOwner.fullName,
+          isReportOwner: true,
+          content: `Seeded report owner follow-up ${index + 1}.`,
+          upvotesCount: 2,
+          downvotesCount: 0,
+          parentCommentId: politicianReplyId,
+          threadRootCommentId: topLevelCommentId,
+          depth: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          _id: adminCommentId,
+          reportId: approvedReport.reportId,
+          authorId: adminUser._id,
+          authorRole: ReportDiscussionAuthorRole.ADMIN,
+          authorDisplayName: adminUser.fullName,
+          isReportOwner: false,
+          content: `Seeded admin moderation note ${index + 1}.`,
+          upvotesCount: 1,
+          downvotesCount: 0,
+          depth: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      );
+
+      discussionCommentVoteDocs.push(
+        {
+          commentId: topLevelCommentId,
+          userId: reportOwner._id,
+          direction: 'up',
+        },
+        {
+          commentId: topLevelCommentId,
+          userId: politicianUser._id,
+          direction: 'up',
+        },
+        {
+          commentId: topLevelCommentId,
+          userId: adminUser._id,
+          direction: 'up',
+        },
+        {
+          commentId: topLevelCommentId,
+          userId: joiningCitizen._id,
+          direction: 'down',
+        },
+        {
+          commentId: politicianReplyId,
+          userId: joiningCitizen._id,
+          direction: 'up',
+        },
+        {
+          commentId: politicianReplyId,
+          userId: reportOwner._id,
+          direction: 'up',
+        },
+        {
+          commentId: politicianReplyId,
+          userId: adminUser._id,
+          direction: 'up',
+        },
+        {
+          commentId: reportOwnerReplyId,
+          userId: politicianUser._id,
+          direction: 'up',
+        },
+        {
+          commentId: reportOwnerReplyId,
+          userId: joiningCitizen._id,
+          direction: 'up',
+        },
+        {
+          commentId: adminCommentId,
+          userId: politicianUser._id,
+          direction: 'up',
+        },
+      );
+    });
+
+    if (discussionParticipantDocs.length) {
+      await reportDiscussionParticipantModel.insertMany(discussionParticipantDocs, {
+        ordered: false,
+      });
+    }
+
+    if (discussionCommentDocs.length) {
+      await reportDiscussionCommentModel.insertMany(discussionCommentDocs, {
+        ordered: false,
+      });
+    }
+
+    if (discussionCommentVoteDocs.length) {
+      await reportDiscussionCommentVoteModel.insertMany(
+        discussionCommentVoteDocs,
+        {
+          ordered: false,
+        },
+      );
+    }
 
     logger.log(
       [

@@ -10,6 +10,7 @@
     "seed:smart": "cd saasan-be-nest && pnpm seed:smart",
     "seed:all-fake": "sh ./scripts/seed-all-fake.sh",
     "reset:all-fake": "sh ./scripts/reset-all-fake.sh",
+    "reset:preserve-locations": "sh ./scripts/reset-preserve-locations.sh",
     "dev:all": "concurrently \"pnpm dev:backend\" \"pnpm dev:worker\" \"pnpm dev:dashboard\" \"pnpm dev:mobile\" \"pnpm dev:politician\"",
     "dev:backend": "cd saasan-be-nest && pnpm start:dev",
     "dev:worker": "cd saasan-be-nest && pnpm start:worker:dev",

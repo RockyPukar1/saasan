@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
 import {
   MessageSquare,
   AlertCircle,
-  User,
-  Reply,
-  ChevronUp,
   ChevronDown,
-  MoreHorizontal,
-  Share,
-  Bookmark,
-  Flag,
+  Send,
+  MapPin,
+  ArrowBigUp,
+  ArrowBigDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -21,9 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { messagesApi, type MessageThread } from "@/services/api";
+import {
+  messagesApi,
+  reportsApi,
+  type MessageThread,
+  type ReportDiscussionComment,
+  type ReportDiscussionThread,
+} from "@/services/api";
 import { PERMISSIONS } from "@/constants/permission.constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "react-hot-toast";
 
 export const MessagesScreen: React.FC = () => {
   const { hasPermission } = useAuth();
@@ -37,66 +41,91 @@ export const MessagesScreen: React.FC = () => {
     null,
   );
   const [replyText, setReplyText] = useState("");
-  const [upvotedMessages, setUpvotedMessages] = useState<Set<string>>(
-    new Set(),
-  );
-  const [downvotedMessages, setDownvotedMessages] = useState<Set<string>>(
-    new Set(),
-  );
   const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(
     new Set(),
   );
-
-  console.log(messages);
+  const [discussionThread, setDiscussionThread] =
+    useState<ReportDiscussionThread | null>(null);
+  const [discussionLoading, setDiscussionLoading] = useState(false);
+  const [discussionDraft, setDiscussionDraft] = useState("");
+  const [activeReplyTargetId, setActiveReplyTargetId] = useState<string | null>(
+    null,
+  );
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [submittingDiscussion, setSubmittingDiscussion] = useState(false);
+  const [submittingVote, setSubmittingVote] = useState<string | null>(null);
 
   useEffect(() => {
-    loadMessages();
+    void loadMessages();
   }, []);
+
+  useEffect(() => {
+    if (!selectedThread?.sourceReportId) {
+      setDiscussionThread(null);
+      setDiscussionDraft("");
+      setReplyDrafts({});
+      setActiveReplyTargetId(null);
+      return;
+    }
+
+    void loadDiscussion(selectedThread.sourceReportId);
+  }, [selectedThread?.sourceReportId]);
 
   const loadMessages = async () => {
     try {
       setLoading(true);
       const data = await messagesApi.getJurisdictionMessages();
       setMessages(data);
+      setSelectedThread((current) => {
+        if (!current) {
+          return data[0] || null;
+        }
+
+        return data.find((thread) => thread.id === current.id) || current;
+      });
     } catch (error) {
       console.error("Failed to load messages:", error);
+      toast.error("Failed to load messages");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReply = async () => {
-    if (!selectedThread || !replyText.trim()) return;
-    if (!canReplyMessages) {
-      return;
+  const loadDiscussion = async (reportId: string) => {
+    try {
+      setDiscussionLoading(true);
+      const thread = await reportsApi.getDiscussion(reportId);
+      setDiscussionThread(thread);
+    } catch (error) {
+      console.error("Failed to load discussion:", error);
+      setDiscussionThread(null);
+    } finally {
+      setDiscussionLoading(false);
     }
+  };
+
+  const refreshSelectedThread = async (threadId: string) => {
+    const updatedThread = await messagesApi.getById(threadId);
+    setSelectedThread(updatedThread);
+    setMessages((current) =>
+      current.map((thread) => (thread.id === threadId ? updatedThread : thread)),
+    );
+  };
+
+  const handleReply = async () => {
+    if (!selectedThread || !replyText.trim() || !canReplyMessages) return;
 
     try {
-      await messagesApi.addReply(selectedThread.id, replyText);
+      setSubmittingReply(true);
+      await messagesApi.addReply(selectedThread.id, replyText.trim());
       setReplyText("");
-      const updatedThread = await messagesApi.getById(selectedThread.id);
-      setSelectedThread(updatedThread);
-      loadMessages();
+      await refreshSelectedThread(selectedThread.id);
     } catch (error) {
       console.error("Failed to send reply:", error);
-    }
-  };
-
-  const handleUpvote = async (messageId: string) => {
-    try {
-      setUpvotedMessages((prev) => new Set([...prev, messageId]));
-      await messagesApi.upvoteMessage(messageId);
-    } catch (error) {
-      console.error("Failed to upvote:", error);
-    }
-  };
-
-  const handleDownvote = async (messageId: string) => {
-    try {
-      setDownvotedMessages((prev) => new Set([...prev, messageId]));
-      await messagesApi.downvoteMessage(messageId);
-    } catch (error) {
-      console.error("Failed to downvote:", error);
+      toast.error("Failed to send reply");
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
@@ -110,25 +139,103 @@ export const MessagesScreen: React.FC = () => {
 
     try {
       await messagesApi.updateStatus(messageId, status);
-      loadMessages();
-      if (selectedThread && selectedThread.id === messageId) {
-        const updatedThread = await messagesApi.getById(messageId);
-        setSelectedThread(updatedThread);
-      }
+      await refreshSelectedThread(messageId);
+      await loadMessages();
     } catch (error) {
       console.error("Failed to update status:", error);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleJoinDiscussion = async () => {
+    if (!selectedThread?.sourceReportId) return;
+
+    try {
+      setSubmittingDiscussion(true);
+      const thread = await reportsApi.joinDiscussion(selectedThread.sourceReportId);
+      setDiscussionThread(thread);
+      toast.success("Joined discussion");
+    } catch (error) {
+      console.error("Failed to join discussion:", error);
+      toast.error("Failed to join discussion");
+    } finally {
+      setSubmittingDiscussion(false);
+    }
+  };
+
+  const handleAddDiscussionComment = async () => {
+    if (!selectedThread?.sourceReportId || !discussionDraft.trim()) return;
+
+    try {
+      setSubmittingDiscussion(true);
+      const thread = await reportsApi.addDiscussionComment(
+        selectedThread.sourceReportId,
+        discussionDraft.trim(),
+      );
+      setDiscussionThread(thread);
+      setDiscussionDraft("");
+    } catch (error) {
+      console.error("Failed to post comment:", error);
+      toast.error("Failed to post comment");
+    } finally {
+      setSubmittingDiscussion(false);
+    }
+  };
+
+  const handleReplyToDiscussionComment = async (commentId: string) => {
+    if (!selectedThread?.sourceReportId) return;
+    const content = replyDrafts[commentId]?.trim();
+    if (!content) return;
+
+    try {
+      setSubmittingDiscussion(true);
+      const thread = await reportsApi.replyToDiscussionComment(
+        selectedThread.sourceReportId,
+        commentId,
+        content,
+      );
+      setDiscussionThread(thread);
+      setReplyDrafts((current) => ({ ...current, [commentId]: "" }));
+      setActiveReplyTargetId(null);
+    } catch (error) {
+      console.error("Failed to send discussion reply:", error);
+      toast.error("Failed to send discussion reply");
+    } finally {
+      setSubmittingDiscussion(false);
+    }
+  };
+
+  const handleVoteOnDiscussionComment = async (
+    commentId: string,
+    direction: "up" | "down",
+  ) => {
+    if (!selectedThread?.sourceReportId) return;
+
+    try {
+      setSubmittingVote(commentId);
+      const thread = await reportsApi.voteOnDiscussionComment(
+        selectedThread.sourceReportId,
+        commentId,
+        direction,
+      );
+      setDiscussionThread(thread);
+    } catch (error) {
+      console.error("Failed to record discussion vote:", error);
+      toast.error("Failed to record discussion vote");
+    } finally {
+      setSubmittingVote(null);
     }
   };
 
   const toggleThreadCollapse = (threadId: string) => {
     setCollapsedThreads((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(threadId)) {
-        newSet.delete(threadId);
+      const next = new Set(prev);
+      if (next.has(threadId)) {
+        next.delete(threadId);
       } else {
-        newSet.add(threadId);
+        next.add(threadId);
       }
-      return newSet;
+      return next;
     });
   };
 
@@ -171,293 +278,199 @@ export const MessagesScreen: React.FC = () => {
   };
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "COMPLAINT":
+    switch (String(category).toLowerCase()) {
+      case "complaint":
         return <AlertCircle className="w-4 h-4" />;
-      case "SUGGESTION":
+      case "suggestion":
         return <MessageSquare className="w-4 h-4" />;
       default:
         return <MessageSquare className="w-4 h-4" />;
     }
   };
 
-  const RedditMessage = ({
-    message,
-    isMain = false,
+  const renderDiscussionComments = (
+    comments: ReportDiscussionComment[],
     level = 0,
-  }: {
-    message: any;
-    isMain?: boolean;
-    level?: number;
-  }) => {
-    const isUpvoted = upvotedMessages.has(message.id);
-    const isDownvoted = downvotedMessages.has(message.id);
-    const voteCount =
-      (message.upvotesCount || 0) - (message.downvotesCount || 0);
-
-    return (
-      <div className={`flex ${level > 0 ? "ml-4" : ""}`}>
-        {/* Voting Section */}
-        <div className="flex flex-col items-center mr-2">
-          <button
-            onClick={() => handleUpvote(message.id)}
-            disabled={isUpvoted}
-            className={`p-1 rounded hover:bg-gray-100 ${
-              isUpvoted ? "text-orange-500" : "text-gray-400"
-            }`}
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-          <span
-            className={`text-sm font-bold ${
-              isUpvoted
-                ? "text-orange-500"
-                : isDownvoted
-                  ? "text-blue-600"
-                  : "text-gray-900"
-            }`}
-          >
-            {voteCount}
-          </span>
-          <button
-            onClick={() => handleDownvote(message.id)}
-            disabled={isDownvoted}
-            className={`p-1 rounded hover:bg-gray-100 ${
-              isDownvoted ? "text-blue-600" : "text-gray-400"
-            }`}
-          >
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Message Content */}
-        <div className="flex-1">
-          <div
-            className={`bg-white border rounded-lg p-3 hover:border-gray-300 transition-colors ${
-              isMain ? "border-blue-200 border-2" : "border-gray-200"
-            }`}
-          >
-            {/* Message Header */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isMain ? "bg-blue-500" : "bg-gray-200"
-                  }`}
-                >
-                  <User
-                    className={`w-4 h-4 ${isMain ? "text-white" : "text-gray-600"}`}
-                  />
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {message.senderType === "politician"
-                      ? selectedThread?.participants.politician.name
-                      : selectedThread?.participants.citizen.name}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-2">
-                    {formatDate(message.createdAt)}
-                  </span>
-                  {isMain && (
-                    <Badge className="ml-2 text-xs bg-blue-100 text-blue-800">
-                      Original Message
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <button className="text-gray-400 hover:text-gray-600">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
+  ): ReactNode =>
+    comments.map((comment) => (
+      <div
+        key={comment.id}
+        className={`space-y-3 ${level > 0 ? "ml-4 border-l border-gray-200 pl-4" : ""}`}
+      >
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {comment.author.isReportOwner
+                  ? `${comment.author.displayName} • Report Creator`
+                  : comment.author.displayName}
+              </p>
+              <p className="text-xs text-gray-500">
+                {new Date(comment.createdAt).toLocaleString()}
+              </p>
             </div>
-
-            {/* Message Content */}
-            <div className="text-gray-900 text-sm mb-2">{message.content}</div>
-
-            {/* Message Actions */}
-            <div className="flex items-center space-x-4 text-xs text-gray-500">
-              <button className="flex items-center space-x-1 hover:text-gray-700">
-                <Reply className="w-3 h-3" />
-                <span>Reply</span>
-              </button>
-              <button className="flex items-center space-x-1 hover:text-gray-700">
-                <Share className="w-3 h-3" />
-                <span>Share</span>
-              </button>
-              <button className="flex items-center space-x-1 hover:text-gray-700">
-                <Bookmark className="w-3 h-3" />
-                <span>Save</span>
-              </button>
-              <button className="flex items-center space-x-1 hover:text-gray-700">
-                <Flag className="w-3 h-3" />
-                <span>Report</span>
-              </button>
-            </div>
+            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium capitalize text-gray-600">
+              {comment.author.role}
+            </span>
           </div>
+          <p className="mt-3 text-sm text-gray-700">{comment.content}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1 rounded-full bg-gray-50 px-1 py-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 ${
+                  comment.currentUserVote === "up"
+                    ? "text-orange-600"
+                    : "text-gray-500"
+                }`}
+                onClick={() => handleVoteOnDiscussionComment(comment.id, "up")}
+                disabled={submittingVote === comment.id}
+              >
+                <ArrowBigUp className="h-4 w-4" />
+              </Button>
+              <span className="min-w-8 text-center text-xs font-semibold text-gray-700">
+                {comment.upvotesCount - comment.downvotesCount}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 ${
+                  comment.currentUserVote === "down"
+                    ? "text-blue-600"
+                    : "text-gray-500"
+                }`}
+                onClick={() =>
+                  handleVoteOnDiscussionComment(comment.id, "down")
+                }
+                disabled={submittingVote === comment.id}
+              >
+                <ArrowBigDown className="h-4 w-4" />
+              </Button>
+            </div>
+            <span className="text-xs text-gray-500">
+              {comment.upvotesCount} upvotes • {comment.downvotesCount} downvotes
+            </span>
+            {comment.canReply && (
+              <Button
+                variant="ghost"
+                className="px-0 text-sm text-blue-600 hover:text-blue-700"
+                onClick={() =>
+                  setActiveReplyTargetId((current) =>
+                    current === comment.id ? null : comment.id,
+                  )
+                }
+              >
+                Reply
+              </Button>
+            )}
+          </div>
+          {activeReplyTargetId === comment.id && (
+            <div className="mt-3 space-y-2">
+              <Textarea
+                value={replyDrafts[comment.id] || ""}
+                onChange={(e) =>
+                  setReplyDrafts((current) => ({
+                    ...current,
+                    [comment.id]: e.target.value,
+                  }))
+                }
+                placeholder="Write a reply..."
+                className="min-h-[90px]"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveReplyTargetId(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleReplyToDiscussionComment(comment.id)}
+                  disabled={
+                    submittingDiscussion ||
+                    !(replyDrafts[comment.id] || "").trim()
+                  }
+                >
+                  Reply
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
+        {comment.replies?.length > 0 &&
+          renderDiscussionComments(comment.replies, level + 1)}
       </div>
-    );
-  };
+    ));
 
-  const RedditThread = ({ thread }: { thread: MessageThread }) => {
+  const ThreadListCard = ({ thread }: { thread: MessageThread }) => {
     const isCollapsed = collapsedThreads.has(thread.id);
-    const voteCount = (thread.upvotesCount || 0) - (thread.downvotesCount || 0);
-    const isUpvoted = upvotedMessages.has(thread.id);
-    const isDownvoted = downvotedMessages.has(thread.id);
 
     return (
       <div
-        className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors cursor-pointer"
+        className="cursor-pointer rounded-lg border border-gray-200 bg-white transition-colors hover:border-gray-300"
         onClick={() => setSelectedThread(thread)}
       >
-        {/* Thread Header */}
-        <div className="flex">
-          {/* Voting Section */}
-          <div
-            className="flex flex-col items-center p-3 border-r border-gray-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => handleUpvote(thread.id)}
-              disabled={isUpvoted}
-              className={`p-1 rounded hover:bg-gray-100 ${
-                isUpvoted ? "text-orange-500" : "text-gray-400"
-              }`}
-            >
-              <ChevronUp className="w-5 h-5" />
-            </button>
-            <span
-              className={`text-lg font-bold ${
-                isUpvoted
-                  ? "text-orange-500"
-                  : isDownvoted
-                    ? "text-blue-600"
-                    : "text-gray-900"
-              }`}
-            >
-              {voteCount}
-            </span>
-            <button
-              onClick={() => handleDownvote(thread.id)}
-              disabled={isDownvoted}
-              className={`p-1 rounded hover:bg-gray-100 ${
-                isDownvoted ? "text-blue-600" : "text-gray-400"
-              }`}
-            >
-              <ChevronDown className="w-5 h-5" />
-            </button>
+        <div className="p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <button
+                className="flex items-center space-x-2 hover:text-gray-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleThreadCollapse(thread.id);
+                }}
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    isCollapsed ? "-rotate-90" : "rotate-0"
+                  }`}
+                />
+                <span className="text-sm font-medium text-gray-900">
+                  {thread.participants.citizen.name}
+                </span>
+              </button>
+              <span className="text-xs text-gray-500">
+                {formatDate(thread.createdAt)}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {getCategoryIcon(thread.category)}
+              <span className={`text-xs font-medium ${getUrgencyColor(thread.urgency)}`}>
+                {thread.urgency}
+              </span>
+              <span className={`text-xs font-medium ${getStatusColor(thread.status)}`}>
+                {thread.status.replace("_", " ")}
+              </span>
+            </div>
           </div>
 
-          {/* Thread Content */}
-          <div className="flex-1 p-3">
-            {/* Thread Meta */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <button
-                  className="flex items-center space-x-2 hover:text-gray-700"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleThreadCollapse(thread.id);
-                  }}
-                >
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      isCollapsed ? "rotate-180" : ""
-                    }`}
-                  />
-                  <span className="text-sm font-medium text-gray-900">
-                    {thread.participants.citizen.name}
-                  </span>
-                </button>
-                <span className="text-xs text-gray-500">
-                  {formatDate(thread.createdAt)}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                {getCategoryIcon(thread.category)}
-                <span
-                  className={`text-xs font-medium ${getUrgencyColor(
-                    thread.urgency,
-                  )}`}
-                >
-                  {thread.urgency}
-                </span>
-                <span
-                  className={`text-xs font-medium ${getStatusColor(
-                    thread.status?.replace("_", " ") || thread.status,
-                  )}`}
-                >
-                  {thread.status?.replace("_", " ") || thread.status}
-                </span>
-              </div>
-            </div>
+          <h3 className="mb-2 text-lg font-medium text-gray-900 hover:underline">
+            {thread.subject}
+          </h3>
 
-            {/* Thread Title */}
-            <h3 className="text-lg font-medium text-gray-900 mb-2 hover:underline">
-              {thread.subject}
-            </h3>
-
-            {/* Thread Content Preview */}
-            {!isCollapsed && (
-              <div className="text-gray-700 text-sm mb-3 line-clamp-2">
+          {!isCollapsed && (
+            <>
+              <div className="mb-3 line-clamp-2 text-sm text-gray-700">
                 {thread.content}
               </div>
-            )}
-
-            {/* Thread Tags */}
-            {!isCollapsed && (
-              <div className="flex items-center space-x-2 mb-3">
+              <div className="mb-3 flex items-center space-x-2">
                 {thread.messageOrigin === "report_converted" && (
                   <Badge variant="outline" className="text-xs">
-                    <span className="mr-1">From Report</span>
+                    From Report
                   </Badge>
                 )}
                 {thread.messageOrigin === "report_escalated" && (
                   <Badge variant="outline" className="text-xs">
-                    <span className="mr-1">Escalated</span>
+                    Escalated
                   </Badge>
                 )}
                 <span className="text-xs text-gray-500">
-                  {thread.messages?.length || 0} comments
+                  {thread.messages?.length || 0} messages
                 </span>
               </div>
-            )}
-
-            {/* Thread Actions */}
-            {!isCollapsed && (
-              <div className="flex items-center space-x-4 text-xs text-gray-500">
-                <button
-                  className="flex items-center space-x-1 hover:text-gray-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{thread.messages?.length || 0} Comments</span>
-                </button>
-                <button
-                  className="flex items-center space-x-1 hover:text-gray-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Share className="w-4 h-4" />
-                  <span>Share</span>
-                </button>
-                <button
-                  className="flex items-center space-x-1 hover:text-gray-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Bookmark className="w-4 h-4" />
-                  <span>Save</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedThread(thread);
-                  }}
-                  className="flex items-center space-x-1 hover:text-gray-700 text-blue-600"
-                >
-                  <span>View Thread</span>
-                </button>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -466,7 +479,7 @@ export const MessagesScreen: React.FC = () => {
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50">
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-1 items-center justify-center">
           <div className="text-gray-500">Loading messages...</div>
         </div>
       </div>
@@ -475,33 +488,30 @@ export const MessagesScreen: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Message List */}
-      <div className="w-1/2 border-r border-gray-200 bg-white overflow-y-auto">
-        <div className="p-4 border-b border-gray-200">
+      <div className="w-1/2 overflow-y-auto border-r border-gray-200 bg-white">
+        <div className="border-b border-gray-200 p-4">
           <h1 className="text-xl font-bold text-gray-900">Messages</h1>
           <p className="text-sm text-gray-600">Messages in your jurisdiction</p>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="space-y-4 p-4">
           {messages.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="py-8 text-center text-gray-500">
               No messages found in your jurisdiction
             </div>
           ) : (
             messages.map((thread) => (
-              <RedditThread key={thread.id} thread={thread} />
+              <ThreadListCard key={thread.id} thread={thread} />
             ))
           )}
         </div>
       </div>
 
-      {/* Message Detail */}
-      <div className="w-1/2 bg-gray-50 overflow-y-auto">
+      <div className="w-1/2 overflow-y-auto bg-gray-50">
         {selectedThread ? (
-          <div className="bg-white">
-            {/* Thread Header */}
-            <div className="border-b border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-3">
+          <div className="space-y-4 bg-white p-4">
+            <div className="border-b border-gray-200 pb-4">
+              <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
                   {selectedThread.subject}
                 </h2>
@@ -523,15 +533,12 @@ export const MessagesScreen: React.FC = () => {
                 </Select>
               </div>
 
-              {/* Thread Meta */}
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
                   {getCategoryIcon(selectedThread.category)}
                   <span className="capitalize">{selectedThread.category}</span>
                 </div>
-                <span
-                  className={`font-medium ${getUrgencyColor(selectedThread.urgency)}`}
-                >
+                <span className={`font-medium ${getUrgencyColor(selectedThread.urgency)}`}>
                   {selectedThread.urgency}
                 </span>
                 {selectedThread.messageOrigin === "report_converted" && (
@@ -541,92 +548,185 @@ export const MessagesScreen: React.FC = () => {
                 )}
               </div>
 
-              {/* Location Information */}
-              {selectedThread.messageOrigin &&
-                (selectedThread.messageOrigin === "report_converted" ||
-                  selectedThread.messageOrigin === "report_escalated") && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded text-xs">
-                    <div className="font-medium text-gray-700 mb-2">
-                      Report Location:
-                    </div>
-                    <div className="space-y-1">
-                      {selectedThread.jurisdiction.provinceId && (
-                        <div>
-                          Province: {selectedThread.jurisdiction.provinceId}
-                        </div>
-                      )}
-                      {selectedThread.jurisdiction.districtId && (
-                        <div>
-                          District: {selectedThread.jurisdiction.districtId}
-                        </div>
-                      )}
-                      {selectedThread.jurisdiction.constituencyId && (
-                        <div>
-                          Constituency:{" "}
-                          {selectedThread.jurisdiction.constituencyId}
-                        </div>
-                      )}
-                      {selectedThread.jurisdiction.municipalityId && (
-                        <div>
-                          Municipality:{" "}
-                          {selectedThread.jurisdiction.municipalityId}
-                        </div>
-                      )}
-                      {selectedThread.jurisdiction.wardId && (
-                        <div>Ward: {selectedThread.jurisdiction.wardId}</div>
-                      )}
-                      {!selectedThread.jurisdiction.provinceId &&
-                        !selectedThread.jurisdiction.districtId &&
-                        !selectedThread.jurisdiction.constituencyId &&
-                        !selectedThread.jurisdiction.municipalityId &&
-                        !selectedThread.jurisdiction.wardId && (
-                          <div className="text-orange-600">
-                            Location information not available
-                          </div>
-                        )}
-                    </div>
+              {(selectedThread.messageOrigin === "report_converted" ||
+                selectedThread.messageOrigin === "report_escalated") && (
+                <div className="mt-3 rounded bg-gray-50 p-3 text-xs">
+                  <div className="mb-2 flex items-center gap-2 font-medium text-gray-700">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Report Location
                   </div>
-                )}
+                  <div className="space-y-1 text-gray-600">
+                    {selectedThread.jurisdiction.provinceId && (
+                      <div>Province: {selectedThread.jurisdiction.provinceId}</div>
+                    )}
+                    {selectedThread.jurisdiction.districtId && (
+                      <div>District: {selectedThread.jurisdiction.districtId}</div>
+                    )}
+                    {selectedThread.jurisdiction.constituencyId && (
+                      <div>
+                        Constituency: {selectedThread.jurisdiction.constituencyId}
+                      </div>
+                    )}
+                    {selectedThread.jurisdiction.municipalityId && (
+                      <div>
+                        Municipality: {selectedThread.jurisdiction.municipalityId}
+                      </div>
+                    )}
+                    {selectedThread.jurisdiction.wardId && (
+                      <div>Ward: {selectedThread.jurisdiction.wardId}</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Messages */}
-            <div className="p-4 space-y-4">
-              {selectedThread.messages?.map((message, index) => (
-                <RedditMessage
-                  key={message.id}
-                  message={message}
-                  isMain={index === 0}
-                  level={0}
-                />
-              ))}
-            </div>
-
-            {/* Reply Form */}
-            <div className="border-t border-gray-200 p-4">
-              <div className="space-y-3">
-                <Input
-                  placeholder="Write a reply..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  className="min-h-[80px]"
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleReply}
-                    disabled={!replyText.trim()}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Reply className="w-4 h-4 mr-2" />
-                    Reply
-                  </Button>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+              <div className="mb-4 flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Report Conversation
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Private conversation between the report creator and assigned
+                    politicians.
+                  </p>
                 </div>
               </div>
+
+              <div className="space-y-3">
+                {selectedThread.messages?.map((message, index) => (
+                  <div
+                    key={message.id || index}
+                    className={`rounded-xl border p-3 ${
+                      message.senderType === "citizen"
+                        ? "border-red-100 bg-red-50/70"
+                        : "border-blue-100 bg-blue-50/70"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {message.senderType === "citizen"
+                          ? selectedThread.participants.citizen.name
+                          : "Representative office"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(message.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-700">
+                      {message.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {canReplyMessages && (
+                <div className="mt-4 space-y-3">
+                  <Textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Reply to this report conversation..."
+                    className="min-h-[100px]"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleReply}
+                      disabled={submittingReply || !replyText.trim()}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Reply
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {selectedThread.sourceReportId && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 p-4">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-emerald-600" />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">
+                        Community Discussion
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Public nested discussion for this approved report.
+                      </p>
+                    </div>
+                  </div>
+                  {!discussionThread?.hasJoined && (
+                    <Button
+                      onClick={handleJoinDiscussion}
+                      disabled={submittingDiscussion}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      Join Thread
+                    </Button>
+                  )}
+                </div>
+
+                {discussionLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-16 animate-pulse rounded-lg bg-gray-100"
+                      />
+                    ))}
+                  </div>
+                ) : discussionThread ? (
+                  <>
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                      {discussionThread.participantCount} participants joined
+                      this discussion.
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      <Textarea
+                        value={discussionDraft}
+                        onChange={(e) => setDiscussionDraft(e.target.value)}
+                        placeholder="Add a top-level comment to the discussion..."
+                        className="min-h-[100px]"
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleAddDiscussionComment}
+                          disabled={
+                            submittingDiscussion || !discussionDraft.trim()
+                          }
+                          className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                          Comment
+                        </Button>
+                      </div>
+                    </div>
+
+                    {discussionThread.comments.length > 0 ? (
+                      <div className="mt-4 space-y-4">
+                        {renderDiscussionComments(discussionThread.comments)}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-lg bg-gray-50 px-3 py-4 text-sm text-gray-600">
+                        No discussion comments yet. Start the thread with a
+                        top-level comment.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                    Discussion could not be loaded for this report yet.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex h-full items-center justify-center text-gray-500">
             <div className="text-center">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <MessageSquare className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <p>Select a message to view details</p>
             </div>
           </div>

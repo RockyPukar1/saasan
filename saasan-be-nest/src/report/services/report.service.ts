@@ -31,6 +31,7 @@ import { RedisCacheService } from 'src/common/cache/services/redis-cache.service
 import { ReportToMessageService } from './report-to-message.service';
 import { AdminRepository } from 'src/user/repositories/admin.repository';
 import { ReportVoteRepository } from '../repositories/report-vote.repository';
+import { ReportDiscussionService } from './report-discussion.service';
 
 @Injectable()
 export class ReportService {
@@ -51,6 +52,7 @@ export class ReportService {
     private readonly reportVisibilityRepo: ReportVisibilityRepository,
     private readonly redisCache: RedisCacheService,
     private readonly reportVoteRepo: ReportVoteRepository,
+    private readonly reportDiscussionService: ReportDiscussionService,
   ) {}
 
   private getReporterId(report: any): string | null {
@@ -188,7 +190,8 @@ export class ReportService {
     const updatedReport = await this.reportRepo.findById(param, requesterId);
     const reportWithPermissions = {
       ...updatedReport,
-      canEdit: !!requesterId && this.getReporterId(updatedReport) === requesterId,
+      canEdit:
+        !!requesterId && this.getReporterId(updatedReport) === requesterId,
     };
 
     return ResponseHelper.response(
@@ -225,7 +228,10 @@ export class ReportService {
       throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
     }
 
-    const existingVote = await this.reportVoteRepo.findOne(userId, param.reportId);
+    const existingVote = await this.reportVoteRepo.findOne(
+      userId,
+      param.reportId,
+    );
 
     if (!existingVote) {
       await this.reportVoteRepo.create(userId, param.reportId, direction);
@@ -347,7 +353,7 @@ export class ReportService {
         this.reportActivityRepo.create({
           reportId: param.reportId,
           category: key,
-          comment: updateData.comment,
+          comment: updateData.comment || 'Report updated',
           modifiedBy: {
             id: modifiedById,
             fullName: adminProfile?.fullName || user.email,
@@ -601,10 +607,90 @@ export class ReportService {
   }
 
   async approveReport(reportId: string, approvalData: any) {
-    return await this.reportToMessageService.approveReport({
+    const approvalResult = await this.reportToMessageService.approveReport({
       reportId,
       ...approvalData,
     });
+
+    const user = await this.userRepo.findById({
+      userId: approvalData.approvedBy,
+    });
+    const adminProfile = await this.adminRepo
+      .findByUserId({ userId: approvalData.approvedBy })
+      .lean();
+    const approvedStatus = await this.reportStatusRepo.findByTitle('approved');
+
+    await this.reportActivityRepo.create({
+      reportId,
+      category: 'status',
+      modifiedBy: {
+        id: approvalData.approvedBy,
+        fullName: adminProfile?.fullName || user?.email || 'Admin',
+      },
+      oldValue: 'submitted',
+      newValue: approvedStatus?.title || 'approved',
+      comment: approvalData.notes || 'Report approved',
+    });
+
+    return approvalResult;
+  }
+
+  async getApprovalSuggestions(reportId: string) {
+    return await this.reportToMessageService.getApprovalSuggestions(reportId);
+  }
+
+  async joinDiscussionThread(
+    reportId: string,
+    actor: { role: string; userId: string; politicianId?: string },
+  ) {
+    return await this.reportDiscussionService.joinThread(reportId, actor);
+  }
+
+  async getDiscussionThread(
+    reportId: string,
+    actor: { role: string; userId: string; politicianId?: string },
+  ) {
+    return await this.reportDiscussionService.getThread(reportId, actor);
+  }
+
+  async addDiscussionComment(
+    reportId: string,
+    content: string,
+    actor: { role: string; userId: string; politicianId?: string },
+  ) {
+    return await this.reportDiscussionService.addTopLevelComment(
+      reportId,
+      content,
+      actor,
+    );
+  }
+
+  async replyToDiscussionComment(
+    reportId: string,
+    commentId: string,
+    content: string,
+    actor: { role: string; userId: string; politicianId?: string },
+  ) {
+    return await this.reportDiscussionService.addReply(
+      reportId,
+      commentId,
+      content,
+      actor,
+    );
+  }
+
+  async voteOnDiscussionComment(
+    reportId: string,
+    commentId: string,
+    direction: 'up' | 'down',
+    actor: { role: string; userId: string; politicianId?: string },
+  ) {
+    return await this.reportDiscussionService.voteOnComment(
+      reportId,
+      commentId,
+      direction,
+      actor,
+    );
   }
 
   async escalateReport(

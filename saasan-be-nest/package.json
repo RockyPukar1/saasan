@@ -24,6 +24,7 @@
     "seed:fake-data": "nest start --entryFile common/seeders/seed-all",
     "reset:fake-data": "nest start --entryFile common/seeders/reset-fake-data",
     "seed:all-fake": "pnpm seed:fake-data",
+    "reset:preserve-locations": "nest start --entryFile common/seeders/reset-preserve-locations",
     "seed:location": "nest start --entryFile common/seeders/location/seed-location",
     "seed:report": "nest start --entryFile common/seeders/report/seed-report",
     "seed:politics": "nest start --entryFile common/seeders/politics/seed-politics",

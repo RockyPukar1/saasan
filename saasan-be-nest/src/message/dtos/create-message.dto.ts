@@ -28,7 +28,13 @@ class MessageParticipantsDto {
   citizenId: string;
 
   @IsOptional()
+  @IsMongoId()
   politicianId: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  politicianIds?: string[];
 
   @IsOptional()
   @IsArray()

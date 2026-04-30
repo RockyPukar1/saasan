@@ -1,22 +1,20 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ReportEntity } from '../entities/report.entity';
 import { PoliticianRepository } from '../../politics/politician/repositories/politician.repository';
-import { PoliticianIdDto } from '../../politics/politician/dtos/politician-id.dto';
 import { MessageService } from '../../message/services/message.service';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { MessageRepository } from '../../message/repositories/message.repository';
 import { ReportRepository } from '../repositories/report.repository';
-import { ReportIdDto } from '../dtos/report-id.dto';
 import {
   MessageCategory,
   MessageUrgency,
 } from '../../message/entities/message.entity';
+import { ReportStatusRepository } from '../repositories/report-status.repository';
 
 export interface ReportApprovalData {
   reportId: string;
   approvedBy: string;
+  politicianIds: string[];
   escalateToHigher?: boolean;
   notes?: string;
 }
@@ -28,25 +26,30 @@ export class ReportToMessageService {
     private readonly politicianRepo: PoliticianRepository,
     private readonly messageService: MessageService,
     private readonly messageRepo: MessageRepository,
+    private readonly reportStatusRepo: ReportStatusRepository,
   ) {}
 
   async approveReport(approvalData: ReportApprovalData) {
-    const { reportId, approvedBy, escalateToHigher, notes } = approvalData;
+    const { reportId, approvedBy, escalateToHigher, notes, politicianIds } =
+      approvalData;
 
-    // Find the report
     const report = await this.reportRepo.findByIdWithPopulate(reportId);
     if (!report) {
       throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
     }
 
-    // Find target politician based on report level
-    const targetPolitician = await this.findTargetPolitician(report);
-
-    if (!targetPolitician) {
-      throw new Error('No politician found for this jurisdiction');
+    if (!politicianIds?.length) {
+      throw new GlobalHttpException('permission403', HttpStatus.BAD_REQUEST);
     }
 
-    // Create message thread from report
+    const selectedPoliticians =
+      await this.politicianRepo.findManyByIds(politicianIds);
+
+    if (selectedPoliticians.length !== politicianIds.length) {
+      throw new GlobalHttpException('politician404', HttpStatus.NOT_FOUND);
+    }
+
+    const primaryPolitician = selectedPoliticians[0];
     const messageData = {
       subject: `Report: ${report.title}`,
       content: this.formatReportContent(report),
@@ -59,7 +62,10 @@ export class ReportToMessageService {
       jurisdiction: this.extractJurisdictionFromReport(report),
       participants: {
         citizenId: report.reporterId._id.toString(),
-        politicianId: targetPolitician._id.toString(),
+        politicianId: primaryPolitician._id.toString(),
+        politicianIds: selectedPoliticians.map((politician) =>
+          politician._id.toString(),
+        ),
       },
       initialMessage: {
         content: report.description,
@@ -67,21 +73,22 @@ export class ReportToMessageService {
       },
       sourceReportId: report._id.toString(),
       messageOrigin: 'report_converted',
-      referenceNumber: `MSG-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`, // Add this line
+      referenceNumber: `MSG-${Date.now()}-${Math.random().toString(36).slice(2, 11).toUpperCase()}`,
     };
 
-    // Create the message thread
     const messageThread = await this.messageService.create(messageData, {
       citizenId: report.reporterId._id.toString(),
     });
 
-    // Update report with conversion details
     await this.reportRepo.updateReportConversion(reportId, {
       statusId: await this.getReportStatusId('approved'),
       autoConvertedToMessage: true,
-      targetPoliticianId: targetPolitician._id,
+      targetPoliticianId: primaryPolitician._id,
+      assignedPoliticianIds: selectedPoliticians.map(
+        (politician) => politician._id,
+      ),
       escalatedToPoliticianId: escalateToHigher
-        ? await this.findHigherLevelPolitician(report)
+        ? (await this.findHigherLevelPolitician(report))?._id || null
         : null,
       verificationNotes: notes,
       verifiedById: approvedBy,
@@ -94,7 +101,23 @@ export class ReportToMessageService {
     };
   }
 
-  async findTargetPolitician(report: any) {
+  async getApprovalSuggestions(reportId: string) {
+    const report = await this.reportRepo.findByIdWithPopulate(reportId);
+
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
+    const suggestedPoliticians = await this.findTargetPoliticians(report);
+
+    return {
+      reportId,
+      hasJurisdictionPolitician: suggestedPoliticians.length > 0,
+      suggestedPoliticians,
+    };
+  }
+
+  async findTargetPoliticians(report: any) {
     const locationFilters: any = {};
 
     switch (report.reportLevel) {
@@ -113,12 +136,13 @@ export class ReportToMessageService {
       case 'province':
         locationFilters.provinceId = report.provinceId;
         break;
-      case 'federal':
-        // Federal level - find highest level politician
-        return await this.findHighestLevelPolitician();
+      case 'federal': {
+        const highestLevelPolitician = await this.findHighestLevelPolitician();
+        return highestLevelPolitician ? [highestLevelPolitician] : [];
+      }
     }
 
-    return await this.findByJurisdiction(locationFilters);
+    return await this.findAllByJurisdiction(locationFilters);
   }
 
   async findHigherLevelPolitician(report: any) {
@@ -163,12 +187,14 @@ export class ReportToMessageService {
   }
 
   private async findByJurisdiction(locationFilters: any) {
-    // Use existing politician repository methods to find by jurisdiction
     return await this.politicianRepo.findByJurisdiction(locationFilters);
   }
 
+  private async findAllByJurisdiction(locationFilters: any) {
+    return await this.politicianRepo.findAllByJurisdiction(locationFilters);
+  }
+
   private async findHighestLevelPolitician() {
-    // Find the politician with highest authority level
     return await this.politicianRepo.findHighestLevelPolitician();
   }
 
@@ -247,9 +273,15 @@ ${report.provinceId ? `- Province: ${report.provinceId}` : ''}
   }
 
   private async getReportStatusId(statusName: string): Promise<Types.ObjectId> {
-    // This would need to be implemented to get the status ID by name
-    // For now, return a placeholder
-    return new Types.ObjectId();
+    const status = await this.reportStatusRepo.findByTitle(statusName);
+
+    if (!status) {
+      throw new Error(`Report status "${statusName}" does not exist`);
+    }
+
+    return status._id instanceof Types.ObjectId
+      ? status._id
+      : new Types.ObjectId(status._id);
   }
 
   async getReportsForPolitician(politicianId: string) {

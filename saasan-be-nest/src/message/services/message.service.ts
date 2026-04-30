@@ -15,18 +15,39 @@ import { UpdateMessageDto } from '../dtos/update-message.dto';
 import { MessageEntrySenderType } from '../entities/message.entity';
 import { ReportIdDto } from 'src/report/dtos/report-id.dto';
 import { Types } from 'mongoose';
+import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
+import { UserRepository } from 'src/user/repositories/user.repository';
 
 @Injectable()
 export class MessageService {
   constructor(
     private readonly messageRepo: MessageRepository,
     private readonly jurisdictionService: JurisdictionService,
+    private readonly politicianRepo: PoliticianRepository,
+    private readonly userRepo: UserRepository,
   ) {}
 
   async create(
     createMessageDto: CreateMessageDto,
     { citizenId }: CitizenIdDto,
   ) {
+    const politicianIds = [
+      createMessageDto.participants.politicianId,
+      ...(createMessageDto.participants.politicianIds || []),
+    ].filter(Boolean);
+
+    const uniquePoliticianIds = [...new Set(politicianIds)];
+    const politicians = uniquePoliticianIds.length
+      ? await this.politicianRepo.findManyByIds(uniquePoliticianIds)
+      : [];
+    const primaryPoliticianId =
+      createMessageDto.participants.politicianId || uniquePoliticianIds[0];
+    const primaryPolitician =
+      politicians.find(
+        (politician) => politician._id.toString() === primaryPoliticianId,
+      ) || politicians[0];
+    const citizen = await this.userRepo.findById({ userId: citizenId });
+
     // Validate jurisdiction access
     // const hasAccess = await this.jurisdictionService.validateJurisdictionAccess(
     //   { politicianId: createMessageDto.participants.politicianId },
@@ -43,14 +64,18 @@ export class MessageService {
         ...createMessageDto.participants,
         citizen: {
           id: citizenId,
-          name: '', // Would be populated from user service
-          email: '', // Would be populated from user service
+          name: citizen?.email?.split('@')[0] || 'Citizen',
+          email: citizen?.email || '',
           location: createMessageDto.jurisdiction,
         },
         politician: {
-          id: createMessageDto.participants.politicianId,
-          name: '', // Would be populated from politician sevice
+          id: primaryPolitician?._id?.toString() || primaryPoliticianId,
+          name: primaryPolitician?.fullName || 'Representative',
         },
+        politicians: politicians.map((politician) => ({
+          id: politician._id.toString(),
+          name: politician.fullName,
+        })),
       },
     };
 
@@ -221,6 +246,14 @@ export class MessageService {
       return message.participants.citizen.id.toString() === actor.userId;
     }
 
-    return message.participants.politician.id.toString() === actor.politicianId;
+    const assignedPoliticianIds = [
+      message.participants.politician?.id,
+      ...(message.participants.politicians?.map((politician) => politician.id) ||
+        []),
+    ]
+      .filter(Boolean)
+      .map((politicianId) => politicianId.toString());
+
+    return assignedPoliticianIds.includes(actor.politicianId || '');
   }
 }

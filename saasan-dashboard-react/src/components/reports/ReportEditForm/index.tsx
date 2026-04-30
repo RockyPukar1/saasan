@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -27,10 +27,12 @@ import {
   reportPrioritiesApi,
   reportVisibilitiesApi,
   reportTypesApi,
+  politicsApi,
 } from "@/services/api";
 import { Save, X, Flag, Eye, FileText, CheckCircle } from "lucide-react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IReport } from "@/types/report";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface IReportEditForm {
   editingReport: IReport | null;
@@ -42,7 +44,7 @@ const reportSchema = z.object({
   priorityId: z.string().optional(),
   visibilityId: z.string().optional(),
   typeId: z.string().optional(),
-  comment: z.string().min(1, "Comment is required"),
+  comment: z.string().optional(),
 });
 
 type ReportFormData = z.infer<typeof reportSchema>;
@@ -53,6 +55,9 @@ export default function ReportEditForm({
 }: IReportEditForm) {
   const { confirm } = useConfirmDialog();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedPoliticianIds, setSelectedPoliticianIds] = useState<string[]>(
+    editingReport?.assignedPoliticianIds || [],
+  );
 
   // Fetch filter options from backend
   const { data: statusesData } = useQuery({
@@ -75,10 +80,22 @@ export default function ReportEditForm({
     queryFn: () => reportTypesApi.getAll(),
   });
 
+  const { data: politiciansResponse } = useQuery({
+    queryKey: ["politicians-approval-options"],
+    queryFn: () => politicsApi.getAll(),
+  });
+
+  const { data: approvalSuggestionsResponse } = useQuery({
+    queryKey: ["report-approval-suggestions", editingReport?.id],
+    queryFn: () => reportsApi.getApprovalSuggestions(editingReport!.id),
+    enabled: !!editingReport?.id,
+  });
+
   const {
     register,
     handleSubmit,
     control,
+    getValues,
     formState: { errors },
   } = useForm<ReportFormData>({
     defaultValues: {
@@ -90,6 +107,33 @@ export default function ReportEditForm({
     },
     resolver: zodResolver(reportSchema),
   });
+
+  const politicianOptions = useMemo(
+    () =>
+      (politiciansResponse?.data || []).map((politician) => ({
+        label: politician.fullName,
+        value: politician.id,
+      })),
+    [politiciansResponse],
+  );
+
+  useEffect(() => {
+    if (!editingReport) {
+      return;
+    }
+
+    const suggestedIds =
+      approvalSuggestionsResponse?.data?.suggestedPoliticians?.map(
+        (politician) => politician.id,
+      ) || [];
+
+    const nextIds =
+      editingReport.assignedPoliticianIds?.length
+        ? editingReport.assignedPoliticianIds
+        : suggestedIds;
+
+    setSelectedPoliticianIds(nextIds);
+  }, [approvalSuggestionsResponse, editingReport]);
 
   const queryClient = useQueryClient();
 
@@ -133,8 +177,15 @@ export default function ReportEditForm({
 
   // Approve report mutation
   const approveMutation = useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
-      reportsApi.approve(id, comment),
+    mutationFn: ({
+      id,
+      politicianIds,
+      comment,
+    }: {
+      id: string;
+      politicianIds: string[];
+      comment?: string;
+    }) => reportsApi.approve(id, politicianIds, comment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       toast.success(
@@ -153,10 +204,15 @@ export default function ReportEditForm({
 
   const handleApprove = () => {
     if (!editingReport) return;
+    if (!selectedPoliticianIds.length) {
+      toast.error("Select at least one politician before approving");
+      return;
+    }
 
     approveMutation.mutate({
       id: editingReport.id,
-      comment: undefined,
+      politicianIds: selectedPoliticianIds,
+      comment: getValues("comment") || undefined,
     });
   };
 
@@ -504,7 +560,7 @@ export default function ReportEditForm({
 
                         {/* Comment */}
                         <div className="space-y-2">
-                          <Label htmlFor="comment">Comment *</Label>
+                          <Label htmlFor="comment">Comment</Label>
                           <Textarea
                             {...register("comment")}
                             placeholder="Add a comment explaining the changes..."
@@ -514,6 +570,36 @@ export default function ReportEditForm({
                             <p className="text-sm text-red-600">
                               {errors.comment.message}
                             </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Politicians For Approval</Label>
+                          <MultiSelect
+                            options={politicianOptions}
+                            onValueChange={(value) => {
+                              setSelectedPoliticianIds(value);
+                              setHasUnsavedChanges(true);
+                            }}
+                            defaultValue={selectedPoliticianIds}
+                            placeholder="Search and assign politicians"
+                            searchable={true}
+                            singleLine={false}
+                            hideSelectAll={false}
+                            resetOnDefaultValueChange={true}
+                          />
+                          <p className="text-xs text-gray-500">
+                            Auto-selected politicians are matched from the report
+                            jurisdiction. You can add or remove politicians
+                            before approval.
+                          </p>
+                          {!approvalSuggestionsResponse?.data
+                            ?.hasJurisdictionPolitician && (
+                            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                              No politician was auto-selected for this
+                              jurisdiction. Choose one or more politicians
+                              manually before approving.
+                            </div>
                           )}
                         </div>
                       </div>
@@ -530,13 +616,15 @@ export default function ReportEditForm({
                         >
                           Cancel
                         </Button>
-                        {editingReport.statusId !== "approved" && (
+                        {editingReport.sourceCategories?.status?.toLowerCase() !==
+                          "approved" && (
                           <Button
                             variant="default"
                             onClick={handleApprove}
                             disabled={
                               updateReportMutation.isPending ||
-                              approveMutation.isPending
+                              approveMutation.isPending ||
+                              !selectedPoliticianIds.length
                             }
                             className="bg-green-600 hover:bg-green-700"
                           >

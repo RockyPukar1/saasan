@@ -187,6 +187,37 @@ const unwrapResponseData = <T>(response: { data: T | ApiResponse<T> }): T => {
   return payload as T;
 };
 
+const normalizeMessageThread = (thread: any): MessageThread => ({
+  ...thread,
+  id: thread?.id || thread?._id,
+  urgency: String(thread?.urgency || "").toLowerCase() as any,
+  status: String(thread?.status || "").toLowerCase() as any,
+  participants: {
+    ...thread?.participants,
+    politician: {
+      id:
+        thread?.participants?.politician?.id ||
+        thread?.participants?.politicians?.[0]?.id ||
+        "",
+      name:
+        thread?.participants?.politician?.name ||
+        thread?.participants?.politicians?.[0]?.name ||
+        "Representative",
+    },
+    politicians:
+      thread?.participants?.politicians ||
+      (thread?.participants?.politician
+        ? [thread.participants.politician]
+        : []),
+  },
+  messages:
+    thread?.messages?.map((message: any) => ({
+      ...message,
+      id: message?.id || message?._id,
+      senderType: String(message?.senderType || "").toLowerCase() as any,
+    })) || [],
+});
+
 // Message Types
 export interface MessageThread {
   id: string;
@@ -220,6 +251,10 @@ export interface MessageThread {
       id: string;
       name: string;
     };
+    politicians?: Array<{
+      id: string;
+      name: string;
+    }>;
     assignedStaff?: Array<{
       id: string;
       name: string;
@@ -258,6 +293,35 @@ export interface MessageThread {
   messageOrigin?: "citizen_created" | "report_converted" | "report_escalated";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReportDiscussionComment {
+  id: string;
+  content: string;
+  depth: number;
+  upvotesCount: number;
+  downvotesCount: number;
+  currentUserVote: "up" | "down" | null;
+  createdAt: string;
+  updatedAt: string;
+  parentCommentId?: string | null;
+  threadRootCommentId?: string | null;
+  canReply: boolean;
+  author: {
+    id: string;
+    role: string;
+    displayName: string;
+    isReportOwner: boolean;
+  };
+  replies: ReportDiscussionComment[];
+}
+
+export interface ReportDiscussionThread {
+  reportId: string;
+  hasJoined: boolean;
+  participantCount: number;
+  canCreateTopLevelComment: boolean;
+  comments: ReportDiscussionComment[];
 }
 
 export interface CreateMessageData {
@@ -317,19 +381,19 @@ export const messagesApi = {
   // Backend currently exposes jurisdiction-scoped fetches for politicians.
   getAll: async (): Promise<MessageThread[]> => {
     const response = await api.get("/message/jurisdiction");
-    return unwrapResponseData(response);
+    return unwrapResponseData<any[]>(response).map(normalizeMessageThread);
   },
 
   // GET /message/jurisdiction - Get messages in politician's jurisdiction
   getJurisdictionMessages: async (): Promise<MessageThread[]> => {
     const response = await api.get("/message/jurisdiction");
-    return unwrapResponseData(response);
+    return unwrapResponseData<any[]>(response).map(normalizeMessageThread);
   },
 
   // GET /message/:messageId - Get single message
   getById: async (messageId: string): Promise<MessageThread> => {
     const response = await api.get(`/message/${messageId}`);
-    return unwrapResponseData(response);
+    return normalizeMessageThread(unwrapResponseData(response));
   },
 
   // POST /message - Create new message (for citizens, but included for completeness)
@@ -352,10 +416,11 @@ export const messagesApi = {
     content: string,
     attachments?: any[],
   ): Promise<MessageThread> => {
-    void messageId;
-    void content;
-    void attachments;
-    return unsupportedRoute("Politician message replies");
+    const response = await api.post(`/message/${messageId}/reply`, {
+      content,
+      attachments,
+    });
+    return normalizeMessageThread(unwrapResponseData(response));
   },
 
   // PUT /message/:messageId - Update message status (using update endpoint with status)
@@ -363,7 +428,7 @@ export const messagesApi = {
     messageId: string,
     status: "pending" | "in_progress" | "resolved" | "closed",
   ): Promise<MessageThread> => {
-    await api.put(`/message/${messageId}`, { status });
+    await api.put(`/message/${messageId}`, { status: status.toUpperCase() });
     return messagesApi.getById(messageId);
   },
 
@@ -375,6 +440,52 @@ export const messagesApi = {
   // POST /message/:messageId/downvote - Downvote a message
   downvoteMessage: async (_messageId: string): Promise<void> => {
     return unsupportedRoute("Message downvotes");
+  },
+};
+
+export const reportsApi = {
+  getDiscussion: async (reportId: string): Promise<ReportDiscussionThread> => {
+    const response = await api.get(`/report/${reportId}/discussion`);
+    return unwrapResponseData<ReportDiscussionThread>(response);
+  },
+
+  joinDiscussion: async (reportId: string): Promise<ReportDiscussionThread> => {
+    const response = await api.post(`/report/${reportId}/discussion/join`);
+    return unwrapResponseData<ReportDiscussionThread>(response);
+  },
+
+  addDiscussionComment: async (
+    reportId: string,
+    content: string,
+  ): Promise<ReportDiscussionThread> => {
+    const response = await api.post(`/report/${reportId}/discussion/comments`, {
+      content,
+    });
+    return unwrapResponseData<ReportDiscussionThread>(response);
+  },
+
+  replyToDiscussionComment: async (
+    reportId: string,
+    commentId: string,
+    content: string,
+  ): Promise<ReportDiscussionThread> => {
+    const response = await api.post(
+      `/report/${reportId}/discussion/comments/${commentId}/reply`,
+      { content },
+    );
+    return unwrapResponseData<ReportDiscussionThread>(response);
+  },
+
+  voteOnDiscussionComment: async (
+    reportId: string,
+    commentId: string,
+    direction: "up" | "down",
+  ): Promise<ReportDiscussionThread> => {
+    const response = await api.put(
+      `/report/${reportId}/discussion/comments/${commentId}/vote`,
+      { direction },
+    );
+    return unwrapResponseData<ReportDiscussionThread>(response);
   },
 };
 

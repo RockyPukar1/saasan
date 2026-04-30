@@ -117,6 +117,7 @@ export class ReportEntity {
       'federal',
     ],
     required: true,
+    default: 'ward',
   })
   reportLevel: string;
 
@@ -125,6 +126,9 @@ export class ReportEntity {
 
   @Prop({ type: Types.ObjectId, ref: 'PoliticianEntity' })
   targetPoliticianId?: Types.ObjectId;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: PoliticianEntity.name }], default: [] })
+  assignedPoliticianIds?: Types.ObjectId[];
 
   @Prop({ type: Types.ObjectId, ref: PoliticianEntity.name })
   escalatedToPoliticianId?: Types.ObjectId;

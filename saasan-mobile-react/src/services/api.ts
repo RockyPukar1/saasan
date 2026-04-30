@@ -114,6 +114,26 @@ const normalizeAuthResponse = <T extends AuthPayload | ProfilePayload>(
   },
 });
 
+const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
+  if (
+    rawPayload &&
+    typeof rawPayload === "object" &&
+    "success" in rawPayload &&
+    "data" in rawPayload
+  ) {
+    return {
+      ...(rawPayload as ApiResponse<T>),
+      data,
+    };
+  }
+
+  return {
+    success: true,
+    data,
+    message: "Success",
+  };
+};
+
 export interface BudgetItem {
   id: string;
   title: string;
@@ -163,6 +183,10 @@ export interface MessageThread {
       id: string;
       name: string;
     };
+    politicians?: Array<{
+      id: string;
+      name: string;
+    }>;
   };
   messages: Array<{
     id?: string;
@@ -177,6 +201,63 @@ export interface MessageThread {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ReportDiscussionComment {
+  id: string;
+  content: string;
+  depth: number;
+  upvotesCount: number;
+  downvotesCount: number;
+  currentUserVote: "up" | "down" | null;
+  createdAt: string;
+  updatedAt: string;
+  parentCommentId?: string | null;
+  threadRootCommentId?: string | null;
+  canReply: boolean;
+  author: {
+    id: string;
+    role: string;
+    displayName: string;
+    isReportOwner: boolean;
+  };
+  replies: ReportDiscussionComment[];
+}
+
+export interface ReportDiscussionThread {
+  reportId: string;
+  hasJoined: boolean;
+  participantCount: number;
+  canCreateTopLevelComment: boolean;
+  comments: ReportDiscussionComment[];
+}
+
+const normalizeMessageThread = (thread: any): MessageThread => ({
+  ...thread,
+  id: thread?.id || thread?._id,
+  participants: {
+    ...thread?.participants,
+    politician: {
+      id:
+        thread?.participants?.politician?.id ||
+        thread?.participants?.politicians?.[0]?.id ||
+        "",
+      name:
+        thread?.participants?.politician?.name ||
+        thread?.participants?.politicians?.[0]?.name ||
+        "Representative",
+    },
+    politicians:
+      thread?.participants?.politicians ||
+      (thread?.participants?.politician
+        ? [thread.participants.politician]
+        : []),
+  },
+  messages:
+    thread?.messages?.map((message: any) => ({
+      ...message,
+      id: message?.id || message?._id,
+    })) || [],
+});
 
 class ApiService {
   private baseURL: string;
@@ -433,16 +514,85 @@ class ApiService {
   }
 
   async getReportThread(reportId: string): Promise<ApiResponse<MessageThread>> {
-    return this.request<MessageThread>("GET", `/message/report/${reportId}`);
+    const response = await this.request<MessageThread>(
+      "GET",
+      `/message/report/${reportId}`,
+    );
+
+    return toApiResponse(response, normalizeMessageThread((response as any).data || response));
   }
 
   async replyToMessageThread(
     messageId: string,
     content: string,
   ): Promise<ApiResponse<MessageThread>> {
-    return this.request<MessageThread>("POST", `/message/${messageId}/reply`, {
-      content,
-    });
+    const response = await this.request<MessageThread>(
+      "POST",
+      `/message/${messageId}/reply`,
+      {
+        content,
+      },
+    );
+
+    return toApiResponse(response, normalizeMessageThread((response as any).data || response));
+  }
+
+  async joinReportDiscussion(
+    reportId: string,
+  ): Promise<ApiResponse<ReportDiscussionThread>> {
+    const response = await this.request<ReportDiscussionThread>(
+      "POST",
+      `/report/${reportId}/discussion/join`,
+    );
+    return toApiResponse(response, (response as any).data || response);
+  }
+
+  async getReportDiscussion(
+    reportId: string,
+  ): Promise<ApiResponse<ReportDiscussionThread>> {
+    const response = await this.request<ReportDiscussionThread>(
+      "GET",
+      `/report/${reportId}/discussion`,
+    );
+    return toApiResponse(response, (response as any).data || response);
+  }
+
+  async addReportDiscussionComment(
+    reportId: string,
+    content: string,
+  ): Promise<ApiResponse<ReportDiscussionThread>> {
+    const response = await this.request<ReportDiscussionThread>(
+      "POST",
+      `/report/${reportId}/discussion/comments`,
+      { content },
+    );
+    return toApiResponse(response, (response as any).data || response);
+  }
+
+  async replyToReportDiscussionComment(
+    reportId: string,
+    commentId: string,
+    content: string,
+  ): Promise<ApiResponse<ReportDiscussionThread>> {
+    const response = await this.request<ReportDiscussionThread>(
+      "POST",
+      `/report/${reportId}/discussion/comments/${commentId}/reply`,
+      { content },
+    );
+    return toApiResponse(response, (response as any).data || response);
+  }
+
+  async voteOnReportDiscussionComment(
+    reportId: string,
+    commentId: string,
+    direction: "up" | "down",
+  ): Promise<ApiResponse<ReportDiscussionThread>> {
+    const response = await this.request<ReportDiscussionThread>(
+      "PUT",
+      `/report/${reportId}/discussion/comments/${commentId}/vote`,
+      { direction },
+    );
+    return toApiResponse(response, (response as any).data || response);
   }
 
   async getBudgets(): Promise<ApiResponse<BudgetItem[]>> {

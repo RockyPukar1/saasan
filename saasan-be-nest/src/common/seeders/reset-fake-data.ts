@@ -8,6 +8,9 @@ import { CaseEntity } from '../../case/entities/case.entity';
 import { EventEntity } from '../../event/entities/event.entity';
 import { MessageEntity } from '../../message/entities/message.entity';
 import { PollVoteEntity } from '../../poll/entities/poll-vote.entity';
+import { ReportDiscussionCommentEntity } from '../../report/entities/report-discussion-comment.entity';
+import { ReportDiscussionCommentVoteEntity } from '../../report/entities/report-discussion-comment-vote.entity';
+import { ReportDiscussionParticipantEntity } from '../../report/entities/report-discussion-participant.entity';
 import { ReportEntity } from '../../report/entities/report.entity';
 import { ReportVoteEntity } from '../../report/entities/report-vote.entity';
 import { UserEntity } from '../../user/entities/user.entity';
@@ -29,6 +32,15 @@ async function bootstrap() {
       getModelToken(PoliticianEntity.name),
     );
     const reportModel = app.get<Model<any>>(getModelToken(ReportEntity.name));
+    const reportDiscussionCommentModel = app.get<Model<any>>(
+      getModelToken(ReportDiscussionCommentEntity.name),
+    );
+    const reportDiscussionParticipantModel = app.get<Model<any>>(
+      getModelToken(ReportDiscussionParticipantEntity.name),
+    );
+    const reportDiscussionCommentVoteModel = app.get<Model<any>>(
+      getModelToken(ReportDiscussionCommentVoteEntity.name),
+    );
     const reportVoteModel = app.get<Model<any>>(
       getModelToken(ReportVoteEntity.name),
     );
@@ -66,6 +78,9 @@ async function bootstrap() {
         : Promise.resolve(),
       userModel.deleteMany({ email: new RegExp(`@${SEEDED_DOMAIN}$`) }),
       reportModel.deleteMany({ tags: 'seeded' }),
+      reportDiscussionCommentModel.deleteMany({}),
+      reportDiscussionCommentVoteModel.deleteMany({}),
+      reportDiscussionParticipantModel.deleteMany({}),
       caseModel.deleteMany({ title: /^\[Seeded\]/ }),
       eventModel.deleteMany({ title: /^\[Seeded\]/ }),
       budgetModel.deleteMany({ isSeeded: true }),

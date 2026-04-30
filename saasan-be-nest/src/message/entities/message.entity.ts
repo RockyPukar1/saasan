@@ -39,6 +39,10 @@ interface MessageParticipants {
     id: string;
     name: string;
   };
+  politicians?: Array<{
+    id: string;
+    name: string;
+  }>;
   assignedStaff?: Array<{
     id: string;
     name: string;

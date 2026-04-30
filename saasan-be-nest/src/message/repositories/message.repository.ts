@@ -58,9 +58,7 @@ export class MessageRepository {
   async findBySourceReport(politicianId: string) {
     return this.model
       .find({
-        'participants.politician.id': {
-          $in: this.getPoliticianIdCandidates(politicianId),
-        },
+        $or: this.buildAssignedPoliticianFilters(politicianId),
         messageOrigin: 'report_converted',
       })
       .exec();
@@ -91,9 +89,7 @@ export class MessageRepository {
   async findByJurisdiction({ politicianId }: PoliticianIdDto) {
     return this.model
       .find({
-        'participants.politician.id': {
-          $in: this.getPoliticianIdCandidates(politicianId),
-        },
+        $or: this.buildAssignedPoliticianFilters(politicianId),
       })
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .exec();
@@ -102,12 +98,27 @@ export class MessageRepository {
   async findByPoliticianId(politicianId: string) {
     return this.model
       .find({
-        'participants.politician.id': {
-          $in: this.getPoliticianIdCandidates(politicianId),
-        },
+        $or: this.buildAssignedPoliticianFilters(politicianId),
       })
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .exec();
+  }
+
+  private buildAssignedPoliticianFilters(politicianId: string) {
+    const candidates = this.getPoliticianIdCandidates(politicianId);
+
+    return [
+      {
+        'participants.politician.id': {
+          $in: candidates,
+        },
+      },
+      {
+        'participants.politicians.id': {
+          $in: candidates,
+        },
+      },
+    ];
   }
 
   private getPoliticianIdCandidates(politicianId: string) {

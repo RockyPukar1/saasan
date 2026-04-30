@@ -206,20 +206,6 @@ export default function ReportsScreen() {
     },
   });
 
-  // Approve report mutation
-  const approveMutation = useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
-      reportsApi.updateStatus(id, "approved", comment),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      toast.success("Report approved successfully!");
-      setShowDetails(null);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to approve report");
-    },
-  });
-
   // Reject report mutation
   const rejectMutation = useMutation({
     mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
@@ -258,14 +244,14 @@ export default function ReportsScreen() {
     resolveMutation.mutate({ id, comment: comment || undefined });
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (report: IReport) => {
     if (!canResolveReports) {
       toast.error("You do not have permission to manage reports");
       return;
     }
 
-    const comment = prompt("Add a comment (optional):");
-    approveMutation.mutate({ id, comment: comment || undefined });
+    await handleEdit(report);
+    setShowDetails(null);
   };
 
   const handleReject = (id: string) => {
@@ -410,7 +396,11 @@ export default function ReportsScreen() {
               {reports.map((report) => (
                 <div
                   key={report.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                    report.awaitingPoliticianReply
+                      ? "border-amber-300 bg-amber-50/60"
+                      : ""
+                  }`}
                   onClick={() => setShowDetails(report)}
                 >
                   <div className="flex items-start justify-between">
@@ -440,6 +430,11 @@ export default function ReportsScreen() {
                             " ",
                           )}
                         </span>
+                        {report.awaitingPoliticianReply && (
+                          <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+                            Approved, awaiting politician reply
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                         {report.description}
@@ -504,13 +499,12 @@ export default function ReportsScreen() {
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleApprove(report.id);
+                                void handleApprove(report);
                               }}
-                              disabled={approveMutation.isPending}
                               className="text-green-600 hover:text-green-700"
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              Approve
+                              Review & Approve
                             </Button>
                           </PermissionGate>
                           <PermissionGate
@@ -831,12 +825,11 @@ export default function ReportsScreen() {
                   <>
                     <PermissionGate permission={PERMISSIONS.reports.resolve}>
                       <Button
-                        onClick={() => handleApprove(showDetails.id)}
-                        disabled={approveMutation.isPending}
+                        onClick={() => void handleApprove(showDetails)}
                         className="bg-green-600 hover:bg-green-700"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Approve
+                        Review & Approve
                       </Button>
                     </PermissionGate>
                     <PermissionGate permission={PERMISSIONS.reports.resolve}>
