@@ -4,6 +4,7 @@ export const HttpErrorCodeMessage = {
 
   /** User */
   user404: 'User does not exist',
+  permission403: 'You do not have permission to perform this action',
 
   userAlreadyExistsWithEmail: 'User already exists with this phone number',
 

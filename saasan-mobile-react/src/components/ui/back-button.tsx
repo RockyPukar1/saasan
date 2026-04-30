@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { Button } from "./button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, type To } from "react-router-dom";
 
 interface BackButtonProps {
   className?: string;
@@ -8,18 +8,25 @@ interface BackButtonProps {
   size?: "sm" | "md" | "lg";
   showText?: boolean;
   text?: string;
+  to?: To;
 }
 
-export function BackButton({ 
+export function BackButton({
   className = "",
   variant = "ghost",
   size = "md",
   showText = false,
-  text = "Back"
+  text = "Back",
+  to,
 }: BackButtonProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {
+    if (to) {
+      navigate(to);
+      return;
+    }
+
     navigate(-1);
   };
 

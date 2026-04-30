@@ -61,6 +61,9 @@ export class ReportEntity {
   @Prop({ type: Number, default: 0 })
   viewsCount?: Number;
 
+  @Prop({ type: Number, default: 0 })
+  sharesCount?: Number;
+
   @Prop({ type: String, unique: true })
   referenceNumber: string;
 

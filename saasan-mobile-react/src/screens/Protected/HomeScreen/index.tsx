@@ -1,27 +1,20 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
 import {
   AlertTriangle,
   CheckCircle2,
   FileText,
   Gavel,
-  Share,
+  ThumbsDown,
+  ThumbsUp,
   Users,
-  Shield,
-  Monitor,
-  KeyRound,
 } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
-import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/PageHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { apiService } from "@/services/api";
-import { showComingSoon } from "@/utils/coming-soon";
 
 const formatShortDate = (value?: string) => {
   if (!value) return "Recently";
@@ -44,54 +37,53 @@ const getStatusTone = (status?: string) => {
   }
 };
 
+const getVoteCardTone = (userVote?: "up" | "down" | null) => {
+  if (userVote === "up") {
+    return "border-green-200 bg-green-50/60";
+  }
+
+  if (userVote === "down") {
+    return "border-red-200 bg-red-50/60";
+  }
+
+  return "border-transparent bg-white";
+};
+
+const VoteBadge = ({
+  userVote,
+  hasVoted,
+}: {
+  userVote?: "up" | "down" | null;
+  hasVoted?: boolean;
+}) => {
+  if (!hasVoted || !userVote) {
+    return null;
+  }
+
+  const isUpvote = userVote === "up";
+  const Icon = isUpvote ? ThumbsUp : ThumbsDown;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
+        isUpvote ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {isUpvote ? "Upvoted" : "Downvoted"}
+    </span>
+  );
+};
+
 export default function HomeScreen() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [currentDate] = useState(new Date());
-  const { user, permissions, hasPermission, logout } = useAuth();
   const { dashboardStats, myRecentReports, publicReports, historicalEvents } =
     useDashboard();
-  const currentSessionId = apiService.getCurrentSessionId();
 
   const overview = dashboardStats?.overview;
   const community = dashboardStats?.community;
-  const canViewSessions = hasPermission("sessions.view");
-  const canRevokeSessions = hasPermission("sessions.revoke");
-
-  const { data: sessionsResponse } = useQuery({
-    queryKey: ["citizen-auth-sessions"],
-    queryFn: () => apiService.getMySessions(),
-    enabled: canViewSessions,
-  });
-
-  const revokeAllSessionsMutation = useMutation({
-    mutationFn: () => apiService.revokeAllOtherSessions(),
-    onSuccess: async () => {
-      toast.success("Other sessions signed out");
-      await queryClient.invalidateQueries({
-        queryKey: ["citizen-auth-sessions"],
-      });
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to sign out devices",
-      );
-    },
-  });
-
-  const sessions =
-    sessionsResponse?.data?.map((session) => ({
-      ...session,
-      isCurrent: session.id === currentSessionId,
-    })) || [];
-  const currentSession = currentSessionId
-    ? sessions.find((session) => session.isCurrent) || null
-    : null;
-
-  const handleShareApp = () => {
-    showComingSoon("Share app");
-  };
 
   return (
     <div className="min-h-screen bg-[#f6f8fc]">
@@ -203,81 +195,6 @@ export default function HomeScreen() {
               </Card>
             </div>
           </div>
-
-          <div className="mb-6 grid gap-4 lg:grid-cols-2">
-            <Card className="border border-red-100 shadow-sm">
-              <CardContent className="p-5">
-                <div className="mb-4 flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-red-600" />
-                  <p className="text-lg font-semibold text-gray-800">
-                    Access and Role
-                  </p>
-                </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p className="font-medium text-gray-900">
-                    {user?.fullName || user?.email || "Citizen account"}
-                  </p>
-                  <p>Role: {user?.role || "citizen"}</p>
-                  <p>Granted permissions: {permissions.length}</p>
-                  <p>
-                    Reports:{" "}
-                    {hasPermission("reports.create") ? "Can submit" : "View only"}
-                  </p>
-                  <p>
-                    Polls: {hasPermission("polls.vote") ? "Can vote" : "Read only"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-blue-100 shadow-sm">
-              <CardContent className="p-5">
-                <div className="mb-4 flex items-center gap-2">
-                  <Monitor className="h-5 w-5 text-blue-600" />
-                  <p className="text-lg font-semibold text-gray-800">
-                    Session Security
-                  </p>
-                </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>
-                    Active sessions: {canViewSessions ? sessions.length : "Hidden"}
-                  </p>
-                  <p>
-                    This device:{" "}
-                    {currentSession?.userAgent || "Current browser not identified yet"}
-                  </p>
-                  <p>
-                    Last used:{" "}
-                    {currentSession?.lastUsedAt
-                      ? formatShortDate(currentSession.lastUsedAt)
-                      : "Recently"}
-                  </p>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {canRevokeSessions && (
-                    <Button
-                      variant="outline"
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                      onClick={() => revokeAllSessionsMutation.mutate()}
-                      disabled={
-                        revokeAllSessionsMutation.isPending || sessions.length <= 1
-                      }
-                    >
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      Sign Out Other Devices
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    className="border-gray-200"
-                    onClick={() => logout()}
-                  >
-                    Sign Out Here
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         <div className="mb-6 grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
@@ -297,8 +214,12 @@ export default function HomeScreen() {
               myRecentReports.map((report) => (
                 <Card
                   key={report.id}
-                  className="mb-3 cursor-pointer shadow-sm"
-                  onClick={() => navigate("/reports")}
+                  className={`mb-3 cursor-pointer border shadow-sm ${getVoteCardTone(
+                    report.userVote,
+                  )}`}
+                  onClick={() =>
+                    navigate(`/reports/${report.id}?from=my_reports`)
+                  }
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -317,13 +238,19 @@ export default function HomeScreen() {
                           <span>{formatShortDate(report.createdAt)}</span>
                         </div>
                       </div>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs font-semibold ${getStatusTone(
-                          report.status,
-                        )}`}
-                      >
-                        {report.status || "pending"}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <VoteBadge
+                          userVote={report.userVote}
+                          hasVoted={report.hasVoted}
+                        />
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-semibold ${getStatusTone(
+                            report.status,
+                          )}`}
+                        >
+                          {report.status || "pending"}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -345,10 +272,18 @@ export default function HomeScreen() {
               </Card>
             ) : (
               publicReports.slice(0, 5).map((report) => (
-                <Card key={report.id} className="mb-3 shadow-sm">
+                <Card
+                  key={report.id}
+                  className={`mb-3 cursor-pointer border shadow-sm transition-shadow hover:shadow-md ${getVoteCardTone(
+                    report.userVote,
+                  )}`}
+                  onClick={() =>
+                    navigate(`/reports/${report.id}?from=all_reports`)
+                  }
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex-1">
                         <p className="mb-1 text-base font-bold text-gray-800">
                           {report.title}
                         </p>
@@ -356,9 +291,15 @@ export default function HomeScreen() {
                           {report.description}
                         </p>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {formatShortDate(report.createdAt)}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <VoteBadge
+                          userVote={report.userVote}
+                          hasVoted={report.hasVoted}
+                        />
+                        <span className="text-xs text-gray-500">
+                          {formatShortDate(report.createdAt)}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -397,8 +338,11 @@ export default function HomeScreen() {
 
         <div className="mb-8">
           <p className="mb-4 text-xl font-bold text-gray-800">Take Action</p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Link className="flex flex-col items-center p-4" to={"/reports"}>
+          <div className="grid grid-cols-3 gap-3">
+            <Link
+              className="flex flex-col items-center rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70"
+              to={"/reports?tab=new"}
+            >
               <div className="mb-2 rounded-full bg-red-100 p-3">
                 <AlertTriangle className="text-red-600 w-6 h-6" />
               </div>
@@ -406,7 +350,17 @@ export default function HomeScreen() {
             </Link>
 
             <Link
-              className="flex flex-col items-center p-4"
+              className="flex flex-col items-center rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70"
+              to={"/reports?tab=my_reports"}
+            >
+              <div className="mb-2 rounded-full bg-emerald-100 p-3">
+                <FileText className="text-emerald-600 w-6 h-6" />
+              </div>
+              <p className="text-gray-700 text-sm font-medium">My Reports</p>
+            </Link>
+
+            <Link
+              className="flex flex-col items-center rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70"
               to={"/politics/politicians"}
             >
               <div className="mb-2 rounded-full bg-blue-100 p-3">
@@ -414,16 +368,6 @@ export default function HomeScreen() {
               </div>
               <p className="text-gray-700 text-sm font-medium">Find Leaders</p>
             </Link>
-
-            <div
-              className="flex flex-col items-center p-4"
-              onClick={handleShareApp}
-            >
-              <div className="mb-2 rounded-full bg-green-100 p-3">
-                <Share className="text-green-600 w-6 h-6" />
-              </div>
-              <p className="text-gray-700 text-sm font-medium">Share App</p>
-            </div>
           </div>
         </div>
 
@@ -442,7 +386,7 @@ export default function HomeScreen() {
                 </div>
                 <Button
                   className="bg-white px-6 py-3 rounded-lg"
-                  onClick={() => navigate("/reports")}
+                  onClick={() => navigate("/reports?tab=my_reports")}
                 >
                   <p className="text-red-600 font-bold text-center">
                     View My Reports

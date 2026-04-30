@@ -10,6 +10,12 @@ export class ReportSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
   @Expose() title: string;
   @Expose() description: string;
+  @Expose() canEdit?: boolean;
+  @Expose() hasVoted?: boolean;
+  @Expose() userVote?: 'up' | 'down' | null;
+  @Expose()
+  @Transform(({ obj }) => obj.reporterId?.toString?.() || obj.reporterId || null)
+  reporterId?: string | null;
   @Expose() @Transform(({ obj }) => obj.statusId as string) statusId: string;
   @Expose()
   @Transform(({ obj }) => obj.priorityId as string)

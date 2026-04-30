@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, FileText, DollarSign } from "lucide-react";
+import { Users, FileText } from "lucide-react";
 
 const politicsPages = [
   {
@@ -16,13 +16,6 @@ const politicsPages = [
     path: "/parties",
     icon: FileText,
     color: "text-green-600",
-  },
-  {
-    name: "Budget Analysis",
-    description: "View and manage budget analysis",
-    path: "/budget",
-    icon: DollarSign,
-    color: "text-purple-600",
   },
 ];
 

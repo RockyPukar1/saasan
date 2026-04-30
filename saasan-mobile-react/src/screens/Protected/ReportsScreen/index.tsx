@@ -11,9 +11,10 @@ import {
   Shield,
   Clock,
   CheckCircle2,
+  ThumbsDown,
+  ThumbsUp,
   X,
 } from "lucide-react";
-import { ShareableImage } from "@/components/ShareableImage";
 import { useReports } from "@/hooks/useReports";
 import type { ReportCreateData } from "@/types";
 import EvidencePicker from "@/components/EvidencePicker";
@@ -22,8 +23,9 @@ import AdditionalReportFields from "@/components/AdditionalReportFields";
 import { Input } from "@/components/ui/input";
 import TabSelector from "@/components/common/TabSelector";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { IReport } from "@/types/reports";
+
 interface ReportCategory {
   id: string;
   name: string;
@@ -31,6 +33,12 @@ interface ReportCategory {
   color: string;
   description: string;
 }
+
+type ReportTab = "new" | "my_reports" | "all_reports";
+
+const isReportTab = (value: string | null): value is ReportTab => {
+  return value === "new" || value === "my_reports" || value === "all_reports";
+};
 
 type CategorySelectorProps = {
   reportCategories: ReportCategory[];
@@ -68,6 +76,42 @@ const reportCategories: ReportCategory[] = [
     description: "Favoritism in appointments or contracts",
   },
 ];
+
+const getVoteCardTone = (userVote?: IReport["userVote"]) => {
+  if (userVote === "up") {
+    return "border-green-200 bg-green-50/60";
+  }
+
+  if (userVote === "down") {
+    return "border-red-200 bg-red-50/60";
+  }
+
+  return "border-gray-200 bg-white";
+};
+
+const VoteBadge: React.FC<{ report: Pick<IReport, "userVote" | "hasVoted"> }> = ({
+  report,
+}) => {
+  if (!report.hasVoted || !report.userVote) {
+    return null;
+  }
+
+  const isUpvote = report.userVote === "up";
+  const Icon = isUpvote ? ThumbsUp : ThumbsDown;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+        isUpvote
+          ? "bg-green-100 text-green-700"
+          : "bg-red-100 text-red-700"
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {isUpvote ? "Upvoted" : "Downvoted"}
+    </span>
+  );
+};
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({
   reportCategories,
@@ -157,7 +201,7 @@ const NewReportForm: React.FC<NewReportFormProps> = ({
         reportCategories={reportCategories}
         selectedCategory={form.category}
         setSelectedCategory={(id) =>
-          setForm((prev) => ({ ...prev, category: id }))
+          setForm((prev) => ({ ...prev, category: id, type: id }))
         }
       />
 
@@ -302,8 +346,15 @@ const MyReportsTab: React.FC = () => {
   return (
     <div className="flex-1 px-4 py-4">
       {reports.map((report: IReport) => (
-        <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)}>
-          <Card className="mb-4">
+        <div
+          key={report.id}
+          onClick={() => navigate(`/reports/${report.id}?from=my_reports`)}
+        >
+          <Card
+            className={`mb-4 cursor-pointer border transition-colors ${getVoteCardTone(
+              report.userVote,
+            )}`}
+          >
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
@@ -313,22 +364,8 @@ const MyReportsTab: React.FC = () => {
                   <p className="text-gray-600 text-sm mt-1">
                     {report.description}
                   </p>
-                  {/* <div className="flex items-center mt-2">
-                    <MapPin className="text-gray-500 w-3 h-3" />
-                    <p className="text-gray-500 text-xs ml-1">
-                      {report.location}
-                    </p>
-                  </div> */}
                 </div>
-                {/* <div
-                  className={`px-3 py-1 rounded-full ${getStatusColor(
-                    report.status,
-                  )}`}
-                >
-                  <p className="text-white text-xs font-bold uppercase">
-                    {report.status.replace("_", " ")}
-                  </p>
-                </div> */}
+                <VoteBadge report={report} />
               </div>
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -378,8 +415,15 @@ const AllReportsTab: React.FC = () => {
   return (
     <div className="flex-1 px-4 py-4">
       {reports.map((report: IReport) => (
-        <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)}>
-          <Card className="mb-4">
+        <div
+          key={report.id}
+          onClick={() => navigate(`/reports/${report.id}?from=all_reports`)}
+        >
+          <Card
+            className={`mb-4 cursor-pointer border transition-colors ${getVoteCardTone(
+              report.userVote,
+            )}`}
+          >
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
@@ -389,22 +433,8 @@ const AllReportsTab: React.FC = () => {
                   <p className="text-gray-600 text-sm mt-1">
                     {report.description}
                   </p>
-                  {/* <div className="flex items-center mt-2">
-                    <MapPin className="text-gray-500 w-3 h-3" />
-                    <p className="text-gray-500 text-xs ml-1">
-                      {report.location}
-                    </p>
-                  </div> */}
                 </div>
-                {/* <div
-                  className={`px-3 py-1 rounded-full ${getStatusColor(
-                    report.status,
-                  )}`}
-                >
-                  <p className="text-white text-xs font-bold uppercase">
-                    {report.status.replace("_", " ")}
-                  </p>
-                </div> */}
+                <VoteBadge report={report} />
               </div>
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -470,13 +500,21 @@ const initialReport: ReportCreateData = {
 };
 export default function ReportsScreen() {
   const { createReport } = useReports();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<
-    "new" | "my_reports" | "all_reports"
-  >("new");
-  const [selectedReport, setSelectedReport] = useState<IReport | null>(null);
+  const tabParam = searchParams.get("tab");
+  const activeTab: ReportTab = isReportTab(tabParam) ? tabParam : "new";
   const [form, setForm] = useState<ReportCreateData>(initialReport);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const setActiveTab: React.Dispatch<React.SetStateAction<ReportTab>> = (
+    nextTab,
+  ) => {
+    const tab = typeof nextTab === "function" ? nextTab(activeTab) : nextTab;
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", tab);
+    setSearchParams(nextSearchParams, { replace: true });
+  };
 
   const handleSubmitReport = async () => {
     if (!form.title || !form.description || !form.dateOccurred) {
@@ -559,32 +597,6 @@ export default function ReportsScreen() {
           <MyReportsTab />
         ) : (
           <AllReportsTab />
-        )}
-
-        {/* Share Modal */}
-        {selectedReport && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-h-[80%] max-w-md w-full">
-              <div className="p-4 border-b border-gray-200 relative">
-                <p className="text-lg font-bold text-gray-800">
-                  Share This Report
-                </p>
-                <Button
-                  onClick={() => setSelectedReport(null)}
-                  className="absolute right-4 top-4 p-1"
-                >
-                  <p className="text-gray-500 text-xl leading-none">×</p>
-                </Button>
-              </div>
-              <div className="max-h-96">
-                <ShareableImage
-                  type="corruption_report"
-                  data={selectedReport}
-                  onShare={() => setSelectedReport(null)}
-                />
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </div>

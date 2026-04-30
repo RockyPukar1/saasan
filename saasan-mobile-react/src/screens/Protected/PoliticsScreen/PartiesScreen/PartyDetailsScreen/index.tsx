@@ -71,7 +71,11 @@ export default function PartyDetailsScreen() {
 
   if (!party) {
     return (
-      <ScrollHideHeaderLayout title="Party Details" showBackButton={true}>
+      <ScrollHideHeaderLayout
+        title="Party Details"
+        showBackButton={true}
+        backTo="/politics/parties"
+      >
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center px-4">
             <X className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -324,6 +328,7 @@ export default function PartyDetailsScreen() {
     <ScrollHideHeaderLayout
       title="Party Details"
       showBackButton={true}
+      backTo="/politics/parties"
       subHeader={
         <TabSelector
           activeTab={activeTab}

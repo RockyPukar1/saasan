@@ -433,17 +433,16 @@ class ApiService {
   }
 
   async getReportThread(reportId: string): Promise<ApiResponse<MessageThread>> {
-    void reportId;
-    return unsupportedRoute("Report-linked message threads");
+    return this.request<MessageThread>("GET", `/message/report/${reportId}`);
   }
 
   async replyToMessageThread(
     messageId: string,
     content: string,
   ): Promise<ApiResponse<MessageThread>> {
-    void messageId;
-    void content;
-    return unsupportedRoute("Message thread replies");
+    return this.request<MessageThread>("POST", `/message/${messageId}/reply`, {
+      content,
+    });
   }
 
   async getBudgets(): Promise<ApiResponse<BudgetItem[]>> {
@@ -606,8 +605,15 @@ class ApiService {
     return unsupportedRoute("Citizen report status updates");
   }
 
-  async voteOnReport(id: string): Promise<ApiResponse<void>> {
-    return this.request<void>("PUT", `/report/${id}/vote`);
+  async voteOnReport(
+    id: string,
+    direction: "up" | "down",
+  ): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("PUT", `/report/${id}/vote`, { direction });
+  }
+
+  async shareReport(id: string): Promise<ApiResponse<IReport>> {
+    return this.request<IReport>("POST", `/report/${id}/share`);
   }
 
   async uploadEvidence(id: string, files: File[]): Promise<ApiResponse<void>> {

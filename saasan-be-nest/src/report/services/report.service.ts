@@ -30,6 +30,7 @@ import { Logger } from '@nestjs/common';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 import { ReportToMessageService } from './report-to-message.service';
 import { AdminRepository } from 'src/user/repositories/admin.repository';
+import { ReportVoteRepository } from '../repositories/report-vote.repository';
 
 @Injectable()
 export class ReportService {
@@ -49,7 +50,30 @@ export class ReportService {
     private readonly reportPriorityRepo: ReportPriorityRepository,
     private readonly reportVisibilityRepo: ReportVisibilityRepository,
     private readonly redisCache: RedisCacheService,
+    private readonly reportVoteRepo: ReportVoteRepository,
   ) {}
+
+  private getReporterId(report: any): string | null {
+    const reporterId = report?.reporterId;
+
+    if (!reporterId) {
+      return null;
+    }
+
+    if (typeof reporterId === 'string') {
+      return reporterId;
+    }
+
+    if (reporterId instanceof Types.ObjectId) {
+      return reporterId.toString();
+    }
+
+    if (typeof reporterId === 'object' && reporterId._id) {
+      return reporterId._id.toString();
+    }
+
+    return reporterId.toString?.() || null;
+  }
 
   async create(reportData: CreateReportDto, files: Express.Multer.File[]) {
     let createdReportId: string = '';
@@ -105,8 +129,8 @@ export class ReportService {
     // TODO: remove evidence using transaction
   }
 
-  async getAll(reportFilterDto: ReportFilterDto) {
-    const reports = await this.reportRepo.getAll(reportFilterDto);
+  async getAll(reportFilterDto: ReportFilterDto, requesterId?: string) {
+    const reports = await this.reportRepo.getAll(reportFilterDto, requesterId);
 
     return ResponseHelper.response(
       ReportSerializer,
@@ -115,57 +139,141 @@ export class ReportService {
     );
   }
 
-  async getById(param: ReportIdDto) {
-    const report = await this.reportRepo.findById(param);
+  async getById(param: ReportIdDto, requesterId?: string) {
+    const report = await this.reportRepo.findById(param, requesterId);
     if (!report) {
       throw new Error('Report not found');
     }
 
+    const reportWithPermissions = {
+      ...report,
+      canEdit: !!requesterId && this.getReporterId(report) === requesterId,
+    };
+
     return ResponseHelper.response(
       ReportSerializer,
-      report,
+      reportWithPermissions,
       'Report fetched successfully',
     );
   }
 
   async getMyReports(reporterId: string) {
-    const reports = await this.reportRepo.getMyReports(reporterId);
+    const reports = await this.reportRepo.getMyReports(reporterId, reporterId);
 
-    // Get evidence for all user reports
-    const reportsWithEvidence = await Promise.all(
-      reports.map(async (report) => {
-        const reportData = Array.isArray(report) ? report[0] : report;
-
-        try {
-          const evidenceData = await this.evidenceRepo.findByReportId({
-            reportId: reportData._id.toString(),
-          });
-
-          reportData.evidence = evidenceData?.evidences || [];
-        } catch (error) {
-          // If evidence fetch fails, set empty evidence array
-          reportData.evidence = [];
-        }
-
-        reportData.statusUpdates = reportData.statusUpdates || [];
-        reportData.sharesCount = reportData.sharesCount || 0;
-
-        return reportData;
-      }),
-    );
+    const reportsWithPermissions = reports.map((report) => ({
+      ...report,
+      statusUpdates: report.statusUpdates || [],
+      sharesCount: report.sharesCount || 0,
+      canEdit: true,
+    }));
 
     return ResponseHelper.response(
       ReportSerializer,
-      reportsWithEvidence,
+      reportsWithPermissions,
       'Reports fetched successfully',
     );
   }
 
-  async updateReport(param: ReportIdDto, updateData: Partial<CreateReportDto>) {
+  async updateReport(
+    param: ReportIdDto,
+    updateData: Partial<CreateReportDto>,
+    requesterId?: string,
+  ) {
+    const report = await this.reportRepo.findById(param);
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
     await this.reportRepo.updateReport(param, updateData);
+    const updatedReport = await this.reportRepo.findById(param, requesterId);
+    const reportWithPermissions = {
+      ...updatedReport,
+      canEdit: !!requesterId && this.getReporterId(updatedReport) === requesterId,
+    };
+
+    return ResponseHelper.response(
+      ReportSerializer,
+      reportWithPermissions,
+      'Report updated successfully',
+    );
   }
 
-  async vote() {}
+  async updateOwnReport(
+    param: ReportIdDto,
+    userId: string,
+    updateData: Partial<CreateReportDto>,
+  ) {
+    const report = await this.reportRepo.findById(param);
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
+    if (this.getReporterId(report) !== userId) {
+      throw new GlobalHttpException('permission403', HttpStatus.FORBIDDEN);
+    }
+
+    return this.updateReport(param, updateData, userId);
+  }
+
+  async vote(
+    param: ReportIdDto,
+    userId: string,
+    direction: 'up' | 'down' = 'up',
+  ) {
+    const report = await this.reportRepo.findById(param, userId);
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
+    const existingVote = await this.reportVoteRepo.findOne(userId, param.reportId);
+
+    if (!existingVote) {
+      await this.reportVoteRepo.create(userId, param.reportId, direction);
+      await this.reportRepo.adjustVoteCounts(param.reportId, {
+        [direction === 'up' ? 'upvotesCount' : 'downvotesCount']: 1,
+      });
+    } else if (existingVote.direction !== direction) {
+      await this.reportVoteRepo.updateDirection(existingVote._id, direction);
+      await this.reportRepo.adjustVoteCounts(param.reportId, {
+        [existingVote.direction === 'up' ? 'upvotesCount' : 'downvotesCount']:
+          -1,
+        [direction === 'up' ? 'upvotesCount' : 'downvotesCount']: 1,
+      });
+    }
+
+    const refreshedReport = await this.reportRepo.findById(param, userId);
+    const reportWithPermissions = {
+      ...refreshedReport,
+      canEdit: this.getReporterId(refreshedReport) === userId,
+    };
+
+    return ResponseHelper.response(
+      ReportSerializer,
+      reportWithPermissions,
+      `Report ${direction}vote recorded successfully`,
+    );
+  }
+
+  async share(param: ReportIdDto, requesterId?: string) {
+    const report = await this.reportRepo.findById(param);
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
+    await this.reportRepo.incrementShareCount(param.reportId);
+    const updatedReport = await this.reportRepo.findById(param, requesterId);
+    const reportWithPermissions = {
+      ...updatedReport,
+      canEdit:
+        !!requesterId && this.getReporterId(updatedReport) === requesterId,
+    };
+
+    return ResponseHelper.response(
+      ReportSerializer,
+      reportWithPermissions,
+      'Report share tracked successfully',
+    );
+  }
 
   async approve() {}
 

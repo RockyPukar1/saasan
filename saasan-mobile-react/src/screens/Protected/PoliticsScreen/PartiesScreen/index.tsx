@@ -35,6 +35,7 @@ export default function PartiesScreen() {
     <ScrollHideHeaderLayout
       title="Political Parties"
       showBackButton={true}
+      backTo="/politics"
       subHeader={
         <div className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="relative">

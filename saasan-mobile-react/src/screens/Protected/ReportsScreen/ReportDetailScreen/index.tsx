@@ -7,7 +7,6 @@ import { ScrollHideHeaderLayout } from "@/components/ui/scroll-hide-header-layou
 import {
   ThumbsUp,
   ThumbsDown,
-  Share2,
   Edit,
   X,
   Save,
@@ -20,15 +19,15 @@ import {
   Send,
 } from "lucide-react";
 import { useReports } from "@/hooks/useReports";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { PERMISSIONS } from "@/constants/permission.constants";
 import { apiService } from "@/services/api";
-import { showComingSoon } from "@/utils/coming-soon";
 import { ReportDetailSkeleton } from "@/components/ui/skeleton";
 import EvidencePicker from "@/components/EvidencePicker";
 import toast from "react-hot-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import type { IReport } from "@/types/reports";
 
 export default function ReportDetailScreen() {
   const { reportId } = useParams();
@@ -42,10 +41,11 @@ export default function ReportDetailScreen() {
     uploadEvidence,
     updateReport,
     deleteEvidence,
+    voteOnReport,
     currentReport,
     loading,
   } = useReports();
-  const { hasPermission } = useAuth();
+  const { hasPermission } = useAuthContext();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -55,6 +55,9 @@ export default function ReportDetailScreen() {
   const [evidenceToDelete, setEvidenceToDelete] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [lastResolvedReport, setLastResolvedReport] = useState<IReport | null>(
+    null,
+  );
 
   useEffect(() => {
     if (reportId) {
@@ -63,12 +66,15 @@ export default function ReportDetailScreen() {
   }, [reportId, getReport]);
 
   const report = currentReport;
+  const displayReport = report ?? lastResolvedReport;
   const canReplyToThread = hasPermission(PERMISSIONS.messages.reply);
+  const backTo = "/reports?tab=all_reports";
+  const canEditReport = displayReport?.canEdit === true;
 
   const { data: threadResponse, isLoading: threadLoading } = useQuery({
     queryKey: ["report-thread", reportId],
     queryFn: () => apiService.getReportThread(reportId as string),
-    enabled: !!reportId && !!report?.autoConvertedToMessage,
+    enabled: !!reportId && !!displayReport?.autoConvertedToMessage,
     retry: false,
   });
 
@@ -92,6 +98,7 @@ export default function ReportDetailScreen() {
 
   useEffect(() => {
     if (report) {
+      setLastResolvedReport(report);
       setEditForm({
         title: report.title,
         description: report.description,
@@ -106,8 +113,8 @@ export default function ReportDetailScreen() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({
-      title: report?.title || "",
-      description: report?.description || "",
+      title: displayReport?.title || "",
+      description: displayReport?.description || "",
     });
     setSelectedFiles([]);
   };
@@ -137,11 +144,13 @@ export default function ReportDetailScreen() {
   };
 
   const confirmDeleteEvidence = async () => {
-    if (!evidenceToDelete || !report) return;
+    if (!evidenceToDelete || !displayReport) return;
 
     try {
       // Find the evidence to get its cloudinaryPublicId
-      const evidence = report.evidences?.find((e) => e.id === evidenceToDelete);
+      const evidence = displayReport.evidences?.find(
+        (e) => e.id === evidenceToDelete,
+      );
       if (!evidence) {
         toast.error("Evidence not found");
         return;
@@ -161,12 +170,21 @@ export default function ReportDetailScreen() {
     }
   };
 
-  const handleVote = async (isUpvote: boolean) => {
-    showComingSoon(isUpvote ? "Upvote" : "Downvote");
-  };
+  const handleVote = async (direction: "up" | "down") => {
+    if (!reportId) return;
 
-  const handleShare = async () => {
-    showComingSoon("Share");
+    try {
+      await voteOnReport(reportId, direction);
+      toast.success(
+        direction === "up"
+          ? "Thanks for supporting this report"
+          : "Feedback recorded",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to record vote",
+      );
+    }
   };
 
   const handleReply = async () => {
@@ -177,13 +195,17 @@ export default function ReportDetailScreen() {
     await replyMutation.mutateAsync(replyText.trim());
   };
 
-  if (loading) {
+  if (loading && !displayReport) {
     return <ReportDetailSkeleton />;
   }
 
-  if (!report) {
+  if (!displayReport) {
     return (
-      <ScrollHideHeaderLayout title="Report Details" showBackButton={true}>
+      <ScrollHideHeaderLayout
+        title="Report Details"
+        showBackButton={true}
+        backTo={backTo}
+      >
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className="text-center">
             <p className="text-gray-500 mb-4">Report not found</p>
@@ -196,10 +218,11 @@ export default function ReportDetailScreen() {
   return (
     <div>
       <ScrollHideHeaderLayout
-        title={report?.title || "Report Details"}
+        title={displayReport.title || "Report Details"}
         showBackButton={true}
+        backTo={backTo}
         rightAction={
-          !isEditing ? (
+          !isEditing && canEditReport ? (
             <Button
               onClick={handleEdit}
               variant="ghost"
@@ -281,9 +304,9 @@ export default function ReportDetailScreen() {
             ) : (
               <>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {report.title}
+                  {displayReport.title}
                 </h1>
-                <p className="text-gray-700 mt-1">{report.description}</p>
+                <p className="text-gray-700 mt-1">{displayReport.description}</p>
               </>
             )}
           </div>
@@ -302,10 +325,10 @@ export default function ReportDetailScreen() {
                 <div className="flex items-center">
                   <Clock className="text-gray-500" size={14} />
                   <span className="text-gray-500 text-sm ml-2">
-                    {new Date(report.createdAt).toLocaleDateString()}
+                    {new Date(displayReport.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                {report.isAnonymous && (
+                {displayReport.isAnonymous && (
                   <div className="flex items-center">
                     <EyeOff className="text-gray-500" size={14} />
                     <span className="text-gray-500 text-sm ml-2">
@@ -315,7 +338,7 @@ export default function ReportDetailScreen() {
                 )}
                 <div className="flex items-center">
                   <span className="text-gray-500 text-sm">
-                    Reference: {report.referenceNumber}
+                    Reference: {displayReport.referenceNumber}
                   </span>
                 </div>
               </div>
@@ -414,9 +437,9 @@ export default function ReportDetailScreen() {
             </div>
           )}
 
-          {report.evidences && report.evidences.length > 0 ? (
+          {displayReport.evidences && displayReport.evidences.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {report.evidences.map((item, index: number) => (
+              {displayReport.evidences.map((item, index: number) => (
                 <div key={index} className="relative group">
                   <div
                     className="w-full h-32 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-blue-400 transition-colors"
@@ -488,7 +511,7 @@ export default function ReportDetailScreen() {
             All evidence is encrypted and stored securely
           </p>
 
-          {report.autoConvertedToMessage && (
+          {displayReport.autoConvertedToMessage && (
             <Card className="my-4 border-blue-100">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
@@ -579,44 +602,44 @@ export default function ReportDetailScreen() {
           )}
 
           {/* Actions */}
-          <div className="flex justify-between items-center bg-white p-4 rounded-lg mb-4">
+          <div className="flex items-center gap-3 bg-white p-4 rounded-lg mb-4">
             <Button
-              onClick={() => handleVote(true)}
+              onClick={() => handleVote("up")}
               variant="ghost"
-              className="flex items-center"
+              className={`flex items-center rounded-full px-4 py-2 transition-colors ${
+                displayReport.userVote === "up"
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+              }`}
             >
               <ThumbsUp
                 className={
-                  report.userVote === "up" ? "text-green-600" : "text-gray-500"
+                  displayReport.userVote === "up"
+                    ? "text-white"
+                    : "text-gray-500"
                 }
                 size={20}
               />
-              <span className="ml-2 text-gray-800">{report.upvotesCount}</span>
+              <span className="ml-2">{displayReport.upvotesCount}</span>
             </Button>
             <Button
-              onClick={() => handleVote(false)}
+              onClick={() => handleVote("down")}
               variant="ghost"
-              className="flex items-center"
+              className={`flex items-center rounded-full px-4 py-2 transition-colors ${
+                displayReport.userVote === "down"
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+              }`}
             >
               <ThumbsDown
                 className={
-                  report.userVote === "down" ? "text-red-600" : "text-gray-500"
+                  displayReport.userVote === "down"
+                    ? "text-white"
+                    : "text-gray-500"
                 }
                 size={20}
               />
-              <span className="ml-2 text-gray-800">
-                {report.downvotesCount}
-              </span>
-            </Button>
-            <Button
-              onClick={handleShare}
-              variant="ghost"
-              className="flex items-center"
-            >
-              <Share2 className="text-gray-500" size={20} />
-              <span className="ml-2 text-gray-800">
-                {report.sharesCount || 0}
-              </span>
+              <span className="ml-2">{displayReport.downvotesCount}</span>
             </Button>
           </div>
 

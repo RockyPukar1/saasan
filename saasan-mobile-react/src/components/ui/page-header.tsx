@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { To } from "react-router-dom";
 import { BackButton } from "./back-button";
 import { Button } from "./button";
 import { LogOut } from "lucide-react";
@@ -12,6 +13,7 @@ interface PageHeaderProps {
   rightAction?: ReactNode;
   backButtonVariant?: "ghost" | "outline" | "default";
   backButtonShowText?: boolean;
+  backTo?: To;
 }
 
 export function PageHeader({
@@ -22,6 +24,7 @@ export function PageHeader({
   rightAction,
   backButtonVariant = "ghost",
   backButtonShowText = false,
+  backTo,
 }: PageHeaderProps) {
   const { logout } = useAuthContext();
 
@@ -30,19 +33,21 @@ export function PageHeader({
   };
 
   return (
-    <div className="bg-white px-4 py-3 border-b border-gray-200">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 flex-1">
+    <div className="border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur lg:px-8 lg:py-5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <div className="flex flex-1 items-center gap-3">
           {showBackButton && (
             <BackButton
+              className="lg:hidden"
               variant={backButtonVariant}
               showText={backButtonShowText}
+              to={backTo}
             />
           )}
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+            <h1 className="text-xl font-bold text-gray-900 lg:text-3xl">{title}</h1>
             {subtitle && (
-              <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+              <p className="mt-1 text-sm text-gray-600 lg:text-base">{subtitle}</p>
             )}
           </div>
         </div>

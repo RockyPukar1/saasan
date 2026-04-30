@@ -21,6 +21,8 @@ export interface IReport {
   id: string;
   title: string;
   description: string;
+  canEdit?: boolean;
+  hasVoted?: boolean;
   statusId?: string;
   priorityId?: string;
   visibilityId?: string;
@@ -31,7 +33,7 @@ export interface IReport {
   viewsCount: number;
   referenceNumber: string;
   tags: string[];
-  userVote?: string;
+  userVote?: "up" | "down" | null;
   isAnonymous: boolean;
   createdAt: string;
   updatedAt: string;

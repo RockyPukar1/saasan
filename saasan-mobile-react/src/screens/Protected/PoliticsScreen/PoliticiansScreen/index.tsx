@@ -187,6 +187,7 @@ export default function PoliticiansScreen() {
     <ScrollHideHeaderLayout
       title="Politicians"
       showBackButton={true}
+      backTo="/politics"
       subHeader={
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
           <div className="flex items-stretch gap-3">

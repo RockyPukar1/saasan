@@ -31,6 +31,10 @@ export const useDashboard = () => {
       priority: item.priority,
       amountInvolved: parseFloat(item.amount_involved) || 0,
       upvotesCount: item.upvotes_count || 0,
+      downvotesCount: item.downvotes_count || 0,
+      hasVoted: item.hasVoted || false,
+      userVote: item.userVote || null,
+      isAnonymous: item.isAnonymous || false,
       createdAt: item.created_at,
     }));
   }, [dashboardData]);
@@ -46,6 +50,10 @@ export const useDashboard = () => {
       priority: item.priority,
       amountInvolved: parseFloat(item.amountInvolved || item.amount_involved) || 0,
       upvotesCount: item.upvotesCount || item.upvotes_count || 0,
+      downvotesCount: item.downvotesCount || item.downvotes_count || 0,
+      hasVoted: item.hasVoted || false,
+      userVote: item.userVote || null,
+      isAnonymous: item.isAnonymous || false,
       createdAt: item.createdAt || item.created_at,
     }));
   }, [dashboardData]);

@@ -12,7 +12,6 @@ import {
   Phone,
   Mail,
   Globe,
-  Share,
   Flag,
   Award,
   DollarSign,
@@ -116,14 +115,7 @@ export default function PoliticianDetailScreen() {
       title={politician?.fullName || "Politician"}
       subtitle={politician?.sourceCategories?.positions?.[0] || "Position"}
       showBackButton={true}
-      rightAction={
-        <Button
-          variant="ghost"
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <Share className="text-gray-600" size={20} />
-        </Button>
-      }
+      backTo="/politics/politicians"
     >
       <div className="max-w-4xl mx-auto">
         {/* Profile Card */}

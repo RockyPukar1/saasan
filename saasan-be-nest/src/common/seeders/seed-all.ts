@@ -27,6 +27,7 @@ import { PollOptionEntity } from '../../poll/entities/poll-option.entity';
 import { PollVoteEntity } from '../../poll/entities/poll-vote.entity';
 import { PollEntity } from '../../poll/entities/poll.entity';
 import { ReportEntity } from '../../report/entities/report.entity';
+import { ReportVoteEntity } from '../../report/entities/report-vote.entity';
 import {
   PASSWORD_SALT,
   UserEntity,
@@ -81,6 +82,9 @@ async function bootstrap() {
     const citizenModel = app.get<Model<any>>(getModelToken(CitizenEntity.name));
     const adminModel = app.get<Model<any>>(getModelToken(AdminEntity.name));
     const reportModel = app.get<Model<any>>(getModelToken(ReportEntity.name));
+    const reportVoteModel = app.get<Model<any>>(
+      getModelToken(ReportVoteEntity.name),
+    );
     const caseModel = app.get<Model<any>>(getModelToken(CaseEntity.name));
     const eventModel = app.get<Model<any>>(getModelToken(EventEntity.name));
     const budgetModel = app.get<Model<any>>(getModelToken(BudgetEntity.name));
@@ -136,6 +140,7 @@ async function bootstrap() {
 
     if (seededUserIds.length) {
       await pollVoteModel.deleteMany({ userId: { $in: seededUserIds } });
+      await reportVoteModel.deleteMany({ userId: { $in: seededUserIds } });
     }
 
     await Promise.all([
@@ -330,6 +335,72 @@ async function bootstrap() {
     }
     const createdReports = await reportModel.insertMany(reportDocs);
 
+    const reportVoteDocs: any[] = [];
+    const reportCountUpdates: Array<{
+      reportId: any;
+      upvotesCount: number;
+      downvotesCount: number;
+    }> = [];
+
+    for (let index = 0; index < createdReports.length; index++) {
+      const report = createdReports[index];
+      const voterPool = citizenUsers.filter(
+        (citizen) =>
+          citizen._id.toString() !== report.reporterId?.toString?.(),
+      );
+      const desiredUpvotes = Math.min(voterPool.length, 3 + (index % 8));
+      const desiredDownvotes = Math.min(
+        Math.max(voterPool.length - desiredUpvotes, 0),
+        index % 3,
+      );
+
+      voterPool.slice(0, desiredUpvotes).forEach((citizen) => {
+        reportVoteDocs.push({
+          reportId: report._id,
+          userId: citizen._id,
+          direction: 'up',
+        });
+      });
+
+      voterPool
+        .slice(desiredUpvotes, desiredUpvotes + desiredDownvotes)
+        .forEach((citizen) => {
+          reportVoteDocs.push({
+            reportId: report._id,
+            userId: citizen._id,
+            direction: 'down',
+          });
+        });
+
+      reportCountUpdates.push({
+        reportId: report._id,
+        upvotesCount: desiredUpvotes,
+        downvotesCount: desiredDownvotes,
+      });
+    }
+
+    if (reportVoteDocs.length) {
+      await reportVoteModel
+        .insertMany(reportVoteDocs, { ordered: false })
+        .catch(() => undefined);
+    }
+
+    if (reportCountUpdates.length) {
+      await reportModel.bulkWrite(
+        reportCountUpdates.map((item) => ({
+          updateOne: {
+            filter: { _id: item.reportId },
+            update: {
+              $set: {
+                upvotesCount: item.upvotesCount,
+                downvotesCount: item.downvotesCount,
+              },
+            },
+          },
+        })),
+      );
+    }
+
     const caseDocs = Array.from({ length: 8 }).map((_, index) => ({
       title: `[Seeded] Major Case ${index + 1}`,
       description: `Seeded major case ${index + 1} for trend analytics and listing pages.`,
@@ -502,7 +573,7 @@ async function bootstrap() {
         `Seeded ${provinces.length} provinces, ${districts.length} districts, ${municipalities.length} municipalities, and ${wards.length} wards`,
         `Seeded politics reference data: ${levels.length} levels, ${positions.length} positions, ${parties.length} parties, ${politicians.length} politicians`,
         `Created ${createdUsers.length} fake users (${adminDefinitions.length} admins, ${citizenUsers.length} citizens, ${politicianUsers.length} politicians)`,
-        `Created ${createdReports.length} reports, ${caseDocs.length} cases, ${eventDocs.length} events, ${budgetDocs.length} budgets, ${voteDocs.length} poll votes, and ${messageDocs.length} messages`,
+        `Created ${createdReports.length} reports, ${reportVoteDocs.length} report votes, ${caseDocs.length} cases, ${eventDocs.length} events, ${budgetDocs.length} budgets, ${voteDocs.length} poll votes, and ${messageDocs.length} messages`,
         `Default seeded password for fake users: saasan123`,
       ].join('\n'),
     );

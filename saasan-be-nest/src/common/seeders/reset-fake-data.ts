@@ -9,6 +9,7 @@ import { EventEntity } from '../../event/entities/event.entity';
 import { MessageEntity } from '../../message/entities/message.entity';
 import { PollVoteEntity } from '../../poll/entities/poll-vote.entity';
 import { ReportEntity } from '../../report/entities/report.entity';
+import { ReportVoteEntity } from '../../report/entities/report-vote.entity';
 import { UserEntity } from '../../user/entities/user.entity';
 import { CitizenEntity } from '../../user/entities/citizen.entity';
 import { AdminEntity } from '../../user/entities/admin.entity';
@@ -28,6 +29,9 @@ async function bootstrap() {
       getModelToken(PoliticianEntity.name),
     );
     const reportModel = app.get<Model<any>>(getModelToken(ReportEntity.name));
+    const reportVoteModel = app.get<Model<any>>(
+      getModelToken(ReportVoteEntity.name),
+    );
     const caseModel = app.get<Model<any>>(getModelToken(CaseEntity.name));
     const eventModel = app.get<Model<any>>(getModelToken(EventEntity.name));
     const budgetModel = app.get<Model<any>>(getModelToken(BudgetEntity.name));
@@ -44,6 +48,7 @@ async function bootstrap() {
 
     if (seededUserIds.length) {
       await pollVoteModel.deleteMany({ userId: { $in: seededUserIds } });
+      await reportVoteModel.deleteMany({ userId: { $in: seededUserIds } });
     }
 
     await Promise.all([

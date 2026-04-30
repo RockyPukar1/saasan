@@ -1,8 +1,25 @@
 import { useLocation, Link } from "react-router-dom";
-import { Home, Users, FileText, Vote, LogOut, Scale } from "lucide-react";
+import {
+  Home,
+  Users,
+  FileText,
+  Vote,
+  LogOut,
+  Scale,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 
-const Tabs = () => {
+interface TabsProps {
+  isDesktopSidebarCollapsed: boolean;
+  onDesktopSidebarToggle: () => void;
+}
+
+const Tabs = ({
+  isDesktopSidebarCollapsed,
+  onDesktopSidebarToggle,
+}: TabsProps) => {
   const location = useLocation();
   const { user, logout } = useAuthContext();
 
@@ -46,32 +63,81 @@ const Tabs = () => {
 
   return (
     <>
-      <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-red-100 lg:bg-white">
-        <div className="border-b border-red-100 bg-gradient-to-br from-red-700 via-red-600 to-orange-500 px-6 py-7 text-white">
-          <div className="mb-6 flex items-center gap-3">
+      <aside
+        className={`hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:flex-col lg:border-r lg:border-red-100 lg:bg-white lg:transition-[width] lg:duration-300 ${
+          isDesktopSidebarCollapsed ? "lg:w-22" : "lg:w-72"
+        }`}
+      >
+        <div
+          className={`border-b border-red-100 bg-gradient-to-br from-red-700 via-red-600 to-orange-500 py-7 text-white ${
+            isDesktopSidebarCollapsed ? "px-4" : "px-6"
+          }`}
+        >
+          <div
+            className={`mb-6 flex items-center ${
+              isDesktopSidebarCollapsed ? "justify-center" : "gap-3"
+            }`}
+          >
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
               <Scale className="h-6 w-6" />
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-red-100">
-                Citizen Portal
-              </p>
-              <h1 className="text-2xl font-semibold">Saasan</h1>
-            </div>
+            {!isDesktopSidebarCollapsed && (
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-red-100">
+                  Citizen Portal
+                </p>
+                <h1 className="text-2xl font-semibold">Saasan</h1>
+              </div>
+            )}
           </div>
 
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <p className="text-sm text-red-50">Signed in as</p>
-            <p className="mt-1 text-base font-semibold">
-              {user?.fullName || "Citizen"}
-            </p>
-            <p className="mt-1 text-sm text-red-100">
-              Track reports, follow leaders, and vote in polls.
-            </p>
+          <div
+            className={`rounded-2xl border border-white/15 bg-white/10 backdrop-blur ${
+              isDesktopSidebarCollapsed ? "p-3" : "p-4"
+            }`}
+          >
+            <div
+              className={`flex items-center ${
+                isDesktopSidebarCollapsed ? "justify-center" : "justify-between gap-3"
+              }`}
+            >
+              {isDesktopSidebarCollapsed ? (
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-100">
+                  CP
+                </p>
+              ) : (
+                <div>
+                  <p className="text-sm text-red-50">Signed in as</p>
+                  <p className="mt-1 text-base font-semibold">
+                    {user?.fullName || "Citizen"}
+                  </p>
+                  <p className="mt-1 text-sm text-red-100">
+                    Track reports, follow leaders, and vote in polls.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                aria-label={
+                  isDesktopSidebarCollapsed
+                    ? "Expand desktop sidebar"
+                    : "Collapse desktop sidebar"
+                }
+                onClick={onDesktopSidebarToggle}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-white transition-colors hover:bg-white/25"
+              >
+                {isDesktopSidebarCollapsed ? (
+                  <PanelLeftOpen className="h-5 w-5" />
+                ) : (
+                  <PanelLeftClose className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-2 px-4 py-5">
+        <nav className={`flex-1 space-y-2 py-5 ${isDesktopSidebarCollapsed ? "px-3" : "px-4"}`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = isActiveTab(tab.path);
@@ -80,11 +146,12 @@ const Tabs = () => {
               <Link
                 key={tab.name}
                 to={tab.path}
-                className={`group flex items-center gap-4 rounded-2xl border px-4 py-4 transition-all duration-200 ${
+                title={tab.title}
+                className={`group flex rounded-2xl border transition-all duration-200 ${
                   isActive
                     ? "border-red-200 bg-red-50 text-red-700 shadow-sm"
                     : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
-                }`}
+                } ${isDesktopSidebarCollapsed ? "items-center justify-center px-3 py-4" : "items-center gap-4 px-4 py-4"}`}
               >
                 <div
                   className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
@@ -95,28 +162,37 @@ const Tabs = () => {
                 >
                   <Icon size={20} />
                 </div>
-                <div>
-                  <p className="font-semibold">{tab.title}</p>
-                  <p className="text-sm text-slate-500">{tab.description}</p>
-                </div>
+                {!isDesktopSidebarCollapsed && (
+                  <div>
+                    <p className="font-semibold">{tab.title}</p>
+                    <p className="text-sm text-slate-500">{tab.description}</p>
+                  </div>
+                )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-slate-200 px-4 py-4">
+        <div className={`border-t border-slate-200 py-4 ${isDesktopSidebarCollapsed ? "px-3" : "px-4"}`}>
           <button
             type="button"
             onClick={() => logout()}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700"
+            title="Logout"
+            className={`flex w-full rounded-2xl text-left text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700 ${
+              isDesktopSidebarCollapsed
+                ? "items-center justify-center px-3 py-3"
+                : "items-center gap-3 px-4 py-3"
+            }`}
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100">
               <LogOut className="h-5 w-5" />
             </div>
-            <div>
-              <p className="font-medium">Logout</p>
-              <p className="text-sm text-slate-500">End this session</p>
-            </div>
+            {!isDesktopSidebarCollapsed && (
+              <div>
+                <p className="font-medium">Logout</p>
+                <p className="text-sm text-slate-500">End this session</p>
+              </div>
+            )}
           </button>
         </div>
       </aside>

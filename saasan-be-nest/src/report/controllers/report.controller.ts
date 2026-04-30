@@ -58,8 +58,8 @@ export class ReportController {
   }
 
   @Post('filter')
-  async getAll(@Body() reportFilterDto: ReportFilterDto) {
-    return await this.reportService.getAll(reportFilterDto);
+  async getAll(@Body() reportFilterDto: ReportFilterDto, @Req() req: Request) {
+    return await this.reportService.getAll(reportFilterDto, req.user.id);
   }
 
   @Get('my-reports')
@@ -68,16 +68,21 @@ export class ReportController {
   }
 
   @Get(':reportId')
-  async getById(@Param() param: ReportIdDto) {
-    return await this.reportService.getById(param);
+  async getById(@Param() param: ReportIdDto, @Req() req: Request) {
+    return await this.reportService.getById(param, req.user.id);
   }
 
   @Put(':reportId')
   async updateReport(
     @Param() param: ReportIdDto,
+    @Req() req: Request,
     @Body() updateData: Partial<CreateReportDto>,
   ) {
-    return await this.reportService.updateReport(param, updateData);
+    return await this.reportService.updateOwnReport(
+      param,
+      req.user.id,
+      updateData,
+    );
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -86,9 +91,25 @@ export class ReportController {
     await this.reportService.deleteById(param);
   }
 
-  @HttpCode(204)
+  @HttpCode(HttpStatus.OK)
   @Put(':reportId/vote')
-  async vote() {}
+  async vote(
+    @Param() param: ReportIdDto,
+    @Req() req: Request,
+    @Body() voteData: { direction?: 'up' | 'down' },
+  ) {
+    return await this.reportService.vote(
+      param,
+      req.user.id,
+      voteData?.direction || 'up',
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':reportId/share')
+  async share(@Param() param: ReportIdDto, @Req() req: Request) {
+    return await this.reportService.share(param, req.user.id);
+  }
 
   @HttpCode(204)
   @Post(':reportId/resolve')

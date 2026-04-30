@@ -29,7 +29,7 @@ export class ReportRepository {
     );
   }
 
-  async findById({ reportId }: ReportIdDto) {
+  async findById({ reportId }: ReportIdDto, requesterId?: string) {
     return (
       (
         await this.model.aggregate([
@@ -51,15 +51,50 @@ export class ReportRepository {
             },
           },
           {
+            $lookup: {
+              from: 'report_votes',
+              localField: '_id',
+              foreignField: 'reportId',
+              as: 'voteData',
+            },
+          },
+          {
             $addFields: {
               evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
               activities: { $arrayElemAt: ['$activityData.activities', 0] },
+              currentUserVote: requesterId
+                ? {
+                    $first: {
+                      $filter: {
+                        input: '$voteData',
+                        as: 'vote',
+                        cond: {
+                          $eq: ['$$vote.userId', new Types.ObjectId(requesterId)],
+                        },
+                      },
+                    },
+                  }
+                : null,
+            },
+          },
+          {
+            $addFields: {
+              userVote: '$currentUserVote.direction',
+              hasVoted: {
+                $cond: [
+                  { $ifNull: ['$currentUserVote', false] },
+                  true,
+                  false,
+                ],
+              },
             },
           },
           {
             $project: {
               evidenceData: 0,
               activityData: 0,
+              voteData: 0,
+              currentUserVote: 0,
             },
           },
         ])
@@ -77,7 +112,7 @@ export class ReportRepository {
     });
   }
 
-  async getAll(reportFilterDto: ReportFilterDto) {
+  async getAll(reportFilterDto: ReportFilterDto, requesterId?: string) {
     const priorityIds = (reportFilterDto?.priority || []).map(
       (id) => new Types.ObjectId(id),
     );
@@ -138,6 +173,14 @@ export class ReportRepository {
           as: 'priorityData',
         },
       },
+      {
+        $lookup: {
+          from: 'report_votes',
+          localField: '_id',
+          foreignField: 'reportId',
+          as: 'voteData',
+        },
+      },
       ...(hasFilters
         ? [
             {
@@ -161,6 +204,27 @@ export class ReportRepository {
             status: { $arrayElemAt: ['$statusData.title', 0] },
             priority: { $arrayElemAt: ['$priorityData.title', 0] },
           },
+          currentUserVote: requesterId
+            ? {
+                $first: {
+                  $filter: {
+                    input: '$voteData',
+                    as: 'vote',
+                    cond: {
+                      $eq: ['$$vote.userId', new Types.ObjectId(requesterId)],
+                    },
+                  },
+                },
+              }
+            : null,
+        },
+      },
+      {
+        $addFields: {
+          userVote: '$currentUserVote.direction',
+          hasVoted: {
+            $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
+          },
         },
       },
       {
@@ -170,15 +234,73 @@ export class ReportRepository {
           statusData: 0,
           priorityData: 0,
           evidenceData: 0,
+          voteData: 0,
+          currentUserVote: 0,
         },
       },
     ]);
   }
 
-  async getMyReports(reporterId: string) {
-    return await this.model.find({
-      reporterId: new Types.ObjectId(reporterId),
-    });
+  async getMyReports(reporterId: string, requesterId?: string) {
+    return await this.model.aggregate([
+      {
+        $match: {
+          reporterId: new Types.ObjectId(reporterId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_evidences',
+          localField: '_id',
+          foreignField: 'reportId',
+          as: 'evidenceData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_votes',
+          localField: '_id',
+          foreignField: 'reportId',
+          as: 'voteData',
+        },
+      },
+      {
+        $addFields: {
+          evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
+          currentUserVote: requesterId
+            ? {
+                $first: {
+                  $filter: {
+                    input: '$voteData',
+                    as: 'vote',
+                    cond: {
+                      $eq: ['$$vote.userId', new Types.ObjectId(requesterId)],
+                    },
+                  },
+                },
+              }
+            : null,
+        },
+      },
+      {
+        $addFields: {
+          userVote: '$currentUserVote.direction',
+          hasVoted: {
+            $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
+          },
+        },
+      },
+      {
+        $project: {
+          evidenceData: 0,
+          voteData: 0,
+          currentUserVote: 0,
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ]);
   }
 
   async updateReport(
@@ -192,6 +314,48 @@ export class ReportRepository {
     );
   }
 
+  async incrementVoteCount(reportId: string, direction: 'up' | 'down') {
+    const updateField =
+      direction === 'down' ? 'downvotesCount' : 'upvotesCount';
+
+    return await this.model
+      .findByIdAndUpdate(
+        reportId,
+        {
+          $inc: { [updateField]: 1 },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async adjustVoteCounts(
+    reportId: string,
+    adjustments: Partial<Record<'upvotesCount' | 'downvotesCount', number>>,
+  ) {
+    return await this.model
+      .findByIdAndUpdate(
+        reportId,
+        {
+          $inc: adjustments,
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async incrementShareCount(reportId: string) {
+    return await this.model
+      .findByIdAndUpdate(
+        reportId,
+        {
+          $inc: { sharesCount: 1 },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
   async getTotalReportsCount() {
     return await this.countDocuments();
   }
@@ -200,8 +364,54 @@ export class ReportRepository {
     return await this.countDocuments({ isResolved: true });
   }
 
-  async getRecentReports() {
-    return await this.model.find().sort({ createdAt: -1 }).limit(5);
+  async getRecentReports(requesterId?: string) {
+    return await this.model.aggregate([
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $limit: 5,
+      },
+      {
+        $lookup: {
+          from: 'report_votes',
+          localField: '_id',
+          foreignField: 'reportId',
+          as: 'voteData',
+        },
+      },
+      {
+        $addFields: {
+          currentUserVote: requesterId
+            ? {
+                $first: {
+                  $filter: {
+                    input: '$voteData',
+                    as: 'vote',
+                    cond: {
+                      $eq: ['$$vote.userId', new Types.ObjectId(requesterId)],
+                    },
+                  },
+                },
+              }
+            : null,
+        },
+      },
+      {
+        $addFields: {
+          userVote: '$currentUserVote.direction',
+          hasVoted: {
+            $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
+          },
+        },
+      },
+      {
+        $project: {
+          voteData: 0,
+          currentUserVote: 0,
+        },
+      },
+    ]);
   }
 
   async getLevelBreakdown() {

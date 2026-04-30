@@ -43,6 +43,11 @@ import { ReportToMessageService } from './services/report-to-message.service';
 import { PoliticsModule } from 'src/politics/politics.module';
 import { MessageModule } from 'src/message/message.module';
 import { FileModule } from 'src/common/file/file.module';
+import {
+  ReportVoteEntity,
+  ReportVoteEntitySchema,
+} from './entities/report-vote.entity';
+import { ReportVoteRepository } from './repositories/report-vote.repository';
 
 @Module({
   imports: [
@@ -57,6 +62,7 @@ import { FileModule } from 'src/common/file/file.module';
         name: ReportVisibilityEntity.name,
         schema: ReportVisibilityEntitySchema,
       },
+      { name: ReportVoteEntity.name, schema: ReportVoteEntitySchema },
     ]),
     CloudinaryModule,
     TransactionModule,
@@ -79,6 +85,7 @@ import { FileModule } from 'src/common/file/file.module';
     ReportStatusRepository,
     ReportPriorityRepository,
     ReportVisibilityRepository,
+    ReportVoteRepository,
     ReportToMessageService,
   ],
   exports: [
@@ -87,6 +94,7 @@ import { FileModule } from 'src/common/file/file.module';
     ReportStatusRepository,
     ReportPriorityRepository,
     ReportVisibilityRepository,
+    ReportVoteRepository,
   ],
 })
 export class ReportModule {}

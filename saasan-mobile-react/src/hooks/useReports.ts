@@ -12,6 +12,31 @@ import toast from "react-hot-toast";
 export const useReports = (initialFilters?: ReportFilters) => {
   const queryClient = useQueryClient();
 
+  const syncReportCaches = useCallback(
+    (updatedReport: IReport) => {
+      queryClient.setQueryData(["reports", "current", updatedReport.id], updatedReport);
+      queryClient.setQueryData(
+        ["reports", "all"],
+        (oldData: IReport[] | undefined) =>
+          Array.isArray(oldData)
+            ? oldData.map((report) =>
+                report.id === updatedReport.id ? updatedReport : report,
+              )
+            : oldData,
+      );
+      queryClient.setQueryData(
+        ["reports", "user"],
+        (oldData: IReport[] | undefined) =>
+          Array.isArray(oldData)
+            ? oldData.map((report) =>
+                report.id === updatedReport.id ? updatedReport : report,
+              )
+            : oldData,
+      );
+    },
+    [queryClient],
+  );
+
   const {
     data: allReports = [],
     isLoading: allReportsLoading,
@@ -41,7 +66,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
     isLoading: currentReportLoading,
     error: currentReportError,
   } = useQuery({
-    queryKey: ["reports", "current"],
+    queryKey: ["reports", "current", currentReportId],
     queryFn: () => apiService.getReportById(currentReportId || ""),
     enabled: !!currentReportId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -70,18 +95,8 @@ export const useReports = (initialFilters?: ReportFilters) => {
       id: string;
       data: Partial<ReportCreateData>;
     }) => apiService.updateReport(id, data),
-    onSuccess: (response, { id }) => {
-      queryClient.setQueriesData({ queryKey: ["reports"] }, (oldData: any) => {
-        if (!oldData?.data) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((report: IReport) =>
-            report.id === id ? response.data : report,
-          ),
-        };
-      });
-
-      // Invalidate to ensure fresh data from server
+    onSuccess: (response) => {
+      syncReportCaches(response.data);
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       toast.success("Report updated successfully!");
     },
@@ -95,19 +110,8 @@ export const useReports = (initialFilters?: ReportFilters) => {
   const updateReportStatusMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ReportUpdateData }) =>
       apiService.updateReportStatus(id, data),
-    onSuccess: (response, { id }) => {
-      // Update all report queries with the updated status
-      queryClient.setQueriesData({ queryKey: ["reports"] }, (oldData: any) => {
-        if (!oldData?.data) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((report: IReport) =>
-            report.id === id ? response.data : report,
-          ),
-        };
-      });
-
-      // Invalidate to ensure fresh data from server
+    onSuccess: (response) => {
+      syncReportCaches(response.data);
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       toast.success("Report status updated successfully!");
     },
@@ -158,27 +162,29 @@ export const useReports = (initialFilters?: ReportFilters) => {
   });
 
   const voteOnReportMutation = useMutation({
-    mutationFn: (id: string) => apiService.voteOnReport(id),
-    onSuccess: (_, id) => {
-      // Update all report queries with the new vote
-      queryClient.setQueriesData({ queryKey: ["reports"] }, (oldData: any) => {
-        if (!oldData?.data) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((report: IReport) =>
-            report.id === id
-              ? {
-                  ...report,
-                  upvotesCount: (report.upvotesCount || 0) + 1,
-                  userVote: "up",
-                }
-              : report,
-          ),
-        };
-      });
-
-      // Also invalidate to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    mutationFn: ({
+      id,
+      direction,
+    }: {
+      id: string;
+      direction: "up" | "down";
+    }) => apiService.voteOnReport(id, direction),
+    onSuccess: async (response, variables) => {
+      syncReportCaches(response.data);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["reports", "current", variables.id],
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["reports", "all"],
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["reports", "user"],
+          exact: true,
+        }),
+      ]);
     },
     onError: (error) => {
       toast.error(
@@ -231,10 +237,8 @@ export const useReports = (initialFilters?: ReportFilters) => {
   );
 
   const voteOnReport = useCallback(
-    async (id: string, isUpvote: boolean) => {
-      if (isUpvote) {
-        return voteOnReportMutation.mutateAsync(id);
-      }
+    async (id: string, direction: "up" | "down") => {
+      return voteOnReportMutation.mutateAsync({ id, direction });
     },
     [voteOnReportMutation],
   );
@@ -243,7 +247,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
     async (id: string) => {
       setCurrentReportId(id);
       return queryClient.fetchQuery({
-        queryKey: ["reports", "current"],
+        queryKey: ["reports", "current", id],
         queryFn: () => apiService.getReportById(id),
       });
     },
@@ -258,8 +262,7 @@ export const useReports = (initialFilters?: ReportFilters) => {
     updateReportMutation.isPending ||
     updateReportStatusMutation.isPending ||
     uploadEvidenceMutation.isPending ||
-    deleteEvidenceMutation.isPending ||
-    voteOnReportMutation.isPending;
+    deleteEvidenceMutation.isPending;
 
   const error =
     allReportsError ||

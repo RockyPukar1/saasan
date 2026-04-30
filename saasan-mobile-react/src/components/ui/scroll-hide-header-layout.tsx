@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { To } from "react-router-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PageHeader } from "./page-header";
 
@@ -9,6 +10,7 @@ export interface ScrollHideHeaderLayoutProps {
   rightAction?: ReactNode;
   backButtonVariant?: "ghost" | "outline" | "default";
   backButtonShowText?: boolean;
+  backTo?: To;
   subHeader?: ReactNode;
   children: ReactNode;
   scrollThreshold?: number;
@@ -22,6 +24,7 @@ export function ScrollHideHeaderLayout({
   rightAction,
   backButtonVariant = "ghost",
   backButtonShowText = false,
+  backTo,
   subHeader,
   children,
   scrollThreshold = 10,
@@ -101,7 +104,7 @@ export function ScrollHideHeaderLayout({
 
       <div
         ref={headerRef}
-        className={`fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out`}
+        className={`fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out lg:left-[var(--desktop-sidebar-width,0px)]`}
         style={{
           transform: isHeaderVisible ? "translateY(0)" : `translateY(-100%)`,
           willChange: "transform",
@@ -115,6 +118,7 @@ export function ScrollHideHeaderLayout({
           rightAction={rightAction}
           backButtonVariant={backButtonVariant}
           backButtonShowText={backButtonShowText}
+          backTo={backTo}
         />
       </div>
 

@@ -127,8 +127,8 @@ export class DashboardService {
       this.reportRepo.getResolvedReportsCount(),
       this.politicianRepo.getTotalPoliticians(),
       this.politicianRepo.getTotalActivePoliticians(),
-      this.reportRepo.getMyReports(citizenId),
-      this.reportRepo.getRecentReports(),
+      this.reportRepo.getMyReports(citizenId, citizenId),
+      this.reportRepo.getRecentReports(citizenId),
       this.eventRepo.getRecentEvents(),
       this.eventRepo.getEventsOnThisDay(),
     ]);
