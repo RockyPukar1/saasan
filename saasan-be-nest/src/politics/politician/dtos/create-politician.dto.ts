@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsMongoId,
   IsNumber,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PoliticianPromiseStatus } from '../entities/politician-promise.entity';
 
 // Promise DTO
 class PromiseDto {
@@ -17,8 +19,8 @@ class PromiseDto {
   @IsString()
   description: string;
 
-  @IsString()
-  status: 'ongoing' | 'fulfilled' | 'broken';
+  @IsEnum(PoliticianPromiseStatus)
+  status: PoliticianPromiseStatus;
 
   @IsOptional()
   @IsString()

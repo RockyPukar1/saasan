@@ -8,6 +8,13 @@ export class SourceCategoriesDto {
   @Expose() levels: string[];
 }
 
+export class PoliticianPreferencesSerializer {
+  @Expose() notifications: Record<string, boolean>;
+  @Expose() appearance: Record<string, string | boolean>;
+  @Expose() privacy: Record<string, string | boolean>;
+  @Expose() advanced: Record<string, boolean>;
+}
+
 export class PromiseSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
   @Expose() title: string;
@@ -22,6 +29,25 @@ export class AchievementSerializer {
   @Expose() description: string;
   @Expose() category: string;
   @Expose() date: Date;
+}
+
+export class AnnouncementSerializer {
+  @Expose() @Transform(({ obj }) => obj._id as string) id: string;
+  @Expose()
+  @Transform(({ obj }) => obj.politicianId?.toString?.() || obj.politicianId)
+  politicianId: string;
+  @Expose() title: string;
+  @Expose() content: string;
+  @Expose() type: string;
+  @Expose() priority: string;
+  @Expose() isPublic: boolean;
+  @Expose() scheduledAt?: Date;
+  @Expose() publishedAt?: Date;
+  @Expose()
+  @Transform(({ obj }) => obj.createdBy?.toString?.() || obj.createdBy)
+  createdBy: string;
+  @Expose() createdAt: string;
+  @Expose() updatedAt: string;
 }
 export class PoliticianSerializer {
   @Expose() @Transform(({ obj }) => obj._id as string) id: string;
@@ -49,6 +75,9 @@ export class PoliticianSerializer {
   @Expose()
   @Type(() => SourceCategoriesDto)
   sourceCategories: SourceCategoriesDto;
+  @Expose()
+  @Type(() => PoliticianPreferencesSerializer)
+  preferences?: PoliticianPreferencesSerializer;
 
   @Expose()
   @Type(() => PromiseSerializer)

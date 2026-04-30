@@ -1,16 +1,31 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import {
+  PoliticianAchievementEntity,
+  PoliticianAchievementSchema,
+} from './politician/entities/politician-achievement.entity';
+import {
+  PoliticianAnnouncementEntity,
+  PoliticianAnnouncementSchema,
+} from './politician/entities/politician-announcement.entity';
 import {
   PoliticianEntity,
   PoliticianEntitySchema,
 } from './politician/entities/politician.entity';
+import {
+  PoliticianPromiseEntity,
+  PoliticianPromiseEntitySchema,
+} from './politician/entities/politician-promise.entity';
 import { LevelEntity, LevelEntitySchema } from './level/entities/level.entity';
 import { PartyEntity, PartyEntitySchema } from './party/entities/party.entity';
 import {
   PositionEntity,
   PositionEntitySchema,
 } from './position/entities/position.entity';
-import { PoliticianController } from './politician/controllers/politician.controller';
+import {
+  PoliticianController,
+  PoliticianPortalController,
+} from './politician/controllers/politician.controller';
 import { LevelController } from './level/controllers/level.controller';
 import { PartyController } from './party/controllers/party.controller';
 import { PositionController } from './position/controllers/position.controller';
@@ -25,10 +40,20 @@ import { PositionRepository } from './position/repositories/position.repository'
 import { AdminPoliticianController } from './politician/controllers/admin-politician.controller';
 import { EmailModule } from 'src/common/email/email.module';
 
+@Global()
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: PoliticianEntity.name, schema: PoliticianEntitySchema },
+      { name: PoliticianPromiseEntity.name, schema: PoliticianPromiseEntitySchema },
+      {
+        name: PoliticianAchievementEntity.name,
+        schema: PoliticianAchievementSchema,
+      },
+      {
+        name: PoliticianAnnouncementEntity.name,
+        schema: PoliticianAnnouncementSchema,
+      },
       { name: LevelEntity.name, schema: LevelEntitySchema },
       { name: PartyEntity.name, schema: PartyEntitySchema },
       { name: PositionEntity.name, schema: PositionEntitySchema },
@@ -37,6 +62,7 @@ import { EmailModule } from 'src/common/email/email.module';
   ],
   controllers: [
     PoliticianController,
+    PoliticianPortalController,
     AdminPoliticianController,
     LevelController,
     PartyController,

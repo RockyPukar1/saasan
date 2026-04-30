@@ -13,6 +13,38 @@ interface IExperience {
   endDate: Date;
 }
 
+interface IPoliticianPreferences {
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    messageUpdates: boolean;
+    promiseReminders: boolean;
+    announcementUpdates: boolean;
+    systemNotifications: boolean;
+    weeklySummary: boolean;
+  };
+  appearance: {
+    theme: 'light' | 'dark' | 'system';
+    language: string;
+    timezone: string;
+    compactMode: boolean;
+    showTimestamps: boolean;
+    enableAnimations: boolean;
+    highContrastMode: boolean;
+  };
+  privacy: {
+    profileVisibility: 'public' | 'constituents_only' | 'private';
+    showContactInfo: boolean;
+    showActivityStatus: boolean;
+    allowMessageRequests: boolean;
+  };
+  advanced: {
+    developerMode: boolean;
+    betaFeatures: boolean;
+  };
+}
+
 @Schema({ timestamps: true, collection: PoliticianEntity.collection })
 export class PoliticianEntity {
   static readonly collection = 'politicians';
@@ -114,6 +146,42 @@ export class PoliticianEntity {
 
   @Prop({ type: Number, default: 0 })
   verifiedReports?: number;
+
+  @Prop({
+    type: MongooseSchema.Types.Mixed,
+    default: {
+      notifications: {
+        email: true,
+        push: false,
+        sms: true,
+        messageUpdates: true,
+        promiseReminders: true,
+        announcementUpdates: true,
+        systemNotifications: true,
+        weeklySummary: false,
+      },
+      appearance: {
+        theme: 'system',
+        language: 'english',
+        timezone: 'Asia/Kathmandu',
+        compactMode: false,
+        showTimestamps: true,
+        enableAnimations: true,
+        highContrastMode: false,
+      },
+      privacy: {
+        profileVisibility: 'public',
+        showContactInfo: true,
+        showActivityStatus: false,
+        allowMessageRequests: true,
+      },
+      advanced: {
+        developerMode: false,
+        betaFeatures: false,
+      },
+    },
+  })
+  preferences?: IPoliticianPreferences;
 }
 
 export const PoliticianEntitySchema =

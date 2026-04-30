@@ -20,11 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { dummyPolitician } from "@/data/dummy-data";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
-import type { AchievementDto, PromiseDto } from "@/types/api";
+import type { AchievementDto, PoliticianDto, PromiseDto } from "@/types/api";
 
-const getEditData = (politician: typeof dummyPolitician) => ({
+const getEditData = (politician: Partial<PoliticianDto>) => ({
   fullName: politician.fullName || "",
   biography: politician.biography || "",
   email: politician.contact?.email || "",
@@ -42,7 +41,7 @@ export const ProfileScreen: React.FC = () => {
   const { data: profilePayload, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const politician = useMemo(
-    () => ({ ...dummyPolitician, ...(profilePayload?.profile as any) }),
+    () => ((profilePayload?.profile as Partial<PoliticianDto>) || {}),
     [profilePayload],
   );
   const [isEditing, setIsEditing] = useState(false);
@@ -125,7 +124,7 @@ export const ProfileScreen: React.FC = () => {
                   <Briefcase className="text-white" size={20} />
                 </div>
                 <span className="text-2xl font-bold text-indigo-600">
-                  {politician.experienceYears}
+                  {politician.experienceYears || 0}
                 </span>
               </div>
               <p className="text-gray-700 text-sm mt-3 font-medium">
@@ -159,7 +158,7 @@ export const ProfileScreen: React.FC = () => {
                   <GraduationCap className="text-white" size={20} />
                 </div>
                 <span className="text-2xl font-bold text-blue-600">
-                  {politician.education?.length || 0}
+                  {politician.education ? 1 : 0}
                 </span>
               </div>
               <p className="text-gray-700 text-sm mt-3 font-medium">
@@ -175,10 +174,12 @@ export const ProfileScreen: React.FC = () => {
                 <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-md">
                   <TrendingUp className="text-white" size={20} />
                 </div>
-                <span className="text-2xl font-bold text-green-600">92%</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {politician.rating ? politician.rating.toFixed(1) : "N/A"}
+                </span>
               </div>
-              <p className="text-gray-700 text-sm mt-3 font-medium">Approval</p>
-              <p className="text-green-500 text-xs mt-1">Public rating</p>
+              <p className="text-gray-700 text-sm mt-3 font-medium">Rating</p>
+              <p className="text-green-500 text-xs mt-1">Platform score</p>
             </CardContent>
           </Card>
         </div>
@@ -351,7 +352,7 @@ export const ProfileScreen: React.FC = () => {
                       />
                     ) : (
                       <p className="text-sm">
-                        {politician.socialMedia.facebook}
+                        {politician.socialMedia?.facebook || "Not provided"}
                       </p>
                     )}
                   </div>
@@ -366,7 +367,7 @@ export const ProfileScreen: React.FC = () => {
                       />
                     ) : (
                       <p className="text-sm">
-                        {politician.socialMedia.twitter}
+                        {politician.socialMedia?.twitter || "Not provided"}
                       </p>
                     )}
                   </div>
@@ -384,7 +385,7 @@ export const ProfileScreen: React.FC = () => {
                       />
                     ) : (
                       <p className="text-sm">
-                        {politician.socialMedia.instagram}
+                        {politician.socialMedia?.instagram || "Not provided"}
                       </p>
                     )}
                   </div>
@@ -401,7 +402,8 @@ export const ProfileScreen: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {politician.achievements?.map((achievement: AchievementDto) => (
+                {politician.achievements?.length ? (
+                  politician.achievements.map((achievement: AchievementDto) => (
                   <div
                     key={achievement.id}
                     className="p-4 border border-gray-200 rounded-lg"
@@ -423,7 +425,10 @@ export const ProfileScreen: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-600">No achievements added yet.</p>
+                )}
               </CardContent>
             </Card>
 
@@ -436,7 +441,8 @@ export const ProfileScreen: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {politician.promises?.map((promise: PromiseDto) => (
+                {politician.promises?.length ? (
+                  politician.promises.map((promise: PromiseDto) => (
                   <div
                     key={promise.id}
                     className="p-4 border border-gray-200 rounded-lg"
@@ -467,7 +473,10 @@ export const ProfileScreen: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-600">No promises added yet.</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -488,7 +497,7 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Email</p>
                     <p className="text-sm text-gray-600">
-                      {politician.contact.email}
+                      {politician.contact?.email || "Not provided"}
                     </p>
                   </div>
                 </div>
@@ -497,7 +506,7 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Phone</p>
                     <p className="text-sm text-gray-600">
-                      {politician.contact.phone}
+                      {politician.contact?.phone || "Not provided"}
                     </p>
                   </div>
                 </div>
@@ -506,7 +515,7 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Website</p>
                     <p className="text-sm text-gray-600">
-                      {politician.contact.website}
+                      {politician.contact?.website || "Not provided"}
                     </p>
                   </div>
                 </div>
@@ -526,30 +535,36 @@ export const ProfileScreen: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium">Party</p>
                     <p className="text-sm text-gray-600">
-                      {politician.sourceCategories.party}
+                      {politician.sourceCategories?.party || "Independent"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Positions</p>
                     <div className="space-y-1">
-                      {politician.sourceCategories.positions.map(
+                      {(politician.sourceCategories?.positions || []).map(
                         (position: string, index: number) => (
                           <p key={index} className="text-sm text-gray-600">
                             • {position}
                           </p>
                         ),
                       )}
+                      {!(politician.sourceCategories?.positions || []).length && (
+                        <p className="text-sm text-gray-600">No positions listed</p>
+                      )}
                     </div>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Levels</p>
                     <div className="space-y-1">
-                      {politician.sourceCategories.levels.map(
+                      {(politician.sourceCategories?.levels || []).map(
                         (level: string, index: number) => (
                           <p key={index} className="text-sm text-gray-600">
                             • {level}
                           </p>
                         ),
+                      )}
+                      {!(politician.sourceCategories?.levels || []).length && (
+                        <p className="text-sm text-gray-600">No levels listed</p>
                       )}
                     </div>
                   </div>

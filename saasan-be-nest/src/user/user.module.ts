@@ -14,7 +14,6 @@ import {
   PoliticianEntity,
   PoliticianEntitySchema,
 } from 'src/politics/politician/entities/politician.entity';
-
 @Global()
 @Module({
   imports: [

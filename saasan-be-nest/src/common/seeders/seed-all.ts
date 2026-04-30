@@ -21,7 +21,14 @@ import { ProvinceEntity } from '../../location/province/entities/province.entity
 import { WardEntity } from '../../location/ward/entities/ward.entity';
 import { PartyEntity } from '../../politics/party/entities/party.entity';
 import { LevelEntity } from '../../politics/level/entities/level.entity';
+import {
+  PoliticianAnnouncementEntity,
+  PoliticianAnnouncementPriority,
+  PoliticianAnnouncementType,
+} from '../../politics/politician/entities/politician-announcement.entity';
 import { PoliticianEntity } from '../../politics/politician/entities/politician.entity';
+import { PoliticianAchievementEntity } from '../../politics/politician/entities/politician-achievement.entity';
+import { PoliticianPromiseEntity } from '../../politics/politician/entities/politician-promise.entity';
 import { PositionEntity } from '../../politics/position/entities/position.entity';
 import { PollOptionEntity } from '../../poll/entities/poll-option.entity';
 import { PollVoteEntity } from '../../poll/entities/poll-vote.entity';
@@ -41,9 +48,43 @@ import {
 } from '../../user/entities/user.entity';
 import { CitizenEntity } from '../../user/entities/citizen.entity';
 import { AdminEntity } from '../../user/entities/admin.entity';
+import { RolePermissionEntity } from '../../role-permission/entities/role-permission.entity';
+import { DEFAULT_ROLE_PERMISSIONS } from '../constants/role-permission.constants';
+import politicianSeedData from './politics/data/politician.json';
 
 const logger = new Logger('SeedAll');
 const SEEDED_DOMAIN = 'seed.saasan.local';
+const DEFAULT_POLITICIAN_PREFERENCES = {
+  notifications: {
+    email: true,
+    push: false,
+    sms: true,
+    messageUpdates: true,
+    promiseReminders: true,
+    announcementUpdates: true,
+    systemNotifications: true,
+    weeklySummary: false,
+  },
+  appearance: {
+    theme: 'system',
+    language: 'english',
+    timezone: 'Asia/Kathmandu',
+    compactMode: false,
+    showTimestamps: true,
+    enableAnimations: true,
+    highContrastMode: false,
+  },
+  privacy: {
+    profileVisibility: 'public',
+    showContactInfo: true,
+    showActivityStatus: false,
+    allowMessageRequests: true,
+  },
+  advanced: {
+    developerMode: false,
+    betaFeatures: false,
+  },
+} as const;
 
 type LocationBundle = {
   provinceId: Types.ObjectId;
@@ -84,9 +125,21 @@ async function bootstrap() {
     const politicianModel = app.get<Model<any>>(
       getModelToken(PoliticianEntity.name),
     );
+    const politicianPromiseModel = app.get<Model<any>>(
+      getModelToken(PoliticianPromiseEntity.name),
+    );
+    const politicianAchievementModel = app.get<Model<any>>(
+      getModelToken(PoliticianAchievementEntity.name),
+    );
+    const politicianAnnouncementModel = app.get<Model<any>>(
+      getModelToken(PoliticianAnnouncementEntity.name),
+    );
     const userModel = app.get<Model<any>>(getModelToken(UserEntity.name));
     const citizenModel = app.get<Model<any>>(getModelToken(CitizenEntity.name));
     const adminModel = app.get<Model<any>>(getModelToken(AdminEntity.name));
+    const rolePermissionModel = app.get<Model<any>>(
+      getModelToken(RolePermissionEntity.name),
+    );
     const reportModel = app.get<Model<any>>(getModelToken(ReportEntity.name));
     const reportVoteModel = app.get<Model<any>>(
       getModelToken(ReportVoteEntity.name),
@@ -152,6 +205,13 @@ async function bootstrap() {
       { _id: 1, role: 1 },
     );
     const seededUserIds = existingSeededUsers.map((user) => user._id);
+    const seededPoliticianIds = politicians
+      .slice(0, Math.min(politicians.length, 8))
+      .map((politician) =>
+        politician._id instanceof Types.ObjectId
+          ? politician._id
+          : new Types.ObjectId(politician._id),
+      );
 
     if (seededUserIds.length) {
       await pollVoteModel.deleteMany({ userId: { $in: seededUserIds } });
@@ -171,6 +231,11 @@ async function bootstrap() {
             { $unset: { userId: '' } },
           )
         : Promise.resolve(),
+      seededPoliticianIds.length
+        ? politicianAnnouncementModel.deleteMany({
+            politicianId: { $in: seededPoliticianIds },
+          })
+        : Promise.resolve(),
       userModel.deleteMany({ email: new RegExp(`@${SEEDED_DOMAIN}$`) }),
       reportModel.deleteMany({ tags: 'seeded' }),
       reportDiscussionCommentModel.deleteMany({}),
@@ -182,7 +247,25 @@ async function bootstrap() {
       messageModel.deleteMany({ tags: 'seeded' }),
     ]);
 
+    await Promise.all(
+      Object.entries(DEFAULT_ROLE_PERMISSIONS).map(([role, permissions]) =>
+        rolePermissionModel.findOneAndUpdate(
+          { role },
+          {
+            $set: {
+              role,
+              permissions,
+            },
+          },
+          { upsert: true, new: true },
+        ),
+      ),
+    );
+
     const defaultPassword = await bcrypt.hash('saasan123', PASSWORD_SALT);
+    const politicianSeedMap = new Map(
+      politicianSeedData.map((politician) => [politician.fullName, politician]),
+    );
 
     const locationBundles: LocationBundle[] = wards.map(
       (ward: any, index: number) => ({
@@ -271,7 +354,7 @@ async function bootstrap() {
         politician._id instanceof Types.ObjectId
           ? politician._id
           : new Types.ObjectId(politician._id);
-      const seededPoliticianEmail = `${formatSlug(politician.fullName)}.${politicianId.toHexString().slice(-6)}@${SEEDED_DOMAIN}`;
+      const seededPoliticianEmail = `${formatSlug(politician.fullName)}@${SEEDED_DOMAIN}`;
       const user = await userModel.create({
         email: seededPoliticianEmail,
         password: defaultPassword,
@@ -286,6 +369,7 @@ async function bootstrap() {
             politician.constituencyId instanceof Types.ObjectId
               ? politician.constituencyId
               : fallbackLocation.constituencyId,
+          preferences: DEFAULT_POLITICIAN_PREFERENCES,
         },
       });
 
@@ -302,6 +386,119 @@ async function bootstrap() {
         municipalityId: fallbackLocation.municipalityId,
         wardId: fallbackLocation.wardId,
       });
+    }
+
+    const seededAnnouncementDocs: any[] = [];
+    for (let index = 0; index < seededPoliticians.length; index++) {
+      const politician = seededPoliticians[index];
+      const politicianId =
+        politician._id instanceof Types.ObjectId
+          ? politician._id
+          : new Types.ObjectId(politician._id);
+      const seedSource = politicianSeedMap.get(politician.fullName);
+
+      if (!seedSource) continue;
+
+      const achievementAnnouncements = (seedSource.achievements || [])
+        .slice(0, 2)
+        .map((achievement, achievementIndex) => ({
+          politicianId,
+          createdBy: politicianId,
+          title: achievement.title,
+          content: achievement.description,
+          type: PoliticianAnnouncementType.ACHIEVEMENT,
+          priority:
+            achievementIndex === 0
+              ? PoliticianAnnouncementPriority.HIGH
+              : PoliticianAnnouncementPriority.MEDIUM,
+          isPublic: true,
+          publishedAt: new Date(achievement.date),
+          scheduledAt: null,
+          createdAt: new Date(achievement.date),
+          updatedAt: new Date(achievement.date),
+        }));
+
+      const promiseAnnouncements = (seedSource.promises || [])
+        .slice(0, 2)
+        .map((promise, promiseIndex) => ({
+          politicianId,
+          createdBy: politicianId,
+          title: `${politician.fullName.split(' ')[0]}'s update: ${promise.title}`,
+          content: `${promise.description} Current progress: ${promise.progress}% and status ${promise.status}.`,
+          type: PoliticianAnnouncementType.UPDATE,
+          priority:
+            promise.progress >= 75
+              ? PoliticianAnnouncementPriority.HIGH
+              : promiseIndex === 0
+                ? PoliticianAnnouncementPriority.MEDIUM
+                : PoliticianAnnouncementPriority.LOW,
+          isPublic: true,
+          publishedAt: new Date(promise.dueDate),
+          scheduledAt: null,
+          createdAt: new Date(promise.dueDate),
+          updatedAt: new Date(promise.dueDate),
+        }));
+
+      seededAnnouncementDocs.push(
+        ...achievementAnnouncements,
+        ...promiseAnnouncements,
+      );
+    }
+
+    if (seededAnnouncementDocs.length) {
+      await politicianAnnouncementModel.insertMany(seededAnnouncementDocs, {
+        ordered: false,
+      });
+    }
+
+    if (seededPoliticianIds.length) {
+      await Promise.all(
+        seededPoliticianIds.map(async (politicianId) => {
+          const promiseDoc = await politicianPromiseModel.findOne({
+            politicianId,
+          });
+          if (promiseDoc) {
+            await politicianPromiseModel.updateOne(
+              { _id: promiseDoc._id },
+              {
+                $set: {
+                  promises: (promiseDoc.promises || []).map((promise: any) => ({
+                    ...promise,
+                    status:
+                      promise.status === 'ongoing'
+                        ? 'in-progress'
+                        : promise.status === 'pending'
+                          ? 'not-started'
+                          : promise.status,
+                  })),
+                },
+              },
+            );
+          }
+
+          const achievementDoc = await politicianAchievementModel.findOne({
+            politicianId,
+          });
+          if (achievementDoc) {
+            await politicianAchievementModel.updateOne(
+              { _id: achievementDoc._id },
+              {
+                $set: {
+                  achievements: (achievementDoc.achievements || []).map(
+                    (achievement: any) => ({
+                      ...achievement,
+                      category:
+                        achievement.category === 'economic'
+                          ? 'economy'
+                          : achievement.category,
+                    }),
+                  ),
+                },
+              },
+            );
+          }
+        }),
+      );
     }
 
     const citizenUsers = createdUsers.filter(
@@ -363,8 +560,7 @@ async function bootstrap() {
     for (let index = 0; index < createdReports.length; index++) {
       const report = createdReports[index];
       const voterPool = citizenUsers.filter(
-        (citizen) =>
-          citizen._id.toString() !== report.reporterId?.toString?.(),
+        (citizen) => citizen._id.toString() !== report.reporterId?.toString?.(),
       );
       const desiredUpvotes = Math.min(voterPool.length, 3 + (index % 8));
       const desiredDownvotes = Math.min(
@@ -579,13 +775,15 @@ async function bootstrap() {
             id: politician.politicianId || politician._id,
             name: politician.fullName,
           },
-          politicians: assignedPoliticianIds.map((assignedPoliticianId, assignedIndex) => ({
-            id: assignedPoliticianId,
-            name:
-              assignedIndex === 0
-                ? politician.fullName
-                : secondaryPolitician?.fullName || politician.fullName,
-          })),
+          politicians: assignedPoliticianIds.map(
+            (assignedPoliticianId, assignedIndex) => ({
+              id: assignedPoliticianId,
+              name:
+                assignedIndex === 0
+                  ? politician.fullName
+                  : secondaryPolitician?.fullName || politician.fullName,
+            }),
+          ),
         },
         messages: [
           {
@@ -636,7 +834,8 @@ async function bootstrap() {
                 autoConvertedToMessage: true,
                 targetPoliticianId: item.primaryPoliticianId,
                 assignedPoliticianIds: item.assignedPoliticianIds,
-                verificationNotes: 'Seeded approved report for discussion flows',
+                verificationNotes:
+                  'Seeded approved report for discussion flows',
                 verifiedAt: new Date(),
               },
             },
@@ -663,9 +862,16 @@ async function bootstrap() {
       const politicianUser =
         politicianUsers[index % Math.max(politicianUsers.length, 1)];
       const adminUser =
-        createdUsers.find((user) => user.role === UserRole.ADMIN) || createdUsers[0];
+        createdUsers.find((user) => user.role === UserRole.ADMIN) ||
+        createdUsers[0];
 
-      if (!report || !reportOwner || !joiningCitizen || !politicianUser || !adminUser) {
+      if (
+        !report ||
+        !reportOwner ||
+        !joiningCitizen ||
+        !politicianUser ||
+        !adminUser
+      ) {
         return;
       }
 
@@ -807,9 +1013,12 @@ async function bootstrap() {
     });
 
     if (discussionParticipantDocs.length) {
-      await reportDiscussionParticipantModel.insertMany(discussionParticipantDocs, {
-        ordered: false,
-      });
+      await reportDiscussionParticipantModel.insertMany(
+        discussionParticipantDocs,
+        {
+          ordered: false,
+        },
+      );
     }
 
     if (discussionCommentDocs.length) {
@@ -832,7 +1041,7 @@ async function bootstrap() {
         `Seeded ${provinces.length} provinces, ${districts.length} districts, ${municipalities.length} municipalities, and ${wards.length} wards`,
         `Seeded politics reference data: ${levels.length} levels, ${positions.length} positions, ${parties.length} parties, ${politicians.length} politicians`,
         `Created ${createdUsers.length} fake users (${adminDefinitions.length} admins, ${citizenUsers.length} citizens, ${politicianUsers.length} politicians)`,
-        `Created ${createdReports.length} reports, ${reportVoteDocs.length} report votes, ${caseDocs.length} cases, ${eventDocs.length} events, ${budgetDocs.length} budgets, ${voteDocs.length} poll votes, and ${messageDocs.length} messages`,
+        `Created ${createdReports.length} reports, ${reportVoteDocs.length} report votes, ${caseDocs.length} cases, ${eventDocs.length} events, ${budgetDocs.length} budgets, ${voteDocs.length} poll votes, ${messageDocs.length} messages, and ${seededAnnouncementDocs.length} politician announcements`,
         `Default seeded password for fake users: saasan123`,
       ].join('\n'),
     );

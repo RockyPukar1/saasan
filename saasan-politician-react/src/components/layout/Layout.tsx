@@ -12,7 +12,7 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f6f8fc] lg:flex">
+    <div className="h-screen overflow-hidden bg-[#f6f8fc] lg:flex">
       <div
         className={`fixed inset-0 z-50 lg:hidden ${
           sidebarOpen ? "block" : "hidden"
@@ -37,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
 
       <Sidebar className="hidden lg:flex" />
 
-      <main className="min-h-screen flex-1 overflow-auto">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="border-b border-red-100 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
             <Button
@@ -58,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
-        <div className="min-h-full">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {children || <Outlet />}
         </div>
       </main>

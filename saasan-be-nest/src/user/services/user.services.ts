@@ -1,26 +1,27 @@
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
-import { UserRole } from '../entities/user.entity';
-import { UserRepository } from '../repositories/user.repository';
+import { AuthSessionRepository } from 'src/auth/repositories/auth-session.repository';
+import { RevokeSessionReason } from 'src/auth/entities/auth-session.entity';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
-import { UserIdDto } from '../dtos/user-id.dto';
+import { PermissionHelper } from 'src/common/helpers/permission.helper';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { RolePermissionService } from 'src/role-permission/services/role-permission.service';
+import { ChangeCurrentPasswordDto } from '../dtos/change-current-password.dto';
+import { DeleteAccountDto } from '../dtos/delete-account.dto';
+import { UpdatePoliticianPreferencesDto } from '../dtos/update-politician-preferences.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
+import { UserIdDto } from '../dtos/user-id.dto';
+import { PASSWORD_SALT, UserRole } from '../entities/user.entity';
+import { AdminRepository } from '../repositories/admin.repository';
+import { CitizenRepository } from '../repositories/citizen.repository';
+import { UserRepository } from '../repositories/user.repository';
 import {
   UserProfilePayloadSerializer,
   UserSerializer,
 } from '../serializers/user.serializer';
-import { PermissionHelper } from 'src/common/helpers/permission.helper';
-import { RolePermissionService } from 'src/role-permission/services/role-permission.service';
-import { CitizenRepository } from '../repositories/citizen.repository';
-import { AdminRepository } from '../repositories/admin.repository';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  PoliticianEntity,
-  PoliticianEntityDocument,
-} from 'src/politics/politician/entities/politician.entity';
-import { Model } from 'mongoose';
+import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
 
 @Injectable()
 export class UserService {
@@ -32,8 +33,8 @@ export class UserService {
     private readonly rolePermissionService: RolePermissionService,
     private readonly citizenRepo: CitizenRepository,
     private readonly adminRepo: AdminRepository,
-    @InjectModel(PoliticianEntity.name)
-    private readonly politicianModel: Model<PoliticianEntityDocument>,
+    private readonly politicianRepo: PoliticianRepository,
+    private readonly authSessionRepo: AuthSessionRepository,
   ) {}
 
   async getProfile({ userId }: UserIdDto) {
@@ -65,12 +66,22 @@ export class UserService {
   }
 
   async updateProfile(userIdDto: UserIdDto, updateData: UpdateUserDto) {
-    const user = await this.userRepo.findById(userIdDto);
-    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+    const existingUser = await this.userRepo.findById(userIdDto);
+    if (!existingUser)
+      throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+
+    const authUpdate = await this.pickSelfAuthUpdate(
+      existingUser._id.toString(),
+      updateData,
+    );
+    const user =
+      Object.keys(authUpdate).length > 0
+        ? await this.userRepo.findByIdAndUpdate(userIdDto, authUpdate)
+        : existingUser;
 
     const profile = await this.updateRoleProfile(
       userIdDto,
-      user.role,
+      existingUser.role,
       this.pickProfileUpdate(updateData),
     );
 
@@ -87,8 +98,12 @@ export class UserService {
       throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
 
     const authUpdate: Record<string, unknown> = {};
-    if (updateData.email)
-      authUpdate.email = updateData.email.trim().toLowerCase();
+    if (updateData.email) {
+      authUpdate.email = await this.validateEmailForUpdate(
+        existingUser._id.toString(),
+        updateData.email,
+      );
+    }
     if (typeof updateData.isActive === 'boolean') {
       authUpdate.isActive = updateData.isActive;
     }
@@ -113,6 +128,144 @@ export class UserService {
       UserSerializer,
       UserSerializer.toPayload(user, profile),
       'User updated successfully',
+    );
+  }
+
+  async updatePoliticianPreferences(
+    userIdDto: UserIdDto,
+    preferences: UpdatePoliticianPreferencesDto,
+  ) {
+    const user = await this.userRepo.findById(userIdDto);
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+    if (user.role !== UserRole.POLITICIAN) {
+      throw new GlobalHttpException('permission403', HttpStatus.FORBIDDEN);
+    }
+
+    const profile = await this.updateRoleProfile(userIdDto, user.role, {
+      preferences,
+    });
+
+    return ResponseHelper.response(
+      UserProfilePayloadSerializer,
+      { user: UserSerializer.toPayload(user, profile), profile },
+      'Settings updated successfully',
+    );
+  }
+
+  async changeMyPassword(
+    userIdDto: UserIdDto,
+    currentSessionId: string | undefined,
+    { currentPassword, newPassword }: ChangeCurrentPasswordDto,
+  ) {
+    const user = await this.userRepo.findById(userIdDto);
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+
+    const isValidPassword = await bcrypt.compare(
+      currentPassword,
+      user.password || '',
+    );
+    if (!isValidPassword) {
+      throw new GlobalHttpException(
+        'invalidCredentials',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const password = await bcrypt.hash(newPassword, PASSWORD_SALT);
+    await this.userRepo.findByIdAndUpdate(userIdDto, { password });
+    if (currentSessionId) {
+      await this.authSessionRepo.revokeAllUserSessionsExceptCurrent(
+        userIdDto,
+        { sessionId: currentSessionId },
+        RevokeSessionReason.REVOKE_ALL_EXCEPT_CURRENT,
+      );
+    } else {
+      await this.authSessionRepo.revokeAllUserSessions(
+        userIdDto,
+        RevokeSessionReason.REVOKE_ALL_SESSIONS,
+      );
+    }
+
+    return ResponseHelper.success(
+      null,
+      'Password updated successfully. Other sessions have been signed out.',
+    );
+  }
+
+  async exportMyData(userIdDto: UserIdDto) {
+    const user = await this.doesUserExists({
+      _id: new Types.ObjectId(userIdDto.userId),
+    }).lean();
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+
+    const profile = await this.getRoleProfile(user);
+    const sessions = await this.authSessionRepo.findAllByUserId(userIdDto);
+    const permissions = await this.rolePermissionService.getPermissionsByRole(
+      user.role,
+    );
+
+    let announcements: any[] = [];
+    if (user.role === UserRole.POLITICIAN && profile?._id) {
+      announcements = await this.politicianRepo.getAnnouncementsByPoliticianId(
+        profile._id.toString(),
+      );
+    }
+
+    return ResponseHelper.success(
+      {
+        exportedAt: new Date().toISOString(),
+        user: UserSerializer.toPayload(user, profile),
+        profile,
+        permissions: permissions.permissions,
+        sessions,
+        announcements,
+      },
+      'Account export generated successfully',
+    );
+  }
+
+  async deleteMyAccount(
+    userIdDto: UserIdDto,
+    { currentPassword }: DeleteAccountDto,
+  ) {
+    const user = await this.userRepo.findById(userIdDto);
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+
+    const isValidPassword = await bcrypt.compare(
+      currentPassword,
+      user.password || '',
+    );
+    if (!isValidPassword) {
+      throw new GlobalHttpException(
+        'invalidCredentials',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (user.role === UserRole.POLITICIAN) {
+      const politician = await this.politicianRepo.findByUserId(userIdDto.userId);
+      if (politician?._id) {
+        await this.politicianRepo.deleteAnnouncementsByPoliticianId(
+          politician._id.toString(),
+        );
+        await this.politicianRepo.findByIdAndUpdate(politician._id.toString(), {
+          $unset: { userId: '' },
+        });
+      }
+    } else {
+      await this.deleteRoleProfile(userIdDto, user.role);
+    }
+
+    await this.authSessionRepo.revokeAllUserSessions(
+      userIdDto,
+      RevokeSessionReason.MANUAL_LOGOUT,
+    );
+    await this.userRepo.deleteOne(userIdDto);
+    await this.redisCache.del('users:*');
+
+    return ResponseHelper.success(
+      null,
+      'Account deleted successfully. Public politician records remain intact.',
     );
   }
 
@@ -203,9 +356,7 @@ export class UserService {
     }
 
     if (user.role === UserRole.POLITICIAN) {
-      return this.politicianModel
-        .findOne({ userId: new Types.ObjectId(userId) })
-        .lean();
+      return this.politicianRepo.findByUserId(userId);
     }
 
     return null;
@@ -214,7 +365,7 @@ export class UserService {
   private async updateRoleProfile(
     { userId }: UserIdDto,
     role: UserRole,
-    updateData: Partial<UpdateUserDto>,
+    updateData: Record<string, unknown>,
   ) {
     if (role === UserRole.CITIZEN) {
       return this.citizenRepo.findByUserIdAndUpdate({ userId }, updateData);
@@ -225,11 +376,14 @@ export class UserService {
     }
 
     if (role === UserRole.POLITICIAN) {
-      return this.politicianModel.findOneAndUpdate(
-        { userId: new Types.ObjectId(userId) },
+      const politician = await this.politicianRepo.findByUserId(userId);
+      if (!politician?._id) return null;
+
+      await this.politicianRepo.findByIdAndUpdate(
+        politician._id.toString(),
         updateData,
-        { new: true },
       );
+      return this.politicianRepo.findByUserId(userId);
     }
 
     return null;
@@ -247,10 +401,12 @@ export class UserService {
     }
 
     if (role === UserRole.POLITICIAN) {
-      await this.politicianModel.updateOne(
-        { userId: new Types.ObjectId(userId) },
-        { $unset: { userId: '' } },
-      );
+      const politician = await this.politicianRepo.findByUserId(userId);
+      if (politician?._id) {
+        await this.politicianRepo.findByIdAndUpdate(politician._id.toString(), {
+          $unset: { userId: '' },
+        });
+      }
     }
   }
 
@@ -263,5 +419,35 @@ export class UserService {
     void isVerified;
 
     return profileUpdate;
+  }
+
+  private async pickSelfAuthUpdate(
+    userId: string,
+    updateData: UpdateUserDto,
+  ): Promise<Record<string, unknown>> {
+    const authUpdate: Record<string, unknown> = {};
+
+    if (updateData.email) {
+      authUpdate.email = await this.validateEmailForUpdate(
+        userId,
+        updateData.email,
+      );
+    }
+
+    return authUpdate;
+  }
+
+  private async validateEmailForUpdate(userId: string, email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await this.userRepo.findOne({ email: normalizedEmail });
+
+    if (existingUser && existingUser._id.toString() !== userId) {
+      throw new GlobalHttpException(
+        'userAlreadyExistsWithEmail',
+        HttpStatus.AMBIGUOUS,
+      );
+    }
+
+    return normalizedEmail;
   }
 }

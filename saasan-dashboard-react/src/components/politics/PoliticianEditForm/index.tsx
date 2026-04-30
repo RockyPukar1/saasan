@@ -1151,9 +1151,7 @@ export default function PoliticianEditForm({
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ongoing">Ongoing</SelectItem>
                           <SelectItem value="fulfilled">Fulfilled</SelectItem>
-                          <SelectItem value="broken">Broken</SelectItem>
                           <SelectItem value="not-started">
                             Not Started
                           </SelectItem>

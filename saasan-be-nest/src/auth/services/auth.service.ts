@@ -326,9 +326,7 @@ export class AuthService {
     }
 
     if (authUser.role === UserRole.POLITICIAN) {
-      const profile = await this.politicianRepo
-        .findOne({ userId: new Types.ObjectId(userId) })
-        .lean();
+      const profile = await this.politicianRepo.findByUserId(userId);
       return {
         authUser: {
           ...authUser,

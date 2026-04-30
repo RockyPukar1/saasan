@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
@@ -6,7 +6,6 @@ import {
   Bell,
   Shield,
   Palette,
-  Globe,
   Lock,
   Smartphone,
   Mail,
@@ -24,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -31,39 +32,127 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { dummyPolitician } from "@/data/dummy-data";
-import { sessionApi } from "@/services/api";
+import { sessionApi, settingsApi } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { PERMISSIONS } from "@/constants/permission.constants";
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import type { PoliticianDto, PoliticianPreferencesDto } from "@/types/api";
+
+const defaultPreferences: PoliticianPreferencesDto = {
+  notifications: {
+    email: true,
+    push: false,
+    sms: true,
+    messageUpdates: true,
+    promiseReminders: true,
+    announcementUpdates: true,
+    systemNotifications: true,
+    weeklySummary: false,
+  },
+  appearance: {
+    theme: "system",
+    language: "english",
+    timezone: "Asia/Kathmandu",
+    compactMode: false,
+    showTimestamps: true,
+    enableAnimations: true,
+    highContrastMode: false,
+  },
+  privacy: {
+    profileVisibility: "public",
+    showContactInfo: true,
+    showActivityStatus: false,
+    allowMessageRequests: true,
+  },
+  advanced: {
+    developerMode: false,
+    betaFeatures: false,
+  },
+};
+
+type ProfileFormState = {
+  fullName: string;
+  email: string;
+  phone: string;
+  profession: string;
+  biography: string;
+  website: string;
+  facebook: string;
+  twitter: string;
+  instagram: string;
+};
+
+const emptyProfileForm: ProfileFormState = {
+  fullName: "",
+  email: "",
+  phone: "",
+  profession: "",
+  biography: "",
+  website: "",
+  facebook: "",
+  twitter: "",
+  instagram: "",
+};
 
 export const SettingsScreen: React.FC = () => {
   const queryClient = useQueryClient();
-  const { user, permissions, hasPermission, logout } = useAuth();
+  const { user, permissions, logout, refreshUser } = useAuth();
+  const { data: profilePayload, isLoading: profileLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
   const [activeTab, setActiveTab] = useState("profile");
   const [showPassword, setShowPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
-  const [smsNotifications, setSmsNotifications] = useState(true);
-  const [theme, setTheme] = useState("system");
-  const [language, setLanguage] = useState("english");
-  const [timezone, setTimezone] = useState("Asia/Kathmandu");
+  const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
+  const [preferencesForm, setPreferencesForm] =
+    useState<PoliticianPreferencesDto>(defaultPreferences);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [deletePassword, setDeletePassword] = useState("");
 
-  const handleSaveSettings = () => {
-    console.log("Saving settings...");
-  };
+  const politicianProfile = useMemo(
+    () => ((profilePayload?.profile as Partial<PoliticianDto>) || {}),
+    [profilePayload],
+  );
 
-  const handlePasswordChange = () => {
-    console.log("Changing password...");
-  };
-
-  const handleExportData = () => {
-    console.log("Exporting data...");
-  };
-
-  const handleDeleteAccount = () => {
-    console.log("Deleting account...");
-  };
+  useEffect(() => {
+    setProfileForm({
+      fullName: politicianProfile.fullName || "",
+      email: profilePayload?.user?.email || politicianProfile.contact?.email || "",
+      phone: politicianProfile.contact?.phone || "",
+      profession: politicianProfile.profession || "",
+      biography: politicianProfile.biography || "",
+      website: politicianProfile.contact?.website || "",
+      facebook: politicianProfile.socialMedia?.facebook || "",
+      twitter: politicianProfile.socialMedia?.twitter || "",
+      instagram: politicianProfile.socialMedia?.instagram || "",
+    });
+    setPreferencesForm(
+      politicianProfile.preferences
+        ? {
+            ...defaultPreferences,
+            ...politicianProfile.preferences,
+            notifications: {
+              ...defaultPreferences.notifications,
+              ...politicianProfile.preferences.notifications,
+            },
+            appearance: {
+              ...defaultPreferences.appearance,
+              ...politicianProfile.preferences.appearance,
+            },
+            privacy: {
+              ...defaultPreferences.privacy,
+              ...politicianProfile.preferences.privacy,
+            },
+            advanced: {
+              ...defaultPreferences.advanced,
+              ...politicianProfile.preferences.advanced,
+            },
+          }
+        : defaultPreferences,
+    );
+  }, [politicianProfile, profilePayload?.user?.email]);
 
   const settingsTabs = [
     { id: "profile", label: "Profile Settings", icon: User },
@@ -75,12 +164,75 @@ export const SettingsScreen: React.FC = () => {
   ];
 
   const currentSessionId = sessionApi.getCurrentSessionId();
-  const canViewSessions = hasPermission(PERMISSIONS.sessions.view);
-  const canRevokeSessions = hasPermission(PERMISSIONS.sessions.revoke);
+
   const { data: sessionsResponse, isLoading: sessionsLoading } = useQuery({
     queryKey: ["politician-auth-sessions"],
     queryFn: () => sessionApi.getMySessions(),
-    enabled: canViewSessions,
+  });
+
+  const savePreferencesMutation = useMutation({
+    mutationFn: (data: PoliticianPreferencesDto) =>
+      settingsApi.updatePreferences(data),
+    onSuccess: async () => {
+      toast.success("Settings saved");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+        refreshUser(),
+      ]);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to save settings");
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+      settingsApi.changePassword(data),
+    onSuccess: () => {
+      toast.success("Password updated");
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to update password",
+      );
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () => settingsApi.exportData(),
+    onSuccess: (data) => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `politician-account-export-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Export generated");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to export data");
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: (currentPassword: string) =>
+      settingsApi.deleteAccount(currentPassword),
+    onSuccess: () => {
+      toast.success("Account deleted");
+      logout();
+      window.location.href = "/login";
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to delete account");
+    },
   });
 
   const revokeSessionMutation = useMutation({
@@ -109,9 +261,122 @@ export const SettingsScreen: React.FC = () => {
     ...session,
     current: session.id === currentSessionId,
   }));
-  const currentSession = currentSessionId
-    ? sessions.find((session) => session.current) || null
-    : null;
+
+  const updateNotification = (
+    key: keyof PoliticianPreferencesDto["notifications"],
+    value: boolean,
+  ) => {
+    setPreferencesForm((current) => ({
+      ...current,
+      notifications: {
+        ...current.notifications,
+        [key]: value,
+      },
+    }));
+  };
+
+  const updateAppearance = (
+    key: keyof PoliticianPreferencesDto["appearance"],
+    value: string | boolean,
+  ) => {
+    setPreferencesForm((current) => ({
+      ...current,
+      appearance: {
+        ...current.appearance,
+        [key]: value,
+      },
+    }));
+  };
+
+  const updatePrivacy = (
+    key: keyof PoliticianPreferencesDto["privacy"],
+    value: string | boolean,
+  ) => {
+    setPreferencesForm((current) => ({
+      ...current,
+      privacy: {
+        ...current.privacy,
+        [key]: value,
+      },
+    }));
+  };
+
+  const updateAdvanced = (
+    key: keyof PoliticianPreferencesDto["advanced"],
+    value: boolean,
+  ) => {
+    setPreferencesForm((current) => ({
+      ...current,
+      advanced: {
+        ...current.advanced,
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile.mutateAsync({
+        fullName: profileForm.fullName,
+        email: profileForm.email,
+        biography: profileForm.biography,
+        profession: profileForm.profession,
+        contact: {
+          email: profileForm.email,
+          phone: profileForm.phone,
+          website: profileForm.website,
+        },
+        socialMedia: {
+          facebook: profileForm.facebook,
+          twitter: profileForm.twitter,
+          instagram: profileForm.instagram,
+        },
+      });
+      await refreshUser();
+      toast.success("Profile updated");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to update profile");
+    }
+  };
+
+  const handleSavePreferences = async () => {
+    await savePreferencesMutation.mutateAsync(preferencesForm);
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      toast.error("Please complete the password form.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New password and confirmation do not match.");
+      return;
+    }
+
+    await changePasswordMutation.mutateAsync({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error("Enter your current password to delete the account.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Delete this portal account? Your public politician record will remain, but portal access and announcements will be removed.",
+      )
+    ) {
+      return;
+    }
+
+    await deleteAccountMutation.mutateAsync(deletePassword);
+  };
+
   const securityHighlights = [
     {
       label: "Role",
@@ -122,14 +387,13 @@ export const SettingsScreen: React.FC = () => {
       value: String(permissions.length),
     },
     {
-      label: "Session access",
-      value: canViewSessions ? "Enabled" : "Hidden",
+      label: "Active sessions",
+      value: String(sessions.length),
     },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Settings Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 mb-6 mx-4 mt-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -144,10 +408,8 @@ export const SettingsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Settings Content */}
       <div className="px-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Settings Navigation */}
           <div className="lg:col-span-1">
             <Card className="sticky top-4">
               <CardHeader>
@@ -177,9 +439,7 @@ export const SettingsScreen: React.FC = () => {
             </Card>
           </div>
 
-          {/* Settings Content */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Profile Settings */}
             {activeTab === "profile" && (
               <>
                 <Card>
@@ -190,237 +450,261 @@ export const SettingsScreen: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="fullName">Full Name</Label>
-                        <Input
-                          id="fullName"
-                          defaultValue={dummyPolitician.fullName}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
+                    {profileLoading ? (
+                      <div className="space-y-4">
+                        {[...Array(3)].map((_, index) => (
+                          <div
+                            key={index}
+                            className="h-12 rounded-lg bg-gray-100 animate-pulse"
+                          />
+                        ))}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          defaultValue={dummyPolitician.contact.email}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          defaultValue={dummyPolitician.contact.phone}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="profession">Profession</Label>
-                        <Input
-                          id="profession"
-                          defaultValue={dummyPolitician.profession}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Biography</Label>
-                      <textarea
-                        id="bio"
-                        rows={4}
-                        defaultValue={dummyPolitician.biography}
-                        className="w-full p-2 border border-indigo-200 rounded-md focus:border-indigo-400 focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        className="border-gray-300 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleSaveSettings}
-                        className="bg-indigo-600 hover:bg-indigo-700"
-                      >
-                        Save Changes
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Globe className="h-5 w-5" />
-                      <span>Social Media Links</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="facebook">Facebook</Label>
-                        <Input
-                          id="facebook"
-                          defaultValue={dummyPolitician.socialMedia.facebook}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="twitter">Twitter</Label>
-                        <Input
-                          id="twitter"
-                          defaultValue={dummyPolitician.socialMedia.twitter}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="instagram">Instagram</Label>
-                        <Input
-                          id="instagram"
-                          defaultValue={dummyPolitician.socialMedia.instagram}
-                          className="border-indigo-200 focus:border-indigo-400"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        className="border-gray-300 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleSaveSettings}
-                        className="bg-indigo-600 hover:bg-indigo-700"
-                      >
-                        Save Changes
-                      </Button>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="fullName">Full Name</Label>
+                            <Input
+                              id="fullName"
+                              value={profileForm.fullName}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  fullName: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              value={profileForm.email}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  email: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input
+                              id="phone"
+                              value={profileForm.phone}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  phone: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="profession">Profession</Label>
+                            <Input
+                              id="profession"
+                              value={profileForm.profession}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  profession: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="website">Website</Label>
+                            <Input
+                              id="website"
+                              value={profileForm.website}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  website: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bio">Biography</Label>
+                          <Textarea
+                            id="bio"
+                            rows={4}
+                            value={profileForm.biography}
+                            onChange={(event) =>
+                              setProfileForm((current) => ({
+                                ...current,
+                                biography: event.target.value,
+                              }))
+                            }
+                            className="border-indigo-200 focus:border-indigo-400"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="facebook">Facebook</Label>
+                            <Input
+                              id="facebook"
+                              value={profileForm.facebook}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  facebook: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="twitter">Twitter</Label>
+                            <Input
+                              id="twitter"
+                              value={profileForm.twitter}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  twitter: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="instagram">Instagram</Label>
+                            <Input
+                              id="instagram"
+                              value={profileForm.instagram}
+                              onChange={(event) =>
+                                setProfileForm((current) => ({
+                                  ...current,
+                                  instagram: event.target.value,
+                                }))
+                              }
+                              className="border-indigo-200 focus:border-indigo-400"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={handleSaveProfile}
+                            disabled={updateProfile.isPending}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                          >
+                            Save Changes
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </>
             )}
 
-            {/* Notification Settings */}
             {activeTab === "notifications" && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Bell className="h-5 w-5" />
-                      <span>Notification Preferences</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <Mail className="h-4 w-4 text-gray-500" />
-                          <Label
-                            htmlFor="email-notifications"
-                            className="font-medium"
-                          >
-                            Email Notifications
-                          </Label>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Receive email updates about your account activity
-                        </p>
-                      </div>
-                      <input
-                        id="email-notifications"
-                        type="checkbox"
-                        checked={emailNotifications}
-                        onChange={(e) =>
-                          setEmailNotifications(e.target.checked)
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <Smartphone className="h-4 w-4 text-gray-500" />
-                          <Label
-                            htmlFor="push-notifications"
-                            className="font-medium"
-                          >
-                            Push Notifications
-                          </Label>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Receive push notifications on your mobile device
-                        </p>
-                      </div>
-                      <input
-                        id="push-notifications"
-                        type="checkbox"
-                        checked={pushNotifications}
-                        onChange={(e) => setPushNotifications(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <Smartphone className="h-4 w-4 text-gray-500" />
-                          <Label
-                            htmlFor="sms-notifications"
-                            className="font-medium"
-                          >
-                            SMS Notifications
-                          </Label>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Receive important updates via SMS
-                        </p>
-                      </div>
-                      <input
-                        id="sms-notifications"
-                        type="checkbox"
-                        checked={smsNotifications}
-                        onChange={(e) => setSmsNotifications(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Notification Types</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {[
-                      "New messages from citizens",
-                      "Promise deadline reminders",
-                      "Announcement updates",
-                      "System notifications",
-                      "Weekly activity summary",
-                    ].map((type) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Bell className="h-5 w-5" />
+                    <span>Notification Preferences</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    {
+                      key: "email" as const,
+                      label: "Email Notifications",
+                      description: "Receive updates by email",
+                      icon: Mail,
+                    },
+                    {
+                      key: "push" as const,
+                      label: "Push Notifications",
+                      description: "Receive device alerts",
+                      icon: Smartphone,
+                    },
+                    {
+                      key: "sms" as const,
+                      label: "SMS Notifications",
+                      description: "Receive important updates by SMS",
+                      icon: Smartphone,
+                    },
+                    {
+                      key: "messageUpdates" as const,
+                      label: "New Message Alerts",
+                      description: "Notify me about citizen replies",
+                      icon: Bell,
+                    },
+                    {
+                      key: "promiseReminders" as const,
+                      label: "Promise Reminders",
+                      description: "Notify me about due dates",
+                      icon: Bell,
+                    },
+                    {
+                      key: "announcementUpdates" as const,
+                      label: "Announcement Updates",
+                      description: "Notify me about publishing activity",
+                      icon: Bell,
+                    },
+                    {
+                      key: "systemNotifications" as const,
+                      label: "System Notices",
+                      description: "Receive maintenance and access updates",
+                      icon: Bell,
+                    },
+                    {
+                      key: "weeklySummary" as const,
+                      label: "Weekly Summary",
+                      description: "Receive a weekly portal digest",
+                      icon: Bell,
+                    },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
                       <div
-                        key={type}
-                        className="flex items-center justify-between py-2"
+                        key={item.key}
+                        className="flex items-center justify-between rounded-lg border border-gray-200 p-4"
                       >
-                        <span className="text-sm font-medium">{type}</span>
-                        <input
-                          type="checkbox"
-                          defaultChecked={type === "New messages from citizens"}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <Icon className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {item.description}
+                          </p>
+                        </div>
+                        <Checkbox
+                          checked={preferencesForm.notifications[item.key]}
+                          onCheckedChange={(checked) =>
+                            updateNotification(item.key, checked === true)
+                          }
                         />
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </>
+                    );
+                  })}
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSavePreferences}
+                      disabled={savePreferencesMutation.isPending}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      Save Preferences
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
-            {/* Security Settings */}
             {activeTab === "security" && (
               <>
                 <Card>
@@ -452,9 +736,8 @@ export const SettingsScreen: React.FC = () => {
                         Signed in as {user?.fullName || user?.email || "Politician"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        Your current access is enforced by backend role
-                        permissions. What you can see in this portal is based on
-                        your live permission set, not hardcoded frontend access.
+                        Access is enforced by the backend role-permission system
+                        and reflected in this portal in real time.
                       </p>
                     </div>
 
@@ -494,6 +777,13 @@ export const SettingsScreen: React.FC = () => {
                         <Input
                           id="current-password"
                           type={showCurrentPassword ? "text" : "password"}
+                          value={passwordForm.currentPassword}
+                          onChange={(event) =>
+                            setPasswordForm((current) => ({
+                              ...current,
+                              currentPassword: event.target.value,
+                            }))
+                          }
                           className="pr-10 border-indigo-200 focus:border-indigo-400"
                         />
                         <button
@@ -517,6 +807,13 @@ export const SettingsScreen: React.FC = () => {
                         <Input
                           id="new-password"
                           type={showPassword ? "text" : "password"}
+                          value={passwordForm.newPassword}
+                          onChange={(event) =>
+                            setPasswordForm((current) => ({
+                              ...current,
+                              newPassword: event.target.value,
+                            }))
+                          }
                           className="pr-10 border-indigo-200 focus:border-indigo-400"
                         />
                         <button
@@ -539,18 +836,20 @@ export const SettingsScreen: React.FC = () => {
                       <Input
                         id="confirm-password"
                         type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(event) =>
+                          setPasswordForm((current) => ({
+                            ...current,
+                            confirmPassword: event.target.value,
+                          }))
+                        }
                         className="border-indigo-200 focus:border-indigo-400"
                       />
                     </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        className="border-gray-300 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </Button>
+                    <div className="flex justify-end">
                       <Button
                         onClick={handlePasswordChange}
+                        disabled={changePasswordMutation.isPending}
                         className="bg-indigo-600 hover:bg-indigo-700"
                       >
                         Update Password
@@ -563,115 +862,95 @@ export const SettingsScreen: React.FC = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between gap-4">
                       <CardTitle>Active Sessions</CardTitle>
-                      {canRevokeSessions && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => revokeAllMutation.mutate()}
-                          disabled={
-                            revokeAllMutation.isPending || sessions.length <= 1
-                          }
-                        >
-                          Sign Out Other Devices
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => revokeAllMutation.mutate()}
+                        disabled={revokeAllMutation.isPending || sessions.length <= 1}
+                      >
+                        Sign Out Other Devices
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {!canViewSessions ? (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                        Your current role does not include permission to view
-                        session details.
-                      </div>
-                    ) : (
-                      <>
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-sm font-medium text-slate-900">
-                            Current device
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {currentSession?.userAgent ||
-                              "This browser has not been matched to a saved session id yet."}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Active sessions: {sessions.length}
-                          </p>
-                        </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-900">
+                        Current device
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {sessions.find((session) => session.current)?.userAgent ||
+                          "This browser has not been matched to a saved session id yet."}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Active sessions: {sessions.length}
+                      </p>
+                    </div>
 
-                        <div className="space-y-3">
-                          {sessionsLoading ? (
+                    <div className="space-y-3">
+                      {sessionsLoading ? (
                         [...Array(3)].map((_, index) => (
                           <div
                             key={index}
                             className="h-20 rounded-lg bg-gray-100 animate-pulse"
                           />
                         ))
-                          ) : sessions.length === 0 ? (
-                            <p className="text-sm text-gray-600">
-                              No active sessions found.
-                            </p>
-                          ) : (
-                            sessions.map((session) => (
-                              <div
-                                key={session.id}
-                                className={`flex items-center justify-between p-3 border rounded-lg ${
-                                  session.current
-                                    ? "border-indigo-200 bg-indigo-50/60"
-                                    : "border-gray-200"
-                                }`}
-                              >
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                    <Monitor className="h-5 w-5 text-gray-600" />
-                                  </div>
-                                  <div>
-                                    <p className="font-medium">
-                                      {session.userAgent || "Unknown device"}
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                      {session.ipAddress || "Unknown IP"} • Last used{" "}
-                                      {session.lastUsedAt
-                                        ? new Date(
-                                            session.lastUsedAt,
-                                          ).toLocaleString()
-                                        : "recently"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  {session.current && (
-                                    <Badge variant="secondary">Current</Badge>
-                                  )}
-                                  {(session.current || canRevokeSessions) && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-red-600 border-red-200 hover:bg-red-50"
-                                      onClick={() =>
-                                        session.current
-                                          ? logout()
-                                          : revokeSessionMutation.mutate(
-                                              session.id,
-                                            )
-                                      }
-                                      disabled={revokeSessionMutation.isPending}
-                                    >
-                                      {session.current ? "Sign Out" : "Revoke"}
-                                    </Button>
-                                  )}
-                                </div>
+                      ) : sessions.length === 0 ? (
+                        <p className="text-sm text-gray-600">
+                          No active sessions found.
+                        </p>
+                      ) : (
+                        sessions.map((session) => (
+                          <div
+                            key={session.id}
+                            className={`flex items-center justify-between p-3 border rounded-lg ${
+                              session.current
+                                ? "border-indigo-200 bg-indigo-50/60"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                <Monitor className="h-5 w-5 text-gray-600" />
                               </div>
-                            ))
-                          )}
-                        </div>
-                      </>
-                    )}
+                              <div>
+                                <p className="font-medium">
+                                  {session.userAgent || "Unknown device"}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {session.ipAddress || "Unknown IP"} • Last used{" "}
+                                  {session.lastUsedAt
+                                    ? new Date(session.lastUsedAt).toLocaleString()
+                                    : "recently"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {session.current && (
+                                <Badge variant="secondary">Current</Badge>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={() =>
+                                  session.current
+                                    ? logout()
+                                    : revokeSessionMutation.mutate(session.id)
+                                }
+                                disabled={revokeSessionMutation.isPending}
+                              >
+                                {session.current ? "Sign Out" : "Revoke"}
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </>
             )}
 
-            {/* Appearance Settings */}
             {activeTab === "appearance" && (
               <>
                 <Card>
@@ -694,9 +973,12 @@ export const SettingsScreen: React.FC = () => {
                           return (
                             <button
                               key={themeOption.value}
-                              onClick={() => setTheme(themeOption.value)}
+                              onClick={() =>
+                                updateAppearance("theme", themeOption.value)
+                              }
                               className={`p-4 border rounded-lg flex flex-col items-center space-y-2 transition-colors ${
-                                theme === themeOption.value
+                                preferencesForm.appearance.theme ===
+                                themeOption.value
                                   ? "border-indigo-500 bg-indigo-50 text-indigo-600"
                                   : "border-gray-200 hover:border-gray-300"
                               }`}
@@ -713,15 +995,16 @@ export const SettingsScreen: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="language">Language</Label>
-                      <Select value={language} onValueChange={setLanguage}>
+                      <Select
+                        value={preferencesForm.appearance.language}
+                        onValueChange={(value) => updateAppearance("language", value)}
+                      >
                         <SelectTrigger className="border-indigo-200 focus:border-indigo-400">
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="english">English</SelectItem>
-                          <SelectItem value="nepali">
-                            नेपाली (Nepali)
-                          </SelectItem>
+                          <SelectItem value="nepali">नेपाली (Nepali)</SelectItem>
                           <SelectItem value="hindi">हिन्दी (Hindi)</SelectItem>
                         </SelectContent>
                       </Select>
@@ -729,7 +1012,10 @@ export const SettingsScreen: React.FC = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="timezone">Timezone</Label>
-                      <Select value={timezone} onValueChange={setTimezone}>
+                      <Select
+                        value={preferencesForm.appearance.timezone}
+                        onValueChange={(value) => updateAppearance("timezone", value)}
+                      >
                         <SelectTrigger className="border-indigo-200 focus:border-indigo-400">
                           <SelectValue placeholder="Select timezone" />
                         </SelectTrigger>
@@ -744,35 +1030,50 @@ export const SettingsScreen: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                  </CardContent>
-                </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Display Preferences</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
                     {[
-                      "Compact mode",
-                      "Show timestamps",
-                      "Enable animations",
-                      "High contrast mode",
-                    ].map((preference) => (
+                      { key: "compactMode" as const, label: "Compact mode" },
+                      {
+                        key: "showTimestamps" as const,
+                        label: "Show timestamps",
+                      },
+                      {
+                        key: "enableAnimations" as const,
+                        label: "Enable animations",
+                      },
+                      {
+                        key: "highContrastMode" as const,
+                        label: "High contrast mode",
+                      },
+                    ].map((item) => (
                       <div
-                        key={preference}
+                        key={item.key}
                         className="flex items-center justify-between py-2"
                       >
-                        <span className="text-sm font-medium">
-                          {preference}
-                        </span>
+                        <span className="text-sm font-medium">{item.label}</span>
+                        <Checkbox
+                          checked={preferencesForm.appearance[item.key]}
+                          onCheckedChange={(checked) =>
+                            updateAppearance(item.key, checked === true)
+                          }
+                        />
                       </div>
                     ))}
+
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleSavePreferences}
+                        disabled={savePreferencesMutation.isPending}
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Save Preferences
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </>
             )}
 
-            {/* Privacy Settings */}
             {activeTab === "privacy" && (
               <>
                 <Card>
@@ -783,63 +1084,68 @@ export const SettingsScreen: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">Profile Visibility</h4>
+                        <p className="text-sm text-gray-600">
+                          Control who can see your profile information
+                        </p>
+                      </div>
+                      <Select
+                        value={preferencesForm.privacy.profileVisibility}
+                        onValueChange={(value) =>
+                          updatePrivacy(
+                            "profileVisibility",
+                            value as PoliticianPreferencesDto["privacy"]["profileVisibility"],
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-40 border-indigo-200 focus:border-indigo-400">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="public">Public</SelectItem>
+                          <SelectItem value="constituents_only">
+                            Constituents Only
+                          </SelectItem>
+                          <SelectItem value="private">Private</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {[
                       {
-                        title: "Profile Visibility",
-                        description:
-                          "Control who can see your profile information",
-                        type: "select",
-                        options: ["Public", "Constituents Only", "Private"],
-                      },
-                      {
+                        key: "showContactInfo" as const,
                         title: "Contact Information",
-                        description: "Show/hide your contact details",
-                        type: "switch",
-                        default: true,
+                        description: "Show or hide your public contact details",
                       },
                       {
+                        key: "showActivityStatus" as const,
                         title: "Activity Status",
-                        description: "Show when you're online",
-                        type: "switch",
-                        default: false,
+                        description: "Show when you are active in the portal",
                       },
                       {
+                        key: "allowMessageRequests" as const,
                         title: "Message Requests",
-                        description: "Allow messages from anyone",
-                        type: "switch",
-                        default: true,
+                        description: "Allow new message requests in the portal",
                       },
-                    ].map((control, index) => (
+                    ].map((item) => (
                       <div
-                        key={index}
+                        key={item.key}
                         className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                       >
                         <div className="flex-1">
-                          <h4 className="font-medium">{control.title}</h4>
+                          <h4 className="font-medium">{item.title}</h4>
                           <p className="text-sm text-gray-600">
-                            {control.description}
+                            {item.description}
                           </p>
                         </div>
-                        {control.type === "switch" ? (
-                          <input
-                            type="checkbox"
-                            defaultChecked={control.default}
-                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <Select defaultValue={control.options?.[0] || ""}>
-                            <SelectTrigger className="w-32 border-indigo-200 focus:border-indigo-400">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {control.options?.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                        <Checkbox
+                          checked={preferencesForm.privacy[item.key]}
+                          onCheckedChange={(checked) =>
+                            updatePrivacy(item.key, checked === true)
+                          }
+                        />
                       </div>
                     ))}
                   </CardContent>
@@ -854,16 +1160,26 @@ export const SettingsScreen: React.FC = () => {
                       <div>
                         <h4 className="font-medium">Export Your Data</h4>
                         <p className="text-sm text-gray-600">
-                          Download a copy of your data
+                          Download your account, profile, sessions, and announcements
                         </p>
                       </div>
                       <Button
-                        onClick={handleExportData}
+                        onClick={() => exportMutation.mutate()}
                         variant="outline"
+                        disabled={exportMutation.isPending}
                         className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Export
+                      </Button>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleSavePreferences}
+                        disabled={savePreferencesMutation.isPending}
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Save Privacy Settings
                       </Button>
                     </div>
                   </CardContent>
@@ -871,7 +1187,6 @@ export const SettingsScreen: React.FC = () => {
               </>
             )}
 
-            {/* Advanced Settings */}
             {activeTab === "advanced" && (
               <>
                 <Card>
@@ -882,44 +1197,43 @@ export const SettingsScreen: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium">Developer Mode</h4>
-                        <p className="text-sm text-gray-600">
-                          Enable advanced debugging features
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium">Beta Features</h4>
-                        <p className="text-sm text-gray-600">
-                          Try out new features before they're released
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium">API Access</h4>
-                        <p className="text-sm text-gray-600">
-                          Manage API keys and access tokens
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+                    {[
+                      {
+                        key: "developerMode" as const,
+                        title: "Developer Mode",
+                        description: "Enable advanced debugging markers",
+                      },
+                      {
+                        key: "betaFeatures" as const,
+                        title: "Beta Features",
+                        description: "Opt into early feature previews",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.key}
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                       >
-                        Manage
+                        <div>
+                          <h4 className="font-medium">{item.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            {item.description}
+                          </p>
+                        </div>
+                        <Checkbox
+                          checked={preferencesForm.advanced[item.key]}
+                          onCheckedChange={(checked) =>
+                            updateAdvanced(item.key, checked === true)
+                          }
+                        />
+                      </div>
+                    ))}
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleSavePreferences}
+                        disabled={savePreferencesMutation.isPending}
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Save Advanced Settings
                       </Button>
                     </div>
                   </CardContent>
@@ -931,23 +1245,42 @@ export const SettingsScreen: React.FC = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                      <div className="flex items-center justify-between">
+                      <div className="space-y-4">
                         <div>
                           <h4 className="font-medium text-red-800">
                             Delete Account
                           </h4>
                           <p className="text-sm text-red-600">
-                            Permanently delete your account and all data
+                            This removes your portal account, signs out every device,
+                            and deletes portal announcements. Your public politician
+                            record remains for platform continuity.
                           </p>
                         </div>
-                        <Button
-                          onClick={handleDeleteAccount}
-                          variant="outline"
-                          className="border-red-300 text-red-600 hover:bg-red-100"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Account
-                        </Button>
+                        <div className="space-y-2">
+                          <Label htmlFor="delete-password" className="text-red-700">
+                            Current Password
+                          </Label>
+                          <Input
+                            id="delete-password"
+                            type="password"
+                            value={deletePassword}
+                            onChange={(event) =>
+                              setDeletePassword(event.target.value)
+                            }
+                            className="border-red-200 bg-white"
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={handleDeleteAccount}
+                            variant="outline"
+                            disabled={deleteAccountMutation.isPending}
+                            className="border-red-300 text-red-600 hover:bg-red-100"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Account
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

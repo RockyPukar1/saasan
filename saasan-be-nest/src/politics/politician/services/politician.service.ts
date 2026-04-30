@@ -1,22 +1,30 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
-import { PASSWORD_SALT } from 'src/user/entities/user.entity';
-import { CreatePoliticianDto } from '../dtos/create-politician.dto';
-import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { Types } from 'mongoose';
-import { PoliticianRepository } from '../repositories/politician.repository';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
-import { PoliticianSerializer } from '../serializers/politician.serializer';
-import { PoliticianIdDto } from '../dtos/politician-id.dto';
-import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
-import { generateRandomPassword } from 'src/common/helpers/generate-password.helper';
-import { EmailPublisher } from 'src/common/email/publishers/email.publisher';
-import { EMAIL_EVENT_TYPES } from 'src/common/email/events/email.events';
-import { UserRepository } from 'src/user/repositories/user.repository';
-import { UserRole } from 'src/user/entities/user.entity';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
+import { EMAIL_EVENT_TYPES } from 'src/common/email/events/email.events';
+import { EmailPublisher } from 'src/common/email/publishers/email.publisher';
+import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { generateRandomPassword } from 'src/common/helpers/generate-password.helper';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { UserRole, PASSWORD_SALT } from 'src/user/entities/user.entity';
+import { UserRepository } from 'src/user/repositories/user.repository';
 import { UserSerializer } from 'src/user/serializers/user.serializer';
+import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
+import { CreatePoliticianDto } from '../dtos/create-politician.dto';
+import { PoliticianAnnouncementIdDto } from '../dtos/politician-announcement-id.dto';
+import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
+import { PoliticianIdDto } from '../dtos/politician-id.dto';
+import { PoliticianPromiseIdDto } from '../dtos/politician-promise-id.dto';
+import { UpdatePoliticianDto } from '../dtos/update-politician.dto';
+import { UpsertPoliticianAnnouncementDto } from '../dtos/upsert-politician-announcement.dto';
+import { UpsertPoliticianPromiseDto } from '../dtos/upsert-politician-promise.dto';
+import { PoliticianRepository } from '../repositories/politician.repository';
+import {
+  AnnouncementSerializer,
+  PoliticianSerializer,
+  PromiseSerializer,
+} from '../serializers/politician.serializer';
 
 @Injectable()
 export class PoliticianService {
@@ -82,7 +90,126 @@ export class PoliticianService {
     return ResponseHelper.success(politicians);
   }
 
-  async getPromises() {}
+  async getOwnPromises(userId: string) {
+    const politician = await this.getPoliticianForUser(userId);
+    const promises = await this.politicianRepo.getPromisesByPoliticianId(
+      politician._id.toString(),
+    );
+
+    return ResponseHelper.response(
+      PromiseSerializer,
+      promises,
+      'Promises fetched successfully',
+    );
+  }
+
+  async createOwnPromise(userId: string, promiseData: UpsertPoliticianPromiseDto) {
+    const politician = await this.getPoliticianForUser(userId);
+    const createdPromise = await this.politicianRepo.addPromise(
+      politician._id.toString(),
+      this.normalizePromiseData(promiseData),
+    );
+
+    return ResponseHelper.response(
+      PromiseSerializer,
+      createdPromise,
+      'Promise created successfully',
+    );
+  }
+
+  async updateOwnPromise(
+    userId: string,
+    { promiseId }: PoliticianPromiseIdDto,
+    promiseData: UpsertPoliticianPromiseDto,
+  ) {
+    const politician = await this.getPoliticianForUser(userId);
+    const updatedPromise = await this.politicianRepo.updatePromise(
+      politician._id.toString(),
+      promiseId,
+      this.normalizePromiseData(promiseData),
+    );
+
+    if (!updatedPromise) {
+      throw new GlobalHttpException('politician404', HttpStatus.NOT_FOUND);
+    }
+
+    return ResponseHelper.response(
+      PromiseSerializer,
+      updatedPromise,
+      'Promise updated successfully',
+    );
+  }
+
+  async deleteOwnPromise(userId: string, { promiseId }: PoliticianPromiseIdDto) {
+    const politician = await this.getPoliticianForUser(userId);
+    await this.politicianRepo.deletePromise(politician._id.toString(), promiseId);
+  }
+
+  async getOwnAnnouncements(userId: string) {
+    const politician = await this.getPoliticianForUser(userId);
+    const announcements =
+      await this.politicianRepo.getAnnouncementsByPoliticianId(
+        politician._id.toString(),
+      );
+
+    return ResponseHelper.response(
+      AnnouncementSerializer,
+      announcements,
+      'Announcements fetched successfully',
+    );
+  }
+
+  async createOwnAnnouncement(
+    userId: string,
+    announcementData: UpsertPoliticianAnnouncementDto,
+  ) {
+    const politician = await this.getPoliticianForUser(userId);
+    const createdAnnouncement = await this.politicianRepo.createAnnouncement(
+      politician._id.toString(),
+      politician._id.toString(),
+      this.normalizeAnnouncementData(announcementData),
+    );
+
+    return ResponseHelper.response(
+      AnnouncementSerializer,
+      createdAnnouncement,
+      'Announcement created successfully',
+    );
+  }
+
+  async updateOwnAnnouncement(
+    userId: string,
+    { announcementId }: PoliticianAnnouncementIdDto,
+    announcementData: UpsertPoliticianAnnouncementDto,
+  ) {
+    const politician = await this.getPoliticianForUser(userId);
+    const updatedAnnouncement = await this.politicianRepo.updateAnnouncement(
+      politician._id.toString(),
+      announcementId,
+      this.normalizeAnnouncementData(announcementData),
+    );
+
+    if (!updatedAnnouncement) {
+      throw new GlobalHttpException('politician404', HttpStatus.NOT_FOUND);
+    }
+
+    return ResponseHelper.response(
+      AnnouncementSerializer,
+      updatedAnnouncement,
+      'Announcement updated successfully',
+    );
+  }
+
+  async deleteOwnAnnouncement(
+    userId: string,
+    { announcementId }: PoliticianAnnouncementIdDto,
+  ) {
+    const politician = await this.getPoliticianForUser(userId);
+    await this.politicianRepo.deleteAnnouncement(
+      politician._id.toString(),
+      announcementId,
+    );
+  }
 
   async getAchievements() {}
 
@@ -170,5 +297,44 @@ export class PoliticianService {
 
   private doesPoliticianExists(filter: any) {
     return this.politicianRepo.findOne(filter);
+  }
+
+  private async getPoliticianForUser(userId: string) {
+    const politician = await this.politicianRepo.findByUserId(userId);
+    if (!politician) {
+      throw new GlobalHttpException('politician404', HttpStatus.NOT_FOUND);
+    }
+
+    return politician;
+  }
+
+  private normalizePromiseData(promiseData: UpsertPoliticianPromiseDto) {
+    return {
+      title: promiseData.title,
+      description: promiseData.description,
+      status: promiseData.status,
+      dueDate: new Date(promiseData.dueDate),
+      progress: promiseData.progress,
+    };
+  }
+
+  private normalizeAnnouncementData(
+    announcementData: UpsertPoliticianAnnouncementDto,
+  ) {
+    const scheduledAt = announcementData.scheduledAt
+      ? new Date(announcementData.scheduledAt)
+      : null;
+    const shouldPublishNow =
+      !scheduledAt || scheduledAt.getTime() <= Date.now();
+
+    return {
+      title: announcementData.title,
+      content: announcementData.content,
+      type: announcementData.type,
+      priority: announcementData.priority,
+      isPublic: announcementData.isPublic ?? true,
+      scheduledAt,
+      publishedAt: shouldPublishNow ? new Date() : null,
+    };
   }
 }

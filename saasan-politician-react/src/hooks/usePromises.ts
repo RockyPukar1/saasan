@@ -18,6 +18,7 @@ export const useUpdatePromise = () => {
       promisesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promises"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
   });
 };
@@ -29,6 +30,19 @@ export const useCreatePromise = () => {
     mutationFn: (data: any) => promisesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promises"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+};
+
+export const useDeletePromise = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => promisesApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promises"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
   });
 };

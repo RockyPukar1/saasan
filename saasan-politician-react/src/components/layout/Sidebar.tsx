@@ -33,7 +33,7 @@ export function Sidebar({ className, onNavigate, mobile = false }: SidebarProps)
   return (
     <div
       className={cn(
-        "flex h-full w-72 flex-col border-r bg-card",
+        "flex h-full w-72 flex-col border-r bg-card lg:h-screen lg:flex-shrink-0",
         mobile && "w-[20rem] max-w-[88vw]",
         className,
       )}

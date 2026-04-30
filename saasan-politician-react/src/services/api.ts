@@ -2,6 +2,11 @@
 // Following the same standards as citizen-app and admin-dashboard
 
 import type { AuthPayload, ProfilePayload } from "@/types/auth";
+import type {
+  AnnouncementDto,
+  PoliticianPreferencesDto,
+  PromiseDto,
+} from "@/types/api";
 import axios from "axios";
 
 declare module "axios" {
@@ -186,6 +191,20 @@ const unwrapResponseData = <T>(response: { data: T | ApiResponse<T> }): T => {
 
   return payload as T;
 };
+
+const normalizePromise = (promise: any): PromiseDto => ({
+  ...promise,
+  id: promise?.id || promise?._id,
+});
+
+const normalizeAnnouncement = (announcement: any): AnnouncementDto => ({
+  ...announcement,
+  id: announcement?.id || announcement?._id,
+  politicianId:
+    announcement?.politicianId?.toString?.() || announcement?.politicianId || "",
+  createdBy:
+    announcement?.createdBy?.toString?.() || announcement?.createdBy || "",
+});
 
 const normalizeMessageThread = (thread: any): MessageThread => ({
   ...thread,
@@ -490,26 +509,73 @@ export const reportsApi = {
 };
 
 export const promisesApi = {
-  getAll: async (): Promise<any[]> => {
-    return unsupportedRoute("Politician promises");
+  getAll: async (): Promise<PromiseDto[]> => {
+    const response = await api.get("/politician/portal/promises");
+    return unwrapResponseData<any[]>(response).map(normalizePromise);
   },
-  update: async (_id: string, _data: any): Promise<any> => {
-    return unsupportedRoute("Politician promise updates");
+  update: async (
+    id: string,
+    data: {
+      title: string;
+      description: string;
+      status: "not-started" | "in-progress" | "fulfilled";
+      dueDate: string;
+      progress: number;
+    },
+  ): Promise<PromiseDto> => {
+    const response = await api.put(`/politician/portal/promises/${id}`, data);
+    return normalizePromise(unwrapResponseData(response));
   },
-  create: async (_data: any): Promise<any> => {
-    return unsupportedRoute("Politician promise creation");
+  create: async (data: {
+    title: string;
+    description: string;
+    status: "not-started" | "in-progress" | "fulfilled";
+    dueDate: string;
+    progress: number;
+  }): Promise<PromiseDto> => {
+    const response = await api.post("/politician/portal/promises", data);
+    return normalizePromise(unwrapResponseData(response));
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/politician/portal/promises/${id}`);
   },
 };
 
 export const announcementsApi = {
-  getAll: async (): Promise<any[]> => {
-    return unsupportedRoute("Announcements");
+  getAll: async (): Promise<AnnouncementDto[]> => {
+    const response = await api.get("/politician/portal/announcements");
+    return unwrapResponseData<any[]>(response).map(normalizeAnnouncement);
   },
-  create: async (_data: any): Promise<any> => {
-    return unsupportedRoute("Announcement creation");
+  create: async (data: {
+    title: string;
+    content: string;
+    type: "notice" | "update" | "achievement" | "meeting";
+    priority: "low" | "medium" | "high";
+    isPublic?: boolean;
+    scheduledAt?: string | null;
+  }): Promise<AnnouncementDto> => {
+    const response = await api.post("/politician/portal/announcements", data);
+    return normalizeAnnouncement(unwrapResponseData(response));
   },
-  update: async (_id: string, _data: any): Promise<any> => {
-    return unsupportedRoute("Announcement updates");
+  update: async (
+    id: string,
+    data: {
+      title: string;
+      content: string;
+      type: "notice" | "update" | "achievement" | "meeting";
+      priority: "low" | "medium" | "high";
+      isPublic?: boolean;
+      scheduledAt?: string | null;
+    },
+  ): Promise<AnnouncementDto> => {
+    const response = await api.put(
+      `/politician/portal/announcements/${id}`,
+      data,
+    );
+    return normalizeAnnouncement(unwrapResponseData(response));
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/politician/portal/announcements/${id}`);
   },
 };
 
@@ -583,5 +649,37 @@ export const profileApi = {
   update: async (data: any): Promise<ProfilePayload> => {
     const response = await api.put("/politician/user/profile", data);
     return normalizeAuthResponse(response.data).data;
+  },
+};
+
+export const settingsApi = {
+  updatePreferences: async (
+    data: PoliticianPreferencesDto,
+  ): Promise<ProfilePayload> => {
+    const response = await api.put(
+      "/politician/user/settings/preferences",
+      data,
+    );
+    return normalizeAuthResponse(response.data).data;
+  },
+
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse<null>> => {
+    const response = await api.post("/politician/user/settings/password", data);
+    return response.data;
+  },
+
+  exportData: async (): Promise<any> => {
+    const response = await api.get("/politician/user/settings/export");
+    return unwrapResponseData(response);
+  },
+
+  deleteAccount: async (currentPassword: string): Promise<ApiResponse<null>> => {
+    const response = await api.delete("/politician/user/settings/account", {
+      data: { currentPassword },
+    });
+    return response.data;
   },
 };

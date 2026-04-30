@@ -70,7 +70,7 @@ export interface PoliticianFormData {
   promises?: {
     title: string;
     description: string;
-    status: "ongoing" | "fulfilled" | "broken" | "not-started" | "in-progress";
+    status: "not-started" | "in-progress" | "fulfilled";
     dueDate: string;
     progress: number;
   }[];

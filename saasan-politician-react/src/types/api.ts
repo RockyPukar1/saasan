@@ -21,12 +21,44 @@ export interface SourceCategoriesDto {
   levels: string[];
 }
 
+export interface PoliticianPreferencesDto {
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    messageUpdates: boolean;
+    promiseReminders: boolean;
+    announcementUpdates: boolean;
+    systemNotifications: boolean;
+    weeklySummary: boolean;
+  };
+  appearance: {
+    theme: "light" | "dark" | "system";
+    language: string;
+    timezone: string;
+    compactMode: boolean;
+    showTimestamps: boolean;
+    enableAnimations: boolean;
+    highContrastMode: boolean;
+  };
+  privacy: {
+    profileVisibility: "public" | "constituents_only" | "private";
+    showContactInfo: boolean;
+    showActivityStatus: boolean;
+    allowMessageRequests: boolean;
+  };
+  advanced: {
+    developerMode: boolean;
+    betaFeatures: boolean;
+  };
+}
+
 // Promise data as sent by backend
 export interface PromiseDto {
   id: string;
   title: string;
   description: string;
-  status: string;
+  status: "not-started" | "in-progress" | "fulfilled";
   dueDate: Date;
   progress: number;
 }
@@ -61,6 +93,7 @@ export interface PoliticianDto {
   sourceCategories: SourceCategoriesDto;
   promises?: PromiseDto[];
   achievements?: AchievementDto[];
+  preferences?: PoliticianPreferencesDto;
   createdAt: string;
   updatedAt: string;
 }
@@ -180,6 +213,7 @@ export interface CitizenMessageDto {
 // Announcement (not in backend yet, but will follow similar pattern)
 export interface AnnouncementDto {
   id: string;
+  politicianId: string;
   title: string;
   content: string;
   type: 'notice' | 'update' | 'achievement' | 'meeting';

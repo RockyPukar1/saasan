@@ -124,6 +124,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     PERMISSIONS.announcements.update,
     PERMISSIONS.announcements.delete,
 
+    PERMISSIONS.sessions.view,
+    PERMISSIONS.sessions.revoke,
+
     PERMISSIONS.politicians.view,
     PERMISSIONS.parties.view,
     PERMISSIONS.geography.view,

@@ -73,7 +73,7 @@ export interface PoliticianDashboard {
   recentPromises: PromiseEntity[];
 }
 
-export type PromiseStatus = "pending" | "ongoing" | "fulfilled" | "broken";
+export type PromiseStatus = "not-started" | "in-progress" | "fulfilled";
 
 export interface PromiseUpdate {
   id: string;

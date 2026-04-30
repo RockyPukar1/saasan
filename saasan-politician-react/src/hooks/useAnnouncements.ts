@@ -32,3 +32,14 @@ export const useUpdateAnnouncement = () => {
     },
   });
 };
+
+export const useDeleteAnnouncement = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => announcementsApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["announcements"] });
+    },
+  });
+};
