@@ -50,8 +50,14 @@ const emptyForm: AnnouncementFormState = {
   scheduledAt: "",
 };
 
+const PAGE_SIZE = 10;
+
 export const AnnouncementsScreen: React.FC = () => {
-  const { data: announcements = [], isLoading } = useAnnouncements();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: announcementsResponse, isLoading } = useAnnouncements(
+    currentPage,
+    PAGE_SIZE,
+  );
   const createAnnouncement = useCreateAnnouncement();
   const updateAnnouncement = useUpdateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
@@ -61,6 +67,8 @@ export const AnnouncementsScreen: React.FC = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] =
     useState<AnnouncementDto | null>(null);
   const [form, setForm] = useState<AnnouncementFormState>(emptyForm);
+  const announcements = announcementsResponse?.data || [];
+  const totalAnnouncements = announcementsResponse?.total || 0;
 
   const counts = useMemo(
     () => ({
@@ -227,7 +235,7 @@ export const AnnouncementsScreen: React.FC = () => {
                   <Megaphone className="text-white" size={20} />
                 </div>
                 <span className="text-2xl font-bold text-purple-600">
-                  {announcements.length}
+                  {totalAnnouncements}
                 </span>
               </div>
               <p className="text-gray-700 text-sm mt-3 font-medium">
@@ -409,6 +417,31 @@ export const AnnouncementsScreen: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
+            {announcementsResponse && announcementsResponse.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {announcementsResponse.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setCurrentPage((page) =>
+                      Math.min(announcementsResponse.totalPages, page + 1),
+                    )
+                  }
+                  disabled={currentPage >= announcementsResponse.totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

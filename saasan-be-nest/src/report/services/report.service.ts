@@ -22,6 +22,7 @@ import { ReportTypeSerializer } from '../serializers/report-type.serializer';
 import { ReportStatusSerializer } from '../serializers/report-status.serializer';
 import { ReportPrioritySerializer } from '../serializers/report-priority.serializer';
 import { ReportVisibilitySerializer } from '../serializers/report-visibility.serializer';
+import { ReportActivitySerializer } from '../serializers/report-activity.serializer';
 import { CreateReportVisibilityDto } from '../dtos/create-report-visibility.dto';
 import { ReportActivityRepository } from '../repositories/report-activity.repository';
 import { UserRepository } from 'src/user/repositories/user.repository';
@@ -32,6 +33,7 @@ import { ReportToMessageService } from './report-to-message.service';
 import { AdminRepository } from 'src/user/repositories/admin.repository';
 import { ReportVoteRepository } from '../repositories/report-vote.repository';
 import { ReportDiscussionService } from './report-discussion.service';
+import { ReportApprovalSuggestionsSerializer } from '../serializers/report-approval-suggestions.serializer';
 
 @Injectable()
 export class ReportService {
@@ -365,14 +367,16 @@ export class ReportService {
       throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
     }
 
-    return ResponseHelper.success(
+    return ResponseHelper.response(
+      ReportActivitySerializer,
       await this.reportActivityRepo.getByReportId(reportId, page, limit),
       'Report activities fetched successfully',
     );
   }
 
   async getRecentActivities(limit = 10) {
-    return ResponseHelper.success(
+    return ResponseHelper.response(
+      ReportActivitySerializer,
       await this.reportActivityRepo.getRecent(limit),
       'Recent report activities fetched successfully',
     );
@@ -723,11 +727,19 @@ export class ReportService {
       comment: approvalData.notes || 'Report approved',
     });
 
-    return approvalResult;
+    return ResponseHelper.response(
+      ReportSerializer,
+      approvalResult.report,
+      'Report approved successfully',
+    );
   }
 
   async getApprovalSuggestions(reportId: string) {
-    return await this.reportToMessageService.getApprovalSuggestions(reportId);
+    return ResponseHelper.response(
+      ReportApprovalSuggestionsSerializer,
+      await this.reportToMessageService.getApprovalSuggestions(reportId),
+      'Politician suggestions fetched successfully',
+    );
   }
 
   async joinDiscussionThread(

@@ -4,6 +4,7 @@
 import type { AuthPayload, ProfilePayload } from "@/types/auth";
 import type {
   AnnouncementDto,
+  PaginatedResponse,
   PoliticianPreferencesDto,
   PromiseDto,
 } from "@/types/api";
@@ -16,6 +17,7 @@ declare module "axios" {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const DEFAULT_LIST_LIMIT = 10;
 
 // Create axios instance
 const api = axios.create({
@@ -149,33 +151,15 @@ interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+  meta?: {
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages?: number;
+    };
+  };
 }
-
-const normalizePermissions = (permissions: unknown): string[] => {
-  if (Array.isArray(permissions)) {
-    return permissions;
-  }
-
-  if (
-    permissions &&
-    typeof permissions === "object" &&
-    Array.isArray((permissions as { permissions?: unknown }).permissions)
-  ) {
-    return (permissions as { permissions: string[] }).permissions;
-  }
-
-  return [];
-};
-
-const normalizeAuthResponse = <T extends AuthPayload | ProfilePayload>(
-  payload: ApiResponse<T>,
-): ApiResponse<T> => ({
-  ...payload,
-  data: {
-    ...payload.data,
-    permissions: normalizePermissions(payload.data?.permissions),
-  },
-});
 
 const unwrapResponseData = <T>(response: { data: T | ApiResponse<T> }): T => {
   const payload = response.data as T | ApiResponse<T>;
@@ -192,50 +176,48 @@ const unwrapResponseData = <T>(response: { data: T | ApiResponse<T> }): T => {
   return payload as T;
 };
 
-const normalizePromise = (promise: any): PromiseDto => ({
-  ...promise,
-  id: promise?.id || promise?._id,
-});
+const unwrapPaginatedResponse = <T>(response: {
+  data: unknown;
+}): PaginatedResponse<T> => {
+  const payload = response.data as
+    | (ApiResponse<T[]> & {
+        meta?: {
+          pagination?: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages?: number;
+          };
+        };
+      })
+    | PaginatedResponse<T>;
 
-const normalizeAnnouncement = (announcement: any): AnnouncementDto => ({
-  ...announcement,
-  id: announcement?.id || announcement?._id,
-  politicianId:
-    announcement?.politicianId?.toString?.() || announcement?.politicianId || "",
-  createdBy:
-    announcement?.createdBy?.toString?.() || announcement?.createdBy || "",
-});
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "success" in payload &&
+    Array.isArray(payload.data)
+  ) {
+    const pagination = payload.meta?.pagination;
+    return {
+      data: payload.data,
+      total: pagination?.total ?? payload.data.length,
+      page: pagination?.page ?? 1,
+      limit: pagination?.limit ?? Math.max(payload.data.length, 1),
+      totalPages:
+        pagination?.totalPages ??
+        Math.max(
+          1,
+          Math.ceil(
+            (pagination?.total ?? payload.data.length) /
+              Math.max(pagination?.limit ?? Math.max(payload.data.length, 1), 1),
+          ),
+        ),
+    };
+  }
 
-const normalizeMessageThread = (thread: any): MessageThread => ({
-  ...thread,
-  id: thread?.id || thread?._id,
-  urgency: String(thread?.urgency || "").toLowerCase() as any,
-  status: String(thread?.status || "").toLowerCase() as any,
-  participants: {
-    ...thread?.participants,
-    politician: {
-      id:
-        thread?.participants?.politician?.id ||
-        thread?.participants?.politicians?.[0]?.id ||
-        "",
-      name:
-        thread?.participants?.politician?.name ||
-        thread?.participants?.politicians?.[0]?.name ||
-        "Representative",
-    },
-    politicians:
-      thread?.participants?.politicians ||
-      (thread?.participants?.politician
-        ? [thread.participants.politician]
-        : []),
-  },
-  messages:
-    thread?.messages?.map((message: any) => ({
-      ...message,
-      id: message?.id || message?._id,
-      senderType: String(message?.senderType || "").toLowerCase() as any,
-    })) || [],
-});
+  return payload as PaginatedResponse<T>;
+};
 
 // Message Types
 export interface MessageThread {
@@ -243,9 +225,9 @@ export interface MessageThread {
   _id?: string;
   subject: string;
   content: string;
-  category: "complaint" | "suggestion" | "question" | "request";
-  urgency: "low" | "medium" | "high";
-  status: "pending" | "in_progress" | "resolved" | "closed";
+  category: string;
+  urgency: string;
+  status: string;
   jurisdiction: {
     provinceId?: string;
     districtId?: string;
@@ -283,7 +265,7 @@ export interface MessageThread {
   messages: Array<{
     id: string;
     senderId: string;
-    senderType: "citizen" | "politician" | "staff";
+    senderType: string;
     content: string;
     attachments?: Array<{
       id: string;
@@ -309,7 +291,7 @@ export interface MessageThread {
   tags: string[];
   isAnonymous: boolean;
   sourceReportId?: string;
-  messageOrigin?: "citizen_created" | "report_converted" | "report_escalated";
+  messageOrigin?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -400,19 +382,19 @@ export const messagesApi = {
   // Backend currently exposes jurisdiction-scoped fetches for politicians.
   getAll: async (): Promise<MessageThread[]> => {
     const response = await api.get("/message/jurisdiction");
-    return unwrapResponseData<any[]>(response).map(normalizeMessageThread);
+    return unwrapResponseData<MessageThread[]>(response);
   },
 
   // GET /message/jurisdiction - Get messages in politician's jurisdiction
   getJurisdictionMessages: async (): Promise<MessageThread[]> => {
     const response = await api.get("/message/jurisdiction");
-    return unwrapResponseData<any[]>(response).map(normalizeMessageThread);
+    return unwrapResponseData<MessageThread[]>(response);
   },
 
   // GET /message/:messageId - Get single message
   getById: async (messageId: string): Promise<MessageThread> => {
     const response = await api.get(`/message/${messageId}`);
-    return normalizeMessageThread(unwrapResponseData(response));
+    return unwrapResponseData<MessageThread>(response);
   },
 
   // POST /message - Create new message (for citizens, but included for completeness)
@@ -439,7 +421,7 @@ export const messagesApi = {
       content,
       attachments,
     });
-    return normalizeMessageThread(unwrapResponseData(response));
+    return unwrapResponseData<MessageThread>(response);
   },
 
   // PUT /message/:messageId - Update message status (using update endpoint with status)
@@ -509,9 +491,14 @@ export const reportsApi = {
 };
 
 export const promisesApi = {
-  getAll: async (): Promise<PromiseDto[]> => {
-    const response = await api.get("/politician/portal/promises");
-    return unwrapResponseData<any[]>(response).map(normalizePromise);
+  getAll: async (
+    page = 1,
+    limit = DEFAULT_LIST_LIMIT,
+  ): Promise<PaginatedResponse<PromiseDto>> => {
+    const response = await api.get("/politician/portal/promises", {
+      params: { page, limit },
+    });
+    return unwrapPaginatedResponse<PromiseDto>(response);
   },
   update: async (
     id: string,
@@ -524,7 +511,7 @@ export const promisesApi = {
     },
   ): Promise<PromiseDto> => {
     const response = await api.put(`/politician/portal/promises/${id}`, data);
-    return normalizePromise(unwrapResponseData(response));
+    return unwrapResponseData<PromiseDto>(response);
   },
   create: async (data: {
     title: string;
@@ -534,7 +521,7 @@ export const promisesApi = {
     progress: number;
   }): Promise<PromiseDto> => {
     const response = await api.post("/politician/portal/promises", data);
-    return normalizePromise(unwrapResponseData(response));
+    return unwrapResponseData<PromiseDto>(response);
   },
   remove: async (id: string): Promise<void> => {
     await api.delete(`/politician/portal/promises/${id}`);
@@ -542,9 +529,14 @@ export const promisesApi = {
 };
 
 export const announcementsApi = {
-  getAll: async (): Promise<AnnouncementDto[]> => {
-    const response = await api.get("/politician/portal/announcements");
-    return unwrapResponseData<any[]>(response).map(normalizeAnnouncement);
+  getAll: async (
+    page = 1,
+    limit = DEFAULT_LIST_LIMIT,
+  ): Promise<PaginatedResponse<AnnouncementDto>> => {
+    const response = await api.get("/politician/portal/announcements", {
+      params: { page, limit },
+    });
+    return unwrapPaginatedResponse<AnnouncementDto>(response);
   },
   create: async (data: {
     title: string;
@@ -555,7 +547,7 @@ export const announcementsApi = {
     scheduledAt?: string | null;
   }): Promise<AnnouncementDto> => {
     const response = await api.post("/politician/portal/announcements", data);
-    return normalizeAnnouncement(unwrapResponseData(response));
+    return unwrapResponseData<AnnouncementDto>(response);
   },
   update: async (
     id: string,
@@ -572,7 +564,7 @@ export const announcementsApi = {
       `/politician/portal/announcements/${id}`,
       data,
     );
-    return normalizeAnnouncement(unwrapResponseData(response));
+    return unwrapResponseData<AnnouncementDto>(response);
   },
   remove: async (id: string): Promise<void> => {
     await api.delete(`/politician/portal/announcements/${id}`);
@@ -589,12 +581,12 @@ export const authApi = {
       email: email.trim().toLowerCase(),
       password,
     });
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 
   getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.get("/politician/user/profile");
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 
   logout: () => {
@@ -644,11 +636,11 @@ export const sessionApi = {
 export const profileApi = {
   get: async (): Promise<ProfilePayload> => {
     const response = await api.get("/politician/user/profile");
-    return normalizeAuthResponse(response.data).data;
+    return response.data.data;
   },
   update: async (data: any): Promise<ProfilePayload> => {
     const response = await api.put("/politician/user/profile", data);
-    return normalizeAuthResponse(response.data).data;
+    return response.data.data;
   },
 };
 
@@ -660,7 +652,7 @@ export const settingsApi = {
       "/politician/user/settings/preferences",
       data,
     );
-    return normalizeAuthResponse(response.data).data;
+    return response.data.data;
   },
 
   changePassword: async (data: {

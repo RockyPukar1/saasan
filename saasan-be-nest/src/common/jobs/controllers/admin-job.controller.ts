@@ -9,6 +9,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/user/entities/user.entity';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
+import { JobRecordSerializer } from '../serializers/job-record.serializer';
 
 @UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
 @Roles(UserRole.ADMIN)
@@ -20,7 +21,11 @@ export class AdminJobController {
   @Get('failed')
   async getFailedJobs() {
     const jobs = await this.jobTracker.getFailedJobs();
-    return ResponseHelper.success(jobs);
+    return ResponseHelper.response(
+      JobRecordSerializer,
+      jobs,
+      'Failed jobs fetched successfully',
+    );
   }
 
   @Permissions(PERMISSIONS.jobs.retry)

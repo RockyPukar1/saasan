@@ -99,7 +99,7 @@ export default function ReportEditForm({
 
   const { data: politiciansResponse } = useQuery({
     queryKey: ["politicians-approval-options"],
-    queryFn: () => politicsApi.getAll(),
+    queryFn: () => politicsApi.getAll(undefined, { page: 1, limit: 100 }),
   });
 
   const { data: approvalSuggestionsResponse } = useQuery({

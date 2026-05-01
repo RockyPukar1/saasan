@@ -15,6 +15,7 @@ import {
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { PermissionGuard } from 'src/common/guards/permission.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
@@ -65,13 +66,19 @@ export class PoliticianController {
   }
 
   @Get('level/:levelName')
-  async getByLevel(@Param() param: LevelNameDto) {
-    return await this.politicianService.getByLevel(param);
+  async getByLevel(
+    @Param() param: LevelNameDto,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return await this.politicianService.getByLevel(param, paginationQuery);
   }
 
   @Get()
-  async getByPartyId(@Query('partyId') partyId: string) {
-    return await this.politicianService.getByPartyId(partyId);
+  async getByPartyId(
+    @Query('partyId') partyId: string,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return await this.politicianService.getByPartyId(partyId, paginationQuery);
   }
 }
 
@@ -83,8 +90,11 @@ export class PoliticianPortalController {
 
   @Permissions(PERMISSIONS.promises.view)
   @Get('promises')
-  async getOwnPromises(@Req() req: Request) {
-    return this.politicianService.getOwnPromises(req.user.id);
+  async getOwnPromises(
+    @Req() req: Request,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.politicianService.getOwnPromises(req.user.id, paginationQuery);
   }
 
   @Permissions(PERMISSIONS.promises.create)
@@ -123,8 +133,14 @@ export class PoliticianPortalController {
 
   @Permissions(PERMISSIONS.announcements.view)
   @Get('announcements')
-  async getOwnAnnouncements(@Req() req: Request) {
-    return this.politicianService.getOwnAnnouncements(req.user.id);
+  async getOwnAnnouncements(
+    @Req() req: Request,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.politicianService.getOwnAnnouncements(
+      req.user.id,
+      paginationQuery,
+    );
   }
 
   @Permissions(PERMISSIONS.announcements.create)

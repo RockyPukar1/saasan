@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
@@ -103,6 +104,8 @@ export class PoliticianRepository {
   }
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {
+    const { page = 1, limit = 10 } = politicianFilterDto;
+    const skip = (page - 1) * limit;
     const partyIds = (politicianFilterDto?.party || []).map(
       (id) => new Types.ObjectId(id),
     );
@@ -116,7 +119,7 @@ export class PoliticianRepository {
     const hasFilters =
       partyIds.length > 0 || positionIds.length > 0 || levelIds.length > 0;
 
-    return await this.model.aggregate([
+    const [result] = await this.model.aggregate([
       {
         $lookup: {
           from: 'parties',
@@ -197,7 +200,28 @@ export class PoliticianRepository {
           accountData: 0,
         },
       },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          meta: [{ $count: 'total' }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          total: {
+            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
+          },
+          page: { $literal: page },
+          limit: { $literal: limit },
+        },
+      },
     ]);
+
+    return result || { data: [], total: 0, page, limit };
   }
 
   findOne(filter: any) {
@@ -377,90 +401,116 @@ export class PoliticianRepository {
     });
   }
 
-  async getByLevel({ levelName }: LevelNameDto) {
-    return await this.model.aggregate([
-      {
-        $lookup: {
-          from: 'positions',
-          localField: 'positionIds',
-          foreignField: '_id',
-          as: 'positions',
-        },
-      },
-      {
-        $unwind: '$positions',
-      },
-      {
-        $lookup: {
-          from: 'levels',
-          localField: 'positions.levelId',
-          foreignField: '_id',
-          as: 'level',
-        },
-      },
-      {
-        $unwind: '$level',
-      },
-      {
-        $match: {
-          'level.name': { $regex: levelName, $options: 'i' },
-        },
-      },
+  async getByLevel(
+    { levelName }: LevelNameDto,
+    { page = 1, limit = 10 }: PaginationQueryDto,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [result] = await this.model.aggregate([
       {
         $lookup: {
           from: 'parties',
           localField: 'partyId',
           foreignField: '_id',
-          as: 'party',
-        },
-      },
-      {
-        $unwind: {
-          path: '$party',
-          preserveNullAndEmptyArrays: true,
+          as: 'partyData',
         },
       },
       {
         $lookup: {
-          from: 'constituencies',
-          localField: 'constituencyId',
+          from: 'positions',
+          localField: 'positionIds',
           foreignField: '_id',
-          as: 'constituency',
+          as: 'positionData',
         },
       },
       {
-        $unwind: {
-          path: '$constituency',
-          preserveNullAndEmptyArrays: true,
+        $lookup: {
+          from: 'levels',
+          localField: 'positionData.levelId',
+          foreignField: '_id',
+          as: 'levelData',
         },
       },
       {
-        $group: {
-          _id: '$_id',
-          fullName: { $first: '$fullName' },
-          partyName: { $first: '$party.abbreviation' },
-          constituencyNumber: { $first: '$constituency.constituencyNumber' },
-          posts: {
-            $push: {
-              level: '$level.name',
-              position: '$positions.name',
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'accountData',
+        },
+      },
+      {
+        $match: {
+          'levelData.name': { $regex: levelName, $options: 'i' },
+        },
+      },
+      {
+        $addFields: {
+          sourceCategories: {
+            party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
+            positions: {
+              $map: {
+                input: '$positionData',
+                as: 'pos',
+                in: '$$pos.abbreviation',
+              },
             },
+            levels: {
+              $map: {
+                input: '$levelData',
+                as: 'lvl',
+                in: '$$lvl.name',
+              },
+            },
+          },
+          hasAccount: {
+            $gt: [{ $size: '$accountData' }, 0],
+          },
+          accountCreatedAt: {
+            $arrayElemAt: ['$accountData.createdAt', 0],
           },
         },
       },
       {
         $project: {
-          fullName: 1,
-          posts: 1,
-          partyName: 1,
-          constituencyNumber: 1,
+          partyData: 0,
+          positionData: 0,
+          levelData: 0,
+          accountData: 0,
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          meta: [{ $count: 'total' }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          total: {
+            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
+          },
+          page: { $literal: page },
+          limit: { $literal: limit },
         },
       },
     ]);
+
+    return result || { data: [], total: 0, page, limit };
   }
 
-  async getByPartyId(partyId: string) {
-    return await this.model.aggregate([
+  async getByPartyId(
+    partyId: string,
+    { page = 1, limit = 10 }: PaginationQueryDto,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [result] = await this.model.aggregate([
       {
         $match: {
           partyId: new Types.ObjectId(partyId),
@@ -533,7 +583,28 @@ export class PoliticianRepository {
           accountData: 0,
         },
       },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          meta: [{ $count: 'total' }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          total: {
+            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
+          },
+          page: { $literal: page },
+          limit: { $literal: limit },
+        },
+      },
     ]);
+
+    return result || { data: [], total: 0, page, limit };
   }
 
   async findByIdWithRelations({ politicianId }: PoliticianIdDto) {

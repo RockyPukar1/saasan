@@ -90,51 +90,25 @@ type ApprovalSuggestionsResponse = {
   suggestedPoliticians: IPolitician[];
 };
 
+type ApiPaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages?: number;
+  hasNext?: boolean;
+  hasPrev?: boolean;
+};
+
+const DEFAULT_LIST_LIMIT = 1000;
+
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     _retry?: boolean;
   }
 }
 
-// Utility function to transform snake_case to camelCase
-const transformPolitician = (politician: IPolitician) => ({
-  id: politician.id,
-  fullName: politician.fullName,
-  experienceYears: politician.experienceYears,
-  party: politician.isIndependent
-    ? "Independent"
-    : politician.sourceCategories?.party || "",
-  constituencyNumber: politician.constituencyNumber,
-  rating: politician.rating || 0,
-  createdAt: politician.createdAt,
-  updatedAt: politician.updatedAt,
-  isIndependent: politician.isIndependent,
-  totalReports: politician.totalReports,
-  verifiedReports: politician.verifiedReports,
-  // Add missing fields
-  biography: politician.biography,
-  education: politician.education,
-  profession: politician.profession,
-  contact: politician.contact,
-  socialMedia: politician.socialMedia,
-  age: politician.age,
-  totalVotes: politician.totalVotes,
-  isActive: politician.isActive,
-  photoUrl: politician.photoUrl,
-  partyId: politician.partyId,
-  constituencyId: politician.constituencyId,
-  status: politician.status,
-  joinedDate: politician.joinedDate,
-  experiences: politician.experiences,
-  promises: politician.promises,
-  achievements: politician.achievements,
-  sourceCategories: politician.sourceCategories,
-  hasAccount: politician.hasAccount,
-  accountCreatedAt: politician.accountCreatedAt,
-});
-
-// Keep the admin client aligned with the backend DTO contract.
-const transformPoliticianForApi = (data: Partial<IPolitician> | any) => {
+// Build the backend DTO payload from the admin form state.
+const buildPoliticianPayload = (data: Partial<IPolitician> | any) => {
   const transformed: any = {
     fullName: data.fullName,
     partyId: data.partyId,
@@ -191,49 +165,6 @@ const transformPoliticianForApi = (data: Partial<IPolitician> | any) => {
 
   return transformed;
 };
-
-// Utility function to transform report data from snake_case to camelCase
-const transformReport = (data: any) => ({
-  id: data._id || data.id,
-  referenceNumber: data.referenceNumber,
-  title: data.title,
-  description: data.description,
-  typeId: data.typeId,
-  reporterId: data.reporterId,
-  isAnonymous: data.isAnonymous,
-  verificationNotes: data.verificationNotes,
-  verifiedById: data.verifiedById,
-  verifiedAt: data.verifiedAt,
-  provinceId: data.provinceId,
-  districtId: data.districtId,
-  constituencyId: data.constituencyId,
-  municipalityId: data.municipalityId,
-  wardId: data.wardId,
-  status: data.status,
-  priority: data.priority,
-  isResolved: data.isResolved,
-  assignedToOfficerId: data.assignedToOfficerId,
-  dateOccurred: data.dateOccurred,
-  amountInvolved: data.amountInvolved,
-  peopleAffectedCount: data.peopleAffectedCount,
-  publicVisibility: data.publicVisibility,
-  tags: data.tags,
-  upvotesCount: data.upvotesCount,
-  downvotesCount: data.downvotesCount,
-  viewsCount: data.viewsCount,
-  sharesCount: data.sharesCount,
-  autoConvertedToMessage: data.autoConvertedToMessage,
-  awaitingPoliticianReply: data.awaitingPoliticianReply,
-  targetPoliticianId: data.targetPoliticianId,
-  assignedPoliticianIds: data.assignedPoliticianIds || [],
-  escalatedToPoliticianId: data.escalatedToPoliticianId,
-  resolvedAt: data.resolvedAt,
-  createdAt: data.createdAt,
-  updatedAt: data.updatedAt,
-  statusUpdates: data.statusUpdates,
-  sourceCategories: data.sourceCategories,
-});
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create axios instance
@@ -275,32 +206,6 @@ const unsupportedRoute = <T>(feature: string): Promise<T> => {
   );
 };
 
-const normalizePermissions = (permissions: unknown): string[] => {
-  if (Array.isArray(permissions)) {
-    return permissions;
-  }
-
-  if (
-    permissions &&
-    typeof permissions === "object" &&
-    Array.isArray((permissions as { permissions?: unknown }).permissions)
-  ) {
-    return (permissions as { permissions: string[] }).permissions;
-  }
-
-  return [];
-};
-
-const normalizeAuthResponse = <T extends AuthPayload | ProfilePayload>(
-  response: ApiResponse<T>,
-): ApiResponse<T> => ({
-  ...response,
-  data: {
-    ...response.data,
-    permissions: normalizePermissions(response.data?.permissions),
-  },
-});
-
 const unwrapResponseData = <T>(response: {
   data: T | ApiResponse<T>;
 }): T => {
@@ -316,6 +221,66 @@ const unwrapResponseData = <T>(response: {
   }
 
   return payload as T;
+};
+
+const unwrapPaginatedResponse = <T>(response: {
+  data: unknown;
+}): PaginatedResponse<T> => {
+  const payload = response.data as
+    | (ApiResponse<T[]> & { meta?: { pagination?: ApiPaginationMeta } })
+    | PaginatedResponse<T>
+    | T[];
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "success" in payload &&
+    Array.isArray(payload.data)
+  ) {
+    const pagination = payload.meta?.pagination;
+    return toPagination({
+      data: payload.data,
+      total: pagination?.total ?? payload.data.length,
+      page: pagination?.page ?? 1,
+      limit: pagination?.limit ?? Math.max(payload.data.length, 1),
+      totalPages:
+        pagination?.totalPages ??
+        Math.max(
+          1,
+          Math.ceil(
+            (pagination?.total ?? payload.data.length) /
+              Math.max(pagination?.limit ?? Math.max(payload.data.length, 1), 1),
+          ),
+        ),
+    });
+  }
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "data" in payload &&
+    Array.isArray((payload as PaginatedResponse<T>).data)
+  ) {
+    return toPagination(payload as PaginatedResponse<T>);
+  }
+
+  if (Array.isArray(payload)) {
+    return toPagination({
+      data: payload,
+      total: payload.length,
+      page: 1,
+      limit: Math.max(payload.length, 1),
+      totalPages: 1,
+    });
+  }
+
+  return toPagination({
+    data: [],
+    total: 0,
+    page: 1,
+    limit: 1,
+    totalPages: 1,
+  });
 };
 
 const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
@@ -338,34 +303,6 @@ const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
   };
 };
 
-const normalizeMessageThread = (thread: any): IMessageThread => ({
-  ...thread,
-  id: thread?.id || thread?._id,
-  participants: {
-    ...thread?.participants,
-    politician: {
-      id:
-        thread?.participants?.politician?.id ||
-        thread?.participants?.politicians?.[0]?.id ||
-        "",
-      name:
-        thread?.participants?.politician?.name ||
-        thread?.participants?.politicians?.[0]?.name ||
-        "Representative",
-    },
-    politicians:
-      thread?.participants?.politicians ||
-      (thread?.participants?.politician
-        ? [thread.participants.politician]
-        : []),
-  },
-  messages:
-    thread?.messages?.map((message: any) => ({
-      ...message,
-      id: message?.id || message?._id,
-    })) || [],
-});
-
 const toPagination = <T>(
   payload: PaginatedResponse<T>,
 ): PaginatedResponse<T> => ({
@@ -377,44 +314,6 @@ const toPagination = <T>(
       Math.ceil((payload.total || 0) / Math.max(payload.limit || 1, 1)),
     ),
 });
-
-const normalizePoll = (poll: any): IPoll => {
-  const totalVotes =
-    poll?.totalVotes ||
-    poll?.options?.reduce(
-      (sum: number, option: any) => sum + (option?.voteCount || 0),
-      0,
-    ) ||
-    0;
-
-  return {
-    id: poll?.id || poll?._id,
-    title: poll?.title || "",
-    description: poll?.description || "",
-    type: poll?.type || "single-choice",
-    status: poll?.status || "active",
-    category: poll?.category || "general",
-    startDate: poll?.startDate,
-    endDate: poll?.endDate,
-    createdBy: poll?.createdBy,
-    totalVotes,
-    requiresVerification: Boolean(poll?.requiresVerification),
-    options:
-      poll?.options?.map((option: any) => ({
-        id: option?.id || option?._id,
-        text: option?.text || "",
-        disabled: false,
-        isVoted: Boolean(option?.isVoted),
-        voteCount: option?.voteCount || 0,
-        percentage:
-          totalVotes > 0
-            ? Math.round(((option?.voteCount || 0) / totalVotes) * 100)
-            : 0,
-      })) || [],
-    createdAt: poll?.createdAt,
-    updatedAt: poll?.updatedAt,
-  };
-};
 
 const toPollPayload = (
   data: ICreatePollData | IUpdatePollData,
@@ -455,80 +354,6 @@ const toPollPayload = (
 
   return payload;
 };
-
-const normalizeHistoricalEvent = (event: any): IHistoricalEvent => ({
-  id: event?.id || event?._id,
-  date: event?.date,
-  title: event?.title || "",
-  description: event?.description || "",
-  year: event?.date
-    ? new Date(event.date).getFullYear()
-    : new Date().getFullYear(),
-  category: event?.category || "general",
-  significance: event?.significance || "medium",
-  createdAt: event?.createdAt,
-  updatedAt: event?.updatedAt,
-});
-
-const normalizeJobRecord = (job: any): IJobRecord => ({
-  ...job,
-  id: job?.id || job?._id,
-});
-
-const normalizeBudget = (budget: any): IBudget => ({
-  ...budget,
-  id: budget?.id || budget?._id,
-});
-
-const toNumericValue = (value: any): number => {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    if (typeof value.$numberDecimal === "string") {
-      const parsed = Number(value.$numberDecimal);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    if (typeof value.toString === "function") {
-      const parsed = Number(value.toString());
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-};
-
-const normalizeMajorCase = (caseRecord: any): IMajorCase => ({
-  id: caseRecord?.id || caseRecord?._id,
-  referenceNumber: caseRecord?.referenceNumber || "",
-  title: caseRecord?.title || "",
-  description: caseRecord?.description || "",
-  status: caseRecord?.status || "unsolved",
-  priority: caseRecord?.priority || "medium",
-  amountInvolved: toNumericValue(caseRecord?.amountInvolved),
-  upvotesCount: Number(caseRecord?.upvotesCount || 0),
-  downvotesCount: Number(caseRecord?.downvotesCount || 0),
-  viewsCount: Number(caseRecord?.viewsCount || 0),
-  sharesCount: Number(caseRecord?.sharesCount || 0),
-  peopleAffectedCount: Number(caseRecord?.peopleAffectedCount || 0),
-  dateOccurred: caseRecord?.dateOccurred,
-  locationDescription: caseRecord?.locationDescription || "",
-  provinceId: caseRecord?.provinceId || undefined,
-  districtId: caseRecord?.districtId || undefined,
-  constituencyId: caseRecord?.constituencyId || undefined,
-  municipalityId: caseRecord?.municipalityId || undefined,
-  wardId: caseRecord?.wardId || undefined,
-  isPublic: Boolean(caseRecord?.isPublic),
-  createdAt: caseRecord?.createdAt,
-  updatedAt: caseRecord?.updatedAt,
-});
 
 const toMajorCasePayload = (caseData: Partial<IMajorCase>) => {
   const payload: Record<string, unknown> = {};
@@ -688,14 +513,14 @@ export const authApi = {
       email: email.trim().toLowerCase(),
       password,
     });
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 
   refreshToken: async (
     refreshToken: string,
   ): Promise<ApiResponse<AuthPayload>> => {
     const response = await api.post("/auth/refresh-token", { refreshToken });
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 
   register: async (userData: {
@@ -713,7 +538,7 @@ export const authApi = {
 
   getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.get("/admin/user/profile");
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 
   logout: async () => {
@@ -774,10 +599,7 @@ export const sessionApi = {
 export const jobsApi = {
   getFailed: async (): Promise<ApiResponse<IJobRecord[]>> => {
     const response = await api.get("/admin/jobs/failed");
-    return toApiResponse(
-      response.data,
-      (unwrapResponseData<any[]>(response) || []).map(normalizeJobRecord),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IJobRecord[]>(response));
   },
 
   retry: async (jobId: string): Promise<ApiResponse<{ jobId: string }>> => {
@@ -789,20 +611,14 @@ export const jobsApi = {
 export const budgetApi = {
   getAll: async (): Promise<ApiResponse<IBudget[]>> => {
     const response = await api.get("/budget");
-    return toApiResponse(
-      response.data,
-      (unwrapResponseData<any[]>(response) || []).map(normalizeBudget),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IBudget[]>(response));
   },
 };
 
 export const messageThreadApi = {
   getByReportId: async (reportId: string): Promise<ApiResponse<IMessageThread>> => {
     const response = await api.get(`/message/report/${reportId}`);
-    return toApiResponse(
-      response.data,
-      normalizeMessageThread(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IMessageThread>(response));
   },
 
   addReply: async (
@@ -810,10 +626,7 @@ export const messageThreadApi = {
     content: string,
   ): Promise<ApiResponse<IMessageThread>> => {
     const response = await api.post(`/message/${messageId}/reply`, { content });
-    return toApiResponse(
-      response.data,
-      normalizeMessageThread(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IMessageThread>(response));
   },
 };
 
@@ -842,33 +655,36 @@ export const dashboardApi = {
 export const politicsApi = {
   getAll: async (
     body?: IPoliticianFilter,
+    pagination?: {
+      page?: number;
+      limit?: number;
+    },
   ): Promise<PaginatedResponse<IPolitician>> => {
-    const response = await api.post("/politician/filter", body || {});
-    const transformedData = response.data.data?.map(transformPolitician) || [];
-    return {
-      ...response.data,
-      data: transformedData,
-    };
+    const response = await api.post("/politician/filter", {
+      page: pagination?.page || 1,
+      limit: pagination?.limit || DEFAULT_LIST_LIMIT,
+      ...(body || {}),
+    });
+    return unwrapPaginatedResponse<IPolitician>(response);
   },
 
   getById: async (id: string): Promise<ApiResponse<IPolitician>> => {
     const response = await api.get(`/politician/${id}`);
-    return {
-      ...response.data,
-      data: transformPolitician(response.data.data),
-    };
+    return toApiResponse(response.data, unwrapResponseData<IPolitician>(response));
   },
 
   getByLevel: async (
     level: string,
     params?: Partial<IPolitician>,
   ): Promise<PaginatedResponse<IPolitician>> => {
-    const response = await api.get(`/politician/level/${level}`, { params });
-    const transformedData = response.data.data?.map(transformPolitician) || [];
-    return {
-      ...response.data,
-      data: transformedData,
-    };
+    const response = await api.get(`/politician/level/${level}`, {
+      params: {
+        page: 1,
+        limit: DEFAULT_LIST_LIMIT,
+        ...(params || {}),
+      },
+    });
+    return unwrapPaginatedResponse<IPolitician>(response);
   },
 
   getGovernmentLevels: async (): Promise<IGovernmentLevel[]> => {
@@ -887,24 +703,18 @@ export const politicsApi = {
   },
 
   create: async (politicianData: any): Promise<ApiResponse<IPolitician>> => {
-    const transformedData = transformPoliticianForApi(politicianData);
+    const transformedData = buildPoliticianPayload(politicianData);
     const response = await api.post("/politician", transformedData);
-    return {
-      ...response.data,
-      data: transformPolitician(response.data.data),
-    };
+    return toApiResponse(response.data, unwrapResponseData<IPolitician>(response));
   },
 
   update: async (
     id: string,
     politicianData: any,
   ): Promise<ApiResponse<IPolitician>> => {
-    const transformedData = transformPoliticianForApi(politicianData);
+    const transformedData = buildPoliticianPayload(politicianData);
     const response = await api.put(`/politician/${id}`, transformedData);
-    return {
-      ...response.data,
-      data: transformPolitician(response.data.data),
-    };
+    return toApiResponse(response.data, unwrapResponseData<IPolitician>(response));
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
@@ -972,12 +782,14 @@ export const partyApi = {
   getPoliticiansByParty: async (
     partyId: string,
   ): Promise<ApiResponse<IPolitician[]>> => {
-    const response = await api.get(`/politician?partyId=${partyId}`);
-    const transformedData = response.data.data?.map(transformPolitician) || [];
-    return {
-      ...response.data,
-      data: transformedData,
-    };
+    const response = await api.get(`/politician`, {
+      params: {
+        partyId,
+        page: 1,
+        limit: DEFAULT_LIST_LIMIT,
+      },
+    });
+    return toApiResponse(response.data, unwrapResponseData<IPolitician[]>(response));
   },
 };
 
@@ -988,10 +800,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IProvince>> => {
-    const url =
-      page && limit ? `/province?page=${page}&limit=${limit}` : `/province`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get("/province", {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IProvince>(response);
   },
 
   getProvince: async (provinceId: string): Promise<{ data: IProvince }> => {
@@ -1014,10 +826,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IDistrict>> => {
-    const url =
-      page && limit ? `/district?page=${page}&limit=${limit}` : `/district`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get("/district", {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IDistrict>(response);
   },
 
   getDistrictsByProvinceId: async (
@@ -1025,12 +837,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IDistrict>> => {
-    const url =
-      page && limit
-        ? `/district/province/${provinceId}?page=${page}&limit=${limit}`
-        : `/district/province/${provinceId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/district/province/${provinceId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IDistrict>(response);
   },
 
   getDistrictById: async (districtId: string): Promise<{ data: IDistrict }> => {
@@ -1048,12 +858,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IMunicipality>> => {
-    const url =
-      page && limit
-        ? `/municipality?page=${page}&limit=${limit}`
-        : `/municipality`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get("/municipality", {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IMunicipality>(response);
   },
 
   getMunicipalitiesByProvinceId: async (
@@ -1061,12 +869,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IMunicipality>> => {
-    const url =
-      page && limit
-        ? `/municipality/province/${provinceId}?page=${page}&limit=${limit}`
-        : `/municipality/province/${provinceId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/municipality/province/${provinceId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IMunicipality>(response);
   },
 
   getMunicipalitiesByDistrictId: async (
@@ -1074,12 +880,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IMunicipality>> => {
-    const url =
-      page && limit
-        ? `/municipality/district/${districtId}?page=${page}&limit=${limit}`
-        : `/municipality/district/${districtId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/municipality/district/${districtId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IMunicipality>(response);
   },
 
   // Wards
@@ -1087,9 +891,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
-    const url = page && limit ? `/ward?page=${page}&limit=${limit}` : `/ward`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get("/ward", {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardsByProvinceId: async (
@@ -1097,12 +902,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
-    const url =
-      page && limit
-        ? `/ward/province/${provinceId}?page=${page}&limit=${limit}`
-        : `/ward/province/${provinceId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/ward/province/${provinceId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardsByDistrictId: async (
@@ -1110,12 +913,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
-    const url =
-      page && limit
-        ? `/ward/district/${districtId}?page=${page}&limit=${limit}`
-        : `/ward/district/${districtId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/ward/district/${districtId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardsByMunicipalityId: async (
@@ -1123,12 +924,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
-    const url =
-      page && limit
-        ? `/ward/municipality/${municipalityId}?page=${page}&limit=${limit}`
-        : `/ward/municipality/${municipalityId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/ward/municipality/${municipalityId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardById: async (wardId: string): Promise<{ data: IWard }> => {
@@ -1146,12 +945,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
-    const url =
-      page && limit
-        ? `/constituency?page=${page}&limit=${limit}`
-        : `/constituency`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get("/constituency", {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IConstituency>(response);
   },
 
   getConstituenciesByProvinceId: async (
@@ -1159,12 +956,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
-    const url =
-      page && limit
-        ? `/constituency/province/${provinceId}?page=${page}&limit=${limit}`
-        : `/constituency/province/${provinceId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/constituency/province/${provinceId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IConstituency>(response);
   },
 
   getConstituenciesByDistrictId: async (
@@ -1172,12 +967,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
-    const url =
-      page && limit
-        ? `/constituency/district/${districtId}?page=${page}&limit=${limit}`
-        : `/constituency/district/${districtId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/constituency/district/${districtId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IConstituency>(response);
   },
 
   getConstituencyByWardId: async (
@@ -1199,12 +992,10 @@ export const geographicApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
-    const url =
-      page && limit
-        ? `/constituency/district/${districtId}?page=${page}&limit=${limit}`
-        : `/constituency/district/${districtId}`;
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get(`/constituency/district/${districtId}`, {
+      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+    });
+    return unwrapPaginatedResponse<IConstituency>(response);
   },
 
   createConstituency: async (
@@ -1222,9 +1013,17 @@ export const reportsApi = {
     priority?: string[];
     visibility?: string[];
     type?: string[];
-  }): Promise<IReport[]> => {
-    const response = await api.post("/admin/report/filter", _params || {});
-    return response.data.data;
+  },
+  pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<IReport>> => {
+    const response = await api.post("/admin/report/filter", {
+      page: pagination?.page || 1,
+      limit: pagination?.limit || DEFAULT_LIST_LIMIT,
+      ...(_params || {}),
+    });
+    return unwrapPaginatedResponse<IReport>(response);
   },
 
   // Admin update report endpoint
@@ -1276,12 +1075,7 @@ export const reportsApi = {
       escalateToHigher: escalateToHigher || false,
       notes: comment,
     });
-    const approvedReport =
-      response.data?.report ||
-      response.data?.data?.report ||
-      response.data?.data ||
-      response.data;
-    return toApiResponse(response.data, transformReport(approvedReport));
+    return toApiResponse(response.data, unwrapResponseData<IReport>(response));
   },
 
   getApprovalSuggestions: async (
@@ -1290,16 +1084,10 @@ export const reportsApi = {
     const response = await api.get(
       `/admin/report/${id}/politician-suggestions`,
     );
-
-    return {
-      ...response.data,
-      data: {
-        ...response.data.data,
-        suggestedPoliticians:
-          response.data.data?.suggestedPoliticians?.map(transformPolitician) ||
-          [],
-      },
-    };
+    return toApiResponse(
+      response.data,
+      unwrapResponseData<ApprovalSuggestionsResponse>(response),
+    );
   },
 
   reject: async (
@@ -1333,8 +1121,7 @@ export const reportsApi = {
     const response = await api.get(`/admin/report/${id}/activities`, {
       params: { page, limit },
     });
-    const payload = unwrapResponseData<PaginatedResponse<any>>(response);
-    return toPagination(payload);
+    return unwrapPaginatedResponse<any>(response);
   },
 
   getRecentActivities: async (limit = 10): Promise<any[]> => {
@@ -1494,8 +1281,7 @@ export const historicalEventsApi = {
     limit?: number;
   }): Promise<PaginatedResponse<IHistoricalEvent>> => {
     const response = await api.get("/event", { params });
-    const allEvents =
-      (unwrapResponseData<any[]>(response) || []).map(normalizeHistoricalEvent);
+    const allEvents = unwrapResponseData<IHistoricalEvent[]>(response) || [];
     const data = allEvents.filter((event) => {
       const matchesCategory =
         !params?.category || event.category === params.category;
@@ -1514,20 +1300,14 @@ export const historicalEventsApi = {
 
   getById: async (id: string): Promise<ApiResponse<IHistoricalEvent>> => {
     const response = await api.get(`/event/${id}`);
-    return toApiResponse(
-      response.data,
-      normalizeHistoricalEvent(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IHistoricalEvent>(response));
   },
 
   create: async (
     eventData: Partial<IHistoricalEvent>,
   ): Promise<ApiResponse<IHistoricalEvent>> => {
     const response = await api.post("/event", eventData);
-    return toApiResponse(
-      response.data,
-      normalizeHistoricalEvent(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IHistoricalEvent>(response));
   },
 
   update: async (
@@ -1535,10 +1315,7 @@ export const historicalEventsApi = {
     eventData: Partial<IHistoricalEvent>,
   ): Promise<ApiResponse<IHistoricalEvent>> => {
     const response = await api.put(`/event/${id}`, eventData);
-    return toApiResponse(
-      response.data,
-      normalizeHistoricalEvent(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IHistoricalEvent>(response));
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
@@ -1557,29 +1334,19 @@ export const majorCasesApi = {
     limit?: number;
   }): Promise<PaginatedResponse<IMajorCase>> => {
     const response = await api.get("/admin/case", { params });
-    const payload = unwrapResponseData<PaginatedResponse<any>>(response);
-    return toPagination({
-      ...payload,
-      data: (payload?.data || []).map(normalizeMajorCase),
-    });
+    return toPagination(unwrapPaginatedResponse<IMajorCase>(response));
   },
 
   getById: async (id: string): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.get(`/admin/case/${id}`);
-    return toApiResponse(
-      response.data,
-      normalizeMajorCase(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IMajorCase>(response));
   },
 
   create: async (
     caseData: Partial<IMajorCase>,
   ): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.post("/admin/case", toMajorCasePayload(caseData));
-    return toApiResponse(
-      response.data,
-      normalizeMajorCase(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IMajorCase>(response));
   },
 
   update: async (
@@ -1590,10 +1357,7 @@ export const majorCasesApi = {
       `/admin/case/${id}`,
       toMajorCasePayload(caseData),
     );
-    return toApiResponse(
-      response.data,
-      normalizeMajorCase(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IMajorCase>(response));
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
@@ -1606,10 +1370,7 @@ export const majorCasesApi = {
     status: string,
   ): Promise<ApiResponse<IMajorCase>> => {
     const response = await api.put(`/admin/case/${id}/status`, { status });
-    return toApiResponse(
-      response.data,
-      normalizeMajorCase(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IMajorCase>(response));
   },
 };
 
@@ -1617,19 +1378,12 @@ export const majorCasesApi = {
 export const pollingApi = {
   getAll: async (filters?: IPollFilters): Promise<PaginatedResponse<IPoll>> => {
     const response = await api.get("/poll", { params: filters });
-    const payload = unwrapResponseData<PaginatedResponse<any>>(response);
-    return toPagination({
-      ...payload,
-      data: (payload?.data || []).map(normalizePoll),
-    });
+    return toPagination(unwrapPaginatedResponse<IPoll>(response));
   },
 
   getById: async (id: string): Promise<ApiResponse<IPoll>> => {
     const response = await api.get(`/poll/${id}`);
-    return toApiResponse(
-      response.data,
-      normalizePoll(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IPoll>(response));
   },
 
   create: async (pollData: ICreatePollData): Promise<ApiResponse<IPoll>> => {
@@ -1637,10 +1391,7 @@ export const pollingApi = {
       "/poll",
       toPollPayload(pollData, { includeStartDate: true }),
     );
-    return toApiResponse(
-      response.data,
-      normalizePoll(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IPoll>(response));
   },
 
   update: async (
@@ -1648,10 +1399,7 @@ export const pollingApi = {
     pollData: IUpdatePollData,
   ): Promise<ApiResponse<IPoll>> => {
     const response = await api.put(`/poll/${id}`, toPollPayload(pollData));
-    return toApiResponse(
-      response.data,
-      normalizePoll(unwrapResponseData(response)),
-    );
+    return toApiResponse(response.data, unwrapResponseData<IPoll>(response));
   },
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
@@ -1767,12 +1515,13 @@ export const userApi = {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResponse<IUser>> => {
-    const url =
-      page && limit
-        ? `/admin/user?page=${page}&limit=${limit}`
-        : "/admin/user";
-    const response = await api.get(url);
-    return response.data.data;
+    const response = await api.get("/admin/user", {
+      params: {
+        page: page || 1,
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
+    });
+    return unwrapPaginatedResponse<IUser>(response);
   },
 
   getById: async (id: string): Promise<ApiResponse<IUser>> => {
@@ -1795,14 +1544,14 @@ export const userApi = {
 
   getProfile: async (): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.get("/admin/user/profile");
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 
   updateProfile: async (
     userData: Partial<IUser>,
   ): Promise<ApiResponse<ProfilePayload>> => {
     const response = await api.put("/admin/user/profile", userData);
-    return normalizeAuthResponse(response.data);
+    return response.data;
   },
 };
 

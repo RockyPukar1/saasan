@@ -37,6 +37,9 @@ export default function PoliticiansScreen() {
     error,
     refresh,
     fetchPoliticians,
+    hasMore,
+    loadMore,
+    loadingMore,
   } = usePoliticians();
 
   const filterNames = [
@@ -60,11 +63,6 @@ export default function PoliticiansScreen() {
   useEffect(() => {
     fetchPoliticians(toApplyFilter);
   }, [toApplyFilter, fetchPoliticians]);
-
-  // Load initial data
-  useEffect(() => {
-    fetchPoliticians(initialFilter);
-  }, [fetchPoliticians]);
 
   // Extract unique parties and positions
   const [currentFilterDropdown, setCurrentFilterDropdown] = useState("");
@@ -329,9 +327,20 @@ export default function PoliticiansScreen() {
       ) : (
         <div className="px-4 py-4">
           {politicians.length > 0 ? (
-            politicians.map((politician) => (
-              <PoliticianCard key={politician.id} politician={politician} />
-            ))
+            <>
+              {politicians.map((politician) => (
+                <PoliticianCard key={politician.id} politician={politician} />
+              ))}
+              {hasMore ? (
+                <Button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium disabled:bg-red-300"
+                >
+                  {loadingMore ? "Loading more..." : "Load More"}
+                </Button>
+              ) : null}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20">
               <Users className="text-gray-400 w-16 h-16" />

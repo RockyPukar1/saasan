@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { UserService } from '../services/user.services';
 import { UserIdDto } from '../dtos/user-id.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
@@ -41,11 +42,8 @@ export class AdminUserController {
 
   @Permissions(PERMISSIONS.users.view)
   @Get()
-  async getAllUsers(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return await this.userService.getAllUsers({ page, limit });
+  async getAllUsers(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.userService.getAllUsers(paginationQuery);
   }
 
   @Permissions(PERMISSIONS.users.view)

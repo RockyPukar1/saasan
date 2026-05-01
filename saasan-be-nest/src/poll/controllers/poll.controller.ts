@@ -7,9 +7,11 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { PollService } from '../services/poll.service';
 import { VoteDto } from '../dtos/vote.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
@@ -23,8 +25,11 @@ export class PollController {
   constructor(private readonly pollService: PollService) {}
 
   @Get()
-  async getAll(@Req() req: Request) {
-    return this.pollService.getAll(req.user.id);
+  async getAll(
+    @Req() req: Request,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.pollService.getAll(req.user.id, paginationQuery);
   }
 
   @HttpCode(201)

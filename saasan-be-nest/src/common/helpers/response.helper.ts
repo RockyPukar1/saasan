@@ -1,5 +1,12 @@
 import { ClassConstructor, plainToInstance } from 'class-transformer';
 
+type PaginatedInput<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
 export class ResponseHelper {
   static success(data: any, message = 'Success', meta?: any) {
     return {
@@ -11,8 +18,14 @@ export class ResponseHelper {
     };
   }
 
-  static paginated(data: any[], total: number, page: number, limit: number) {
-    return this.success(data, 'Data retrieved successfully', {
+  static paginated(
+    data: any[],
+    total: number,
+    page: number,
+    limit: number,
+    message = 'Data retrieved successfully',
+  ) {
+    return this.success(data, message, {
       pagination: {
         total,
         page,
@@ -24,31 +37,36 @@ export class ResponseHelper {
     });
   }
 
+  private static isPaginatedInput<T>(plain: unknown): plain is PaginatedInput<T> {
+    return (
+      !!plain &&
+      typeof plain === 'object' &&
+      'data' in plain &&
+      Array.isArray((plain as PaginatedInput<T>).data) &&
+      'total' in plain &&
+      'page' in plain &&
+      'limit' in plain
+    );
+  }
+
   static response<T>(
     cls: ClassConstructor<T>,
     plain: unknown,
-    message?: string,
+    message = 'Success',
   ) {
-    if (plain && typeof plain === 'object' && 'data' in plain) {
-      const paginatedData = plain as {
-        data: unknown[];
-        total: number;
-        page: number;
-        limit: number;
-      };
+    if (this.isPaginatedInput(plain)) {
+      const paginatedData = plain;
       const serializedItems = plainToInstance(cls, paginatedData.data, {
         strategy: 'excludeAll',
         exposeUnsetFields: false,
         excludeExtraneousValues: true,
       });
 
-      return this.success(
-        {
-          data: serializedItems,
-          total: paginatedData.total,
-          page: paginatedData.page,
-          limit: paginatedData.limit,
-        },
+      return this.paginated(
+        serializedItems,
+        paginatedData.total,
+        paginatedData.page,
+        paginatedData.limit,
         message,
       );
     }

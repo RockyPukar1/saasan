@@ -34,10 +34,13 @@ import UserEditForm from "@/components/user/UserEditForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { PERMISSIONS } from "@/constants/permission.constants";
 import { PermissionGate } from "@/components/PermissionGate";
+import RenderPagination from "@/components/geography/RenderPagination";
 
 const initialFilter = {
   search: "",
 };
+
+const PAGE_SIZE = 10;
 
 export default function UsersScreen() {
   const { hasPermission } = useAuth();
@@ -48,6 +51,7 @@ export default function UsersScreen() {
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -55,8 +59,8 @@ export default function UsersScreen() {
   const queryClient = useQueryClient();
 
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => userApi.getAll(),
+    queryKey: ["users", currentPage],
+    queryFn: () => userApi.getAll(currentPage, PAGE_SIZE),
   });
 
   // Delete user mutation
@@ -210,7 +214,10 @@ export default function UsersScreen() {
             <div className="flex gap-2">
               <div className="flex items-end">
                 <Button
-                  onClick={() => setToApplyFilter({ search: searchQuery })}
+                  onClick={() => {
+                    setCurrentPage(1);
+                    setToApplyFilter({ search: searchQuery });
+                  }}
                   variant="outline"
                   className="w-full"
                 >
@@ -222,6 +229,7 @@ export default function UsersScreen() {
                 <Button
                   onClick={() => {
                     setSearchQuery("");
+                    setCurrentPage(1);
                     setToApplyFilter(initialFilter);
                   }}
                   variant="outline"
@@ -363,6 +371,16 @@ export default function UsersScreen() {
                   </div>
                 </div>
               ))}
+              {usersData && usersData.totalPages > 1 && (
+                <RenderPagination
+                  currentPage={currentPage}
+                  totalPages={usersData.totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={usersData.total}
+                  pageSize={PAGE_SIZE}
+                  itemName="users"
+                />
+              )}
             </div>
           )}
         </CardContent>

@@ -1,15 +1,3 @@
-import { IsOptional, IsMongoId } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
-export class GetReportActivitiesDto {
-  @IsMongoId()
-  reportId: string;
-
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value))
-  page?: number = 1;
-
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value))
-  limit?: number = 20;
-}
+export class GetReportActivitiesDto extends PaginationQueryDto {}

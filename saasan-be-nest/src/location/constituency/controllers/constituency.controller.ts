@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { ConstituencyService } from '../services/constituency.service';
 import { CreateConstituencyDto } from '../dtos/create-constituency.dto';
 import { WardIdDto } from 'src/location/ward/dtos/ward-id.dto';
@@ -18,11 +19,8 @@ import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
 export class ConstituencyController {
   constructor(private readonly constituencyService: ConstituencyService) {}
   @Get()
-  async getConstituencies(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return await this.constituencyService.getConstituencies({ page, limit });
+  async getConstituencies(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.constituencyService.getConstituencies(paginationQuery);
   }
 
   @HttpCode(201)
@@ -41,30 +39,22 @@ export class ConstituencyController {
   @Get('province/:provinceId')
   async getConstituenciesByProvinceId(
     @Param() provinceIdDto: ProvinceIdDto,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() paginationQuery: PaginationQueryDto,
   ) {
     return await this.constituencyService.getConstituenciesByProvinceId(
       provinceIdDto,
-      {
-        page,
-        limit,
-      },
+      paginationQuery,
     );
   }
 
   @Get('district/:districtId')
   async getConstituenciesByDistrictId(
     @Param() districtIdDto: DistrictIdDto,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() paginationQuery: PaginationQueryDto,
   ) {
     return await this.constituencyService.getConstituenciesByDistrictId(
       districtIdDto,
-      {
-        page,
-        limit,
-      },
+      paginationQuery,
     );
   }
 

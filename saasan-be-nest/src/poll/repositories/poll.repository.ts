@@ -1,6 +1,7 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { PollEntity, PollEntityDocument } from '../entities/poll.entity';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 
@@ -11,8 +12,13 @@ export class PollRepository {
     private readonly model: Model<PollEntityDocument>,
   ) {}
 
-  async getAll(userId: string) {
-    return await this.model.aggregate([
+  async getAll(
+    userId: string,
+    { page = 1, limit = 10 }: PaginationQueryDto,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [result] = await this.model.aggregate([
       {
         $match: { status: 'active' },
       },
@@ -81,7 +87,25 @@ export class PollRepository {
       {
         $sort: { createdAt: -1 },
       },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          meta: [{ $count: 'total' }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          total: {
+            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
+          },
+          page: { $literal: page },
+          limit: { $literal: limit },
+        },
+      },
     ]);
+
+    return result || { data: [], total: 0, page, limit };
   }
 
   async create(pollData: Omit<CreatePollDto, 'options'>) {

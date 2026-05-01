@@ -34,34 +34,6 @@ import type {
   AuthSession,
 } from "@/types/auth-session";
 
-// Utility function to transform poll data from backend format to frontend format
-const transformPoll = (data: any): Poll => {
-  // Format bilingual data
-  const formattedData = formatApiResponse(data, "en");
-
-  return {
-    id: formattedData.id,
-    title: formattedData.title,
-    description: formattedData.description,
-    type: formattedData.type,
-    status: formattedData.status,
-    category: formattedData.category,
-    options:
-      formattedData.options?.map((option: any) => ({
-        id: option.id,
-        text: option.text,
-        voteCount: option.voteCount,
-        isVoted: option.isVoted,
-      })) || [],
-    totalVotes: formattedData.totalVotes,
-    startDate: formattedData.startDate,
-    endDate: formattedData.endDate,
-    createdAt: formattedData.createdAt,
-    updatedAt: formattedData.updatedAt,
-    requiresVerification: formattedData.requiresVerification,
-  };
-};
-
 const BASE_URL = import.meta.env.VITE_SAASAN_API_URL!;
 
 const unsupportedRoute = <T>(feature: string): Promise<T> => {
@@ -74,6 +46,14 @@ interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+  meta?: {
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages?: number;
+    };
+  };
 }
 
 interface ApiData<T> {
@@ -88,31 +68,7 @@ interface LoginData {
   password: string;
 }
 
-const normalizePermissions = (permissions: unknown): string[] => {
-  if (Array.isArray(permissions)) {
-    return permissions;
-  }
-
-  if (
-    permissions &&
-    typeof permissions === "object" &&
-    Array.isArray((permissions as { permissions?: unknown }).permissions)
-  ) {
-    return (permissions as { permissions: string[] }).permissions;
-  }
-
-  return [];
-};
-
-const normalizeAuthResponse = <T extends AuthPayload | ProfilePayload>(
-  response: ApiResponse<T>,
-): ApiResponse<T> => ({
-  ...response,
-  data: {
-    ...response.data,
-    permissions: normalizePermissions(response.data?.permissions),
-  },
-});
+const DEFAULT_LIST_LIMIT = 1000;
 
 const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
   if (
@@ -133,6 +89,13 @@ const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
     message: "Success",
   };
 };
+
+const toApiData = <T>(response: ApiResponse<T>): ApiData<T> => ({
+  data: response.data,
+  total: response.meta?.pagination?.total,
+  page: response.meta?.pagination?.page,
+  limit: response.meta?.pagination?.limit,
+});
 
 export interface BudgetItem {
   id: string;
@@ -231,34 +194,6 @@ export interface ReportDiscussionThread {
   comments: ReportDiscussionComment[];
 }
 
-const normalizeMessageThread = (thread: any): MessageThread => ({
-  ...thread,
-  id: thread?.id || thread?._id,
-  participants: {
-    ...thread?.participants,
-    politician: {
-      id:
-        thread?.participants?.politician?.id ||
-        thread?.participants?.politicians?.[0]?.id ||
-        "",
-      name:
-        thread?.participants?.politician?.name ||
-        thread?.participants?.politicians?.[0]?.name ||
-        "Representative",
-    },
-    politicians:
-      thread?.participants?.politicians ||
-      (thread?.participants?.politician
-        ? [thread.participants.politician]
-        : []),
-  },
-  messages:
-    thread?.messages?.map((message: any) => ({
-      ...message,
-      id: message?.id || message?._id,
-    })) || [],
-});
-
 class ApiService {
   private baseURL: string;
   private isRefreshing = false;
@@ -353,7 +288,7 @@ class ApiService {
       response.data.sessionId,
     );
 
-    return normalizeAuthResponse(response);
+    return response;
   }
 
   private async request<T>(
@@ -454,7 +389,7 @@ class ApiService {
       response.data.refreshToken,
       response.data.sessionId,
     );
-    return normalizeAuthResponse(response);
+    return response;
   }
 
   async register(data: IRegisterData): Promise<ApiResponse<AuthPayload>> {
@@ -471,7 +406,7 @@ class ApiService {
       response.data.refreshToken,
       response.data.sessionId,
     );
-    return normalizeAuthResponse(response);
+    return response;
   }
 
   async logout(): Promise<void> {
@@ -489,7 +424,7 @@ class ApiService {
       "GET",
       "/citizen/user/profile",
     );
-    return normalizeAuthResponse(response);
+    return response;
   }
 
   async getMySessions(): Promise<ApiResponse<AuthSession[]>> {
@@ -519,7 +454,7 @@ class ApiService {
       `/message/report/${reportId}`,
     );
 
-    return toApiResponse(response, normalizeMessageThread((response as any).data || response));
+    return toApiResponse(response, response.data);
   }
 
   async replyToMessageThread(
@@ -534,7 +469,7 @@ class ApiService {
       },
     );
 
-    return toApiResponse(response, normalizeMessageThread((response as any).data || response));
+    return toApiResponse(response, response.data);
   }
 
   async joinReportDiscussion(
@@ -615,10 +550,14 @@ class ApiService {
 
   // Politicians APIs
   async getPoliticiansByFilter(
-    filter: IPoliticianFilter,
+    filter: IPoliticianFilter & { page?: number; limit?: number },
   ): Promise<ApiResponse<IPolitician[]>> {
     try {
-      return this.request<IPolitician[]>("POST", "/politician/filter", filter);
+      return this.request<IPolitician[]>("POST", "/politician/filter", {
+        page: 1,
+        limit: DEFAULT_LIST_LIMIT,
+        ...filter,
+      });
     } catch (error) {
       console.error("Error fetching politicians:", error);
       throw error;
@@ -635,7 +574,7 @@ class ApiService {
     try {
       return this.request<IPolitician[]>(
         "GET",
-        `/politician?partyId=${partyId}`,
+        `/politician?partyId=${partyId}&page=1&limit=${DEFAULT_LIST_LIMIT}`,
       );
     } catch (error) {
       console.error("Error fetching politicians by party:", error);
@@ -664,23 +603,23 @@ class ApiService {
 
   // Location APIs
   async getAllProvinces(): Promise<ApiData<IProvince[]>> {
-    const data = await this.request<ApiResponse<IProvince[]>>(
+    const response = await this.request<IProvince[]>(
       "GET",
-      "/province",
+      `/province?page=1&limit=${DEFAULT_LIST_LIMIT}`,
     );
 
-    return data.data;
+    return toApiData(response);
   }
 
   async getDistrictsByProvinceId(
     provinceId: string,
   ): Promise<ApiData<IDistrict[]>> {
-    const data = await this.request<ApiResponse<IDistrict[]>>(
+    const response = await this.request<IDistrict[]>(
       "GET",
-      `/district/province/${provinceId}`,
+      `/district/province/${provinceId}?page=1&limit=${DEFAULT_LIST_LIMIT}`,
     );
 
-    return data.data;
+    return toApiData(response);
   }
 
   async getConstituencyByWardId(
@@ -692,21 +631,21 @@ class ApiService {
   async getMunicipalitiesByDistrictId(
     districtId: string,
   ): Promise<ApiData<IMunicipality[]>> {
-    const data = await this.request<ApiResponse<IMunicipality[]>>(
+    const response = await this.request<IMunicipality[]>(
       "GET",
-      `/municipality/district/${districtId}`,
+      `/municipality/district/${districtId}?page=1&limit=${DEFAULT_LIST_LIMIT}`,
     );
-    return data.data;
+    return toApiData(response);
   }
 
   async getWardsByMunicipalityId(
     municipalityId: string,
   ): Promise<ApiData<IWard[]>> {
-    const data = await this.request<ApiResponse<IWard[]>>(
+    const response = await this.request<IWard[]>(
       "GET",
-      `/ward/municipality/${municipalityId}`,
+      `/ward/municipality/${municipalityId}?page=1&limit=${DEFAULT_LIST_LIMIT}`,
     );
-    return data.data;
+    return toApiData(response);
   }
 
   // Reports APIs
@@ -730,7 +669,10 @@ class ApiService {
   }
 
   async getAllReports(): Promise<ApiResponse<IReport[]>> {
-    return this.request<IReport[]>("POST", `/report/filter`);
+    return this.request<IReport[]>("POST", `/report/filter`, {
+      page: 1,
+      limit: DEFAULT_LIST_LIMIT,
+    });
   }
 
   async getReportById(id: string): Promise<ApiResponse<IReport>> {
@@ -812,15 +754,11 @@ class ApiService {
       "GET",
       `/poll${queryParams}`,
     );
-    return response.data?.map(transformPoll) || [];
+    return response.data || [];
   }
 
   async getPollById(id: string): Promise<ApiResponse<Poll>> {
-    const response = await this.request<any>("GET", `/poll/${id}`);
-    return {
-      ...response,
-      data: transformPoll(response.data),
-    };
+    return this.request<Poll>("GET", `/poll/${id}`);
   }
 
   async getUserPolls(): Promise<ApiResponse<Poll[]>> {

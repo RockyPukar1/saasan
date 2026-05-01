@@ -55,6 +55,7 @@ export class PoliticianSerializer {
   @Transform(({ obj }) => obj.userId?.toString?.() || obj.userId)
   userId?: string;
   @Expose() fullName: string;
+  @Expose() age?: number;
   @Expose() biography: string;
   @Expose()
   @Type(() => ContactSerializer)
@@ -65,11 +66,29 @@ export class PoliticianSerializer {
   @Expose() education: string;
   @Expose() experienceYears: number;
   @Expose() isIndependent: boolean;
+  @Expose() isActive?: boolean;
   @Expose() profession: string;
+  @Expose() joinedDate?: Date;
+  @Expose() photoUrl?: string;
   @Expose() rating: number;
   @Expose() totalReports: number;
   @Expose() totalVotes: number;
   @Expose() verifiedReports: number;
+  @Expose()
+  @Transform(({ obj }) => obj.partyId?.toString?.() || obj.partyId)
+  partyId?: string;
+  @Expose()
+  @Transform(({ obj }) => obj.constituencyId?.toString?.() || obj.constituencyId)
+  constituencyId?: string;
+  @Expose() termStartDate?: Date;
+  @Expose() termEndDate?: Date;
+  @Expose() experiences?: Array<{
+    category: string;
+    title: string;
+    company: string;
+    startDate: Date;
+    endDate: Date;
+  }>;
   @Expose() hasAccount?: boolean;
   @Expose() accountCreatedAt?: Date;
   @Expose()

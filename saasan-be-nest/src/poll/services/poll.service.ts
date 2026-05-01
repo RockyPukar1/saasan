@@ -9,6 +9,7 @@ import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollSerializer } from '../serializers/poll.serializer';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
 import { UpdatePollDto } from '../dtos/update-poll.dto';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 @Injectable()
 export class PollService {
@@ -21,8 +22,8 @@ export class PollService {
     private readonly redisCache: RedisCacheService,
   ) {}
 
-  async getAll(userId: string) {
-    const data = await this.pollRepo.getAll(userId);
+  async getAll(userId: string, paginationQuery: PaginationQueryDto) {
+    const data = await this.pollRepo.getAll(userId, paginationQuery);
 
     return ResponseHelper.response(
       PollSerializer,

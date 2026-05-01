@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { BudgetRepository } from '../repositories/budget.repository';
+import { BudgetSerializer } from '../serializers/budget.serializer';
 
 @Injectable()
 export class BudgetService {
@@ -8,6 +9,10 @@ export class BudgetService {
 
   async getAll() {
     const budgets = await this.budgetRepo.getAll();
-    return ResponseHelper.success(budgets);
+    return ResponseHelper.response(
+      BudgetSerializer,
+      budgets,
+      'Budgets fetched successfully',
+    );
   }
 }

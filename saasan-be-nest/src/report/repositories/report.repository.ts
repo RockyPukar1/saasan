@@ -143,6 +143,8 @@ export class ReportRepository {
   }
 
   async getAll(reportFilterDto: ReportFilterDto, requesterId?: string) {
+    const { page = 1, limit = 10 } = reportFilterDto;
+    const skip = (page - 1) * limit;
     const priorityIds = (reportFilterDto?.priority || []).map(
       (id) => new Types.ObjectId(id),
     );
@@ -162,7 +164,7 @@ export class ReportRepository {
       typeIds.length > 0 ||
       visibilityIds.length > 0;
 
-    return await this.model.aggregate([
+    const [result] = await this.model.aggregate([
       {
         $lookup: {
           from: 'report_evidences',
@@ -298,7 +300,28 @@ export class ReportRepository {
           politicianReplyCount: 0,
         },
       },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          meta: [{ $count: 'total' }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          total: {
+            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
+          },
+          page: { $literal: page },
+          limit: { $literal: limit },
+        },
+      },
     ]);
+
+    return result || { data: [], total: 0, page, limit };
   }
 
   async getMyReports(reporterId: string, requesterId?: string) {

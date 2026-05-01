@@ -114,9 +114,7 @@ export default function PoliticianEditForm({
         experiences: editingPolitician.experiences || [],
         isIndependent: editingPolitician.isIndependent || false,
         party:
-          editingPolitician.sourceCategories?.party ||
-          editingPolitician.party ||
-          "",
+          editingPolitician.sourceCategories?.party || "",
         partyId: editingPolitician.partyId || "",
         positionIds: editingPolitician.sourceCategories?.positions || [],
         levelIds: editingPolitician.sourceCategories?.levels || [],

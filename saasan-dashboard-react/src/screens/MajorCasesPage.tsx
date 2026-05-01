@@ -37,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { majorCasesApi } from "@/services/api";
 import { majorCaseSchema, type MajorCaseFormData } from "@/lib/validations";
 import type { IMajorCase } from "@/types/case";
+import RenderPagination from "@/components/geography/RenderPagination";
 
 const DEFAULT_FORM_VALUES: MajorCaseFormData = {
   title: "",
@@ -50,12 +51,15 @@ const DEFAULT_FORM_VALUES: MajorCaseFormData = {
   isPublic: true,
 };
 
+const PAGE_SIZE = 10;
+
 export const MajorCasesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingCase, setEditingCase] = useState<IMajorCase | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const queryClient = useQueryClient();
 
@@ -84,6 +88,7 @@ export const MajorCasesPage: React.FC = () => {
         search: searchQuery,
         status: selectedStatus,
         priority: selectedPriority,
+        page: currentPage,
       },
     ],
     queryFn: () =>
@@ -91,8 +96,8 @@ export const MajorCasesPage: React.FC = () => {
         search: searchQuery || undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         priority: selectedPriority !== "all" ? selectedPriority : undefined,
-        page: 1,
-        limit: 50,
+        page: currentPage,
+        limit: PAGE_SIZE,
       }),
   });
 
@@ -257,14 +262,23 @@ export const MajorCasesPage: React.FC = () => {
                   id="search"
                   placeholder="Search title, reference, location..."
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => {
+                    setCurrentPage(1);
+                    setSearchQuery(event.target.value);
+                  }}
                   className="pl-10"
                 />
               </div>
             </div>
             <div>
               <Label>Status</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select
+                value={selectedStatus}
+                onValueChange={(value) => {
+                  setCurrentPage(1);
+                  setSelectedStatus(value);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -280,7 +294,10 @@ export const MajorCasesPage: React.FC = () => {
               <Label>Priority</Label>
               <Select
                 value={selectedPriority}
-                onValueChange={setSelectedPriority}
+                onValueChange={(value) => {
+                  setCurrentPage(1);
+                  setSelectedPriority(value);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
@@ -302,6 +319,7 @@ export const MajorCasesPage: React.FC = () => {
                   setSearchQuery("");
                   setSelectedStatus("all");
                   setSelectedPriority("all");
+                  setCurrentPage(1);
                 }}
               >
                 <Filter className="mr-2 h-4 w-4" />
@@ -433,6 +451,16 @@ export const MajorCasesPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {casesData && casesData.totalPages > 1 && (
+                <RenderPagination
+                  currentPage={currentPage}
+                  totalPages={casesData.totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={casesData.total}
+                  pageSize={PAGE_SIZE}
+                  itemName="cases"
+                />
+              )}
             </div>
           )}
         </CardContent>

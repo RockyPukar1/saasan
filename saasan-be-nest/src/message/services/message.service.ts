@@ -17,6 +17,8 @@ import { ReportIdDto } from 'src/report/dtos/report-id.dto';
 import { Types } from 'mongoose';
 import { PoliticianRepository } from 'src/politics/politician/repositories/politician.repository';
 import { UserRepository } from 'src/user/repositories/user.repository';
+import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { MessageThreadSerializer } from '../serializers/message.serializer';
 
 @Injectable()
 export class MessageService {
@@ -79,7 +81,11 @@ export class MessageService {
       },
     };
 
-    return this.messageRepo.create(messageData);
+    return ResponseHelper.response(
+      MessageThreadSerializer,
+      await this.messageRepo.create(messageData),
+      'Message thread created successfully',
+    );
   }
 
   async findOne(messageIdDto: MessageIdDto, politicianIdDto: PoliticianIdDto) {
@@ -95,7 +101,11 @@ export class MessageService {
     if (!hasAccess)
       throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
 
-    return message;
+    return ResponseHelper.response(
+      MessageThreadSerializer,
+      message,
+      'Message thread fetched successfully',
+    );
   }
 
   async findBySourceReport(
@@ -116,7 +126,11 @@ export class MessageService {
     if (!hasAccess)
       throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
 
-    return message;
+    return ResponseHelper.response(
+      MessageThreadSerializer,
+      message,
+      'Message thread fetched successfully',
+    );
   }
 
   async update(
@@ -136,7 +150,12 @@ export class MessageService {
     if (!hasAccess)
       throw new GlobalHttpException('message403', HttpStatus.FORBIDDEN);
 
-    return this.messageRepo.update(messageIdDto, updateMessageDto);
+    await this.messageRepo.update(messageIdDto, updateMessageDto);
+    return ResponseHelper.response(
+      MessageThreadSerializer,
+      await this.messageRepo.findOne(messageIdDto),
+      'Message thread updated successfully',
+    );
   }
 
   async addMessageToThread(
@@ -203,11 +222,19 @@ export class MessageService {
       actor,
     );
 
-    return this.messageRepo.findOne(messageIdDto);
+    return ResponseHelper.response(
+      MessageThreadSerializer,
+      await this.messageRepo.findOne(messageIdDto),
+      'Reply added successfully',
+    );
   }
 
   async getMessagesByJurisdiction(policianIdDto: PoliticianIdDto) {
-    return await this.messageRepo.findByJurisdiction(policianIdDto);
+    return ResponseHelper.response(
+      MessageThreadSerializer,
+      await this.messageRepo.findByJurisdiction(policianIdDto),
+      'Message threads fetched successfully',
+    );
   }
 
   async updateStatus(

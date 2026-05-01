@@ -4,6 +4,7 @@ import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { CreateEventDto } from '../dtos/create-event.dto';
 import { UpdateEventDto } from '../dtos/update-event.dto';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
+import { EventSerializer } from '../serializers/event.serializer';
 
 @Injectable()
 export class EventService {
@@ -11,7 +12,11 @@ export class EventService {
 
   async getAll() {
     const events = await this.eventRepo.getAll();
-    return ResponseHelper.success(events);
+    return ResponseHelper.response(
+      EventSerializer,
+      events,
+      'Events fetched successfully',
+    );
   }
 
   async getById(id: string) {
@@ -20,12 +25,20 @@ export class EventService {
       throw new GlobalHttpException('event404', HttpStatus.NOT_FOUND);
     }
 
-    return ResponseHelper.success(event);
+    return ResponseHelper.response(
+      EventSerializer,
+      event,
+      'Event fetched successfully',
+    );
   }
 
   async create(data: CreateEventDto) {
     const event = await this.eventRepo.create(data);
-    return ResponseHelper.success(event, 'Event created successfully');
+    return ResponseHelper.response(
+      EventSerializer,
+      event,
+      'Event created successfully',
+    );
   }
 
   async update(id: string, data: UpdateEventDto) {
@@ -34,7 +47,11 @@ export class EventService {
       throw new GlobalHttpException('event404', HttpStatus.NOT_FOUND);
     }
 
-    return ResponseHelper.success(event, 'Event updated successfully');
+    return ResponseHelper.response(
+      EventSerializer,
+      event,
+      'Event updated successfully',
+    );
   }
 
   async delete(id: string) {

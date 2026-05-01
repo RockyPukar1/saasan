@@ -15,7 +15,11 @@ export default function RenderPagination({
   totalItems,
   onPageChange,
   itemName,
+  pageSize,
 }: IRenderPagination) {
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
   return (
     <div className="flex justify-center items-center space-x-4 mt-6">
       <Button
@@ -41,7 +45,7 @@ export default function RenderPagination({
       </Button>
 
       <span className="text-sm text-gray-500 ml-4">
-        Showing {currentPage} to {totalPages} of {totalItems} {itemName}
+        Showing {startItem} to {endItem} of {totalItems} {itemName}
       </span>
     </div>
   );

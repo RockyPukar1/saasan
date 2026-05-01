@@ -20,6 +20,7 @@ import { UserRole } from 'src/user/entities/user.entity';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
 import { CreateCaseDto } from '../dtos/create-case.dto';
+import { GetCasesDto } from '../dtos/get-cases.dto';
 import { UpdateCaseDto } from '../dtos/update-case.dto';
 
 @UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
@@ -30,20 +31,8 @@ export class CaseController {
 
   @Permissions(PERMISSIONS.cases.view)
   @Get()
-  async getAll(
-    @Query('search') search?: string,
-    @Query('status') status?: string,
-    @Query('priority') priority?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return await this.caseService.getAll({
-      search,
-      status,
-      priority,
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-    });
+  async getAll(@Query() query: GetCasesDto) {
+    return await this.caseService.getAll(query);
   }
 
   @Permissions(PERMISSIONS.cases.view)

@@ -1,6 +1,7 @@
-import { IsArray, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsMongoId, IsOptional } from 'class-validator';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
-export class ReportFilterDto {
+export class ReportFilterDto extends PaginationQueryDto {
   @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })

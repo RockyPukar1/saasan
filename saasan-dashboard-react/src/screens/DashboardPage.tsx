@@ -91,7 +91,7 @@ export const DashboardPage: React.FC = () => {
     caseResolutionRate: 0,
   };
 
-  const recentReports = reports?.slice(0, 5) || [];
+  const recentReports = reports?.data?.slice(0, 5) || [];
   const recentPoliticians = politicians?.data?.slice(0, 5) || [];
   const aggregations = stats?.data?.aggregations;
   const reportMix = aggregations?.reportLevelBreakdown || [];

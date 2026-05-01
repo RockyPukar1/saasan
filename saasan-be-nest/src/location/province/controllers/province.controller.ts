@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { ProvinceService } from '../services/province.service';
 import { ProvinceIdDto } from '../dtos/province-id.dto';
 
@@ -7,11 +8,8 @@ export class ProvinceController {
   constructor(private readonly provinceService: ProvinceService) {}
 
   @Get()
-  async getProvinces(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return await this.provinceService.getProvinces({ page, limit });
+  async getProvinces(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.provinceService.getProvinces(paginationQuery);
   }
 
   @Get(':provinceId')

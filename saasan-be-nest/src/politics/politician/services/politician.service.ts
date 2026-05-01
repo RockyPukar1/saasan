@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { EMAIL_EVENT_TYPES } from 'src/common/email/events/email.events';
 import { EmailPublisher } from 'src/common/email/publishers/email.publisher';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
@@ -80,25 +81,45 @@ export class PoliticianService {
     return await this.politicianRepo.findByIdAndDelete(politicianId);
   }
 
-  async getByLevel(query: LevelNameDto) {
-    const politicians = await this.politicianRepo.getByLevel(query);
-    return ResponseHelper.success(politicians);
+  async getByLevel(query: LevelNameDto, paginationQuery: PaginationQueryDto) {
+    const politicians = await this.politicianRepo.getByLevel(
+      query,
+      paginationQuery,
+    );
+    return ResponseHelper.response(
+      PoliticianSerializer,
+      politicians,
+      'Politicians fetched successfully',
+    );
   }
 
-  async getByPartyId(partyId: string) {
-    const politicians = await this.politicianRepo.getByPartyId(partyId);
-    return ResponseHelper.success(politicians);
+  async getByPartyId(partyId: string, paginationQuery: PaginationQueryDto) {
+    const politicians = await this.politicianRepo.getByPartyId(
+      partyId,
+      paginationQuery,
+    );
+    return ResponseHelper.response(
+      PoliticianSerializer,
+      politicians,
+      'Politicians fetched successfully',
+    );
   }
 
-  async getOwnPromises(userId: string) {
+  async getOwnPromises(userId: string, { page, limit }: PaginationQueryDto) {
     const politician = await this.getPoliticianForUser(userId);
     const promises = await this.politicianRepo.getPromisesByPoliticianId(
       politician._id.toString(),
     );
 
+    const start = (page - 1) * limit;
     return ResponseHelper.response(
       PromiseSerializer,
-      promises,
+      {
+        data: promises.slice(start, start + limit),
+        total: promises.length,
+        page,
+        limit,
+      },
       'Promises fetched successfully',
     );
   }
@@ -145,16 +166,25 @@ export class PoliticianService {
     await this.politicianRepo.deletePromise(politician._id.toString(), promiseId);
   }
 
-  async getOwnAnnouncements(userId: string) {
+  async getOwnAnnouncements(
+    userId: string,
+    { page, limit }: PaginationQueryDto,
+  ) {
     const politician = await this.getPoliticianForUser(userId);
     const announcements =
       await this.politicianRepo.getAnnouncementsByPoliticianId(
         politician._id.toString(),
       );
 
+    const start = (page - 1) * limit;
     return ResponseHelper.response(
       AnnouncementSerializer,
-      announcements,
+      {
+        data: announcements.slice(start, start + limit),
+        total: announcements.length,
+        page,
+        limit,
+      },
       'Announcements fetched successfully',
     );
   }

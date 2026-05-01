@@ -28,7 +28,6 @@ import { RoleGuard } from 'src/common/guards/role.guard';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
 import { PermissionGuard } from 'src/common/guards/permission.guard';
-import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { GetReportActivitiesDto } from '../dtos/get-report-activities.dto';
 
 @UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
@@ -57,10 +56,7 @@ export class AdminReportController {
   @Permissions(PERMISSIONS.reports.view)
   @Get(':reportId/politician-suggestions')
   async getPoliticianSuggestions(@Param() param: ReportIdDto) {
-    return ResponseHelper.success(
-      await this.reportService.getApprovalSuggestions(param.reportId),
-      'Politician suggestions fetched successfully',
-    );
+    return await this.reportService.getApprovalSuggestions(param.reportId);
   }
 
   @Permissions(PERMISSIONS.reports.view)

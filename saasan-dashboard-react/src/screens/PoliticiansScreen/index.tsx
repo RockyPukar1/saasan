@@ -29,6 +29,7 @@ import PoliticianEditForm from "@/components/politics/PoliticianEditForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { PERMISSIONS } from "@/constants/permission.constants";
 import { PermissionGate } from "@/components/PermissionGate";
+import RenderPagination from "@/components/geography/RenderPagination";
 
 export interface IPoliticianFilter {
   level: string[];
@@ -41,6 +42,8 @@ const initialFilter: IPoliticianFilter = {
   position: [],
   party: [],
 };
+
+const PAGE_SIZE = 10;
 
 export default function PoliticiansScreen() {
   const { hasPermission } = useAuth();
@@ -55,6 +58,7 @@ export default function PoliticiansScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editingPolitician, setEditingPolitician] =
     useState<IPolitician | null>(null);
@@ -63,8 +67,12 @@ export default function PoliticiansScreen() {
   const queryClient = useQueryClient();
 
   const { data: politiciansData, isLoading } = useQuery({
-    queryKey: ["politicians", toApplyFilter],
-    queryFn: () => politicsApi.getAll(toApplyFilter),
+    queryKey: ["politicians", toApplyFilter, currentPage],
+    queryFn: () =>
+      politicsApi.getAll(toApplyFilter, {
+        page: currentPage,
+        limit: PAGE_SIZE,
+      }),
   });
 
   const { data: governmentLevels } = useQuery({
@@ -250,7 +258,10 @@ export default function PoliticiansScreen() {
             <div className="flex gap-2">
               <div className="flex items-end">
                 <Button
-                  onClick={() => setToApplyFilter(filter)}
+                  onClick={() => {
+                    setCurrentPage(1);
+                    setToApplyFilter(filter);
+                  }}
                   variant="outline"
                   className="w-full"
                 >
@@ -262,6 +273,7 @@ export default function PoliticiansScreen() {
                 <Button
                   onClick={() => {
                     setFilter(initialFilter);
+                    setCurrentPage(1);
                     setToApplyFilter(initialFilter);
                   }}
                   variant="outline"
@@ -324,7 +336,7 @@ export default function PoliticiansScreen() {
                           {politician.fullName}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {politician.party || "Unknown Party"} • Rating:{" "}
+                          {politician.sourceCategories?.party || "Unknown Party"} • Rating:{" "}
                           {politician.rating || 0}
                         </p>
                         <p className="text-xs text-gray-400">
@@ -421,6 +433,16 @@ export default function PoliticiansScreen() {
                   </div>
                 </div>
               ))}
+              {politiciansData && politiciansData.totalPages > 1 && (
+                <RenderPagination
+                  currentPage={currentPage}
+                  totalPages={politiciansData.totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={politiciansData.total}
+                  pageSize={PAGE_SIZE}
+                  itemName="politicians"
+                />
+              )}
             </div>
           )}
         </CardContent>

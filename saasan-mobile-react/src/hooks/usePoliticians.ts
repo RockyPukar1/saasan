@@ -10,11 +10,44 @@ import type {
 } from "@/types/politics";
 import toast from "react-hot-toast";
 
+const PAGE_SIZE = 10;
+const EMPTY_FILTER: IPoliticianFilter = {
+  level: [],
+  position: [],
+  party: [],
+};
+
+const mapPolitician = (politician: IPolitician) => ({
+  id: politician.id,
+  fullName: politician.fullName,
+  biography: politician.biography,
+  contact: politician.contact,
+  socialMedia: politician.socialMedia,
+  education: politician.education,
+  experienceYears: politician.experienceYears,
+  profession: politician.profession,
+  party: politician.isIndependent
+    ? "Independent"
+    : politician.sourceCategories?.party || "",
+  rating: politician.rating || 0,
+  totalVotes: politician.totalVotes,
+  totalReports: politician.totalReports,
+  verifiedReports: politician.verifiedReports,
+  isIndependent: politician.isIndependent,
+  sourceCategories: politician.sourceCategories,
+  promises: politician.promises || [],
+  achievements: politician.achievements || [],
+  createdAt: politician.createdAt,
+  updatedAt: politician.updatedAt,
+});
+
 export const usePoliticians = () => {
   const queryClient = useQueryClient();
   const [currentFilter, setCurrentFilter] = useState<IPoliticianFilter | null>(
     null,
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allPoliticians, setAllPoliticians] = useState<IPolitician[]>([]);
 
   // Government Levels Query - Long cache as this data rarely changes
   const {
@@ -91,48 +124,60 @@ export const usePoliticians = () => {
   const {
     data: politiciansData,
     isLoading: politiciansLoading,
+    isFetching: politiciansFetching,
     error: politiciansError,
   } = useQuery({
-    queryKey: ["politicians", "list", currentFilter],
+    queryKey: ["politicians", "list", currentFilter, currentPage],
     queryFn: () =>
-      currentFilter
-        ? apiService.getPoliticiansByFilter(currentFilter)
-        : apiService.getPoliticiansByFilter({
-            level: [],
-            position: [],
-            party: [],
-          }),
-    enabled: true, // Always enabled to load initial data
+      apiService.getPoliticiansByFilter({
+        ...(currentFilter || EMPTY_FILTER),
+        page: currentPage,
+        limit: PAGE_SIZE,
+      }),
+    enabled: currentFilter !== null,
     staleTime: 10 * 60 * 1000, // 10 minutes
     select: (response) => {
-      if (response.success && response.data) {
-        return response.data.map((politician: IPolitician) => ({
-          id: politician.id,
-          fullName: politician.fullName,
-          biography: politician.biography,
-          contact: politician.contact,
-          socialMedia: politician.socialMedia,
-          education: politician.education,
-          experienceYears: politician.experienceYears,
-          profession: politician.profession,
-          party: politician.isIndependent
-            ? "Independent"
-            : politician.sourceCategories?.party || "",
-          rating: politician.rating || 0,
-          totalVotes: politician.totalVotes,
-          totalReports: politician.totalReports,
-          verifiedReports: politician.verifiedReports,
-          isIndependent: politician.isIndependent,
-          sourceCategories: politician.sourceCategories,
-          promises: politician.promises || [],
-          achievements: politician.achievements || [],
-          createdAt: politician.createdAt,
-          updatedAt: politician.updatedAt,
-        }));
-      }
-      return [];
+      const items = response.success && response.data
+        ? response.data.map(mapPolitician)
+        : [];
+
+      return {
+        items,
+        pagination: response.meta?.pagination,
+      };
     },
   });
+
+  useEffect(() => {
+    if (!politiciansData) {
+      return;
+    }
+
+    setAllPoliticians((previousPoliticians) => {
+      if (currentPage === 1) {
+        return politiciansData.items;
+      }
+
+      const existingIds = new Set(
+        previousPoliticians.map((politician) => politician.id),
+      );
+      const nextPagePoliticians = politiciansData.items.filter(
+        (politician) => !existingIds.has(politician.id),
+      );
+
+      return [...previousPoliticians, ...nextPagePoliticians];
+    });
+  }, [currentPage, politiciansData]);
+
+  useEffect(() => {
+    if (politiciansError && allPoliticians.length > 0) {
+      toast.error(
+        politiciansError instanceof Error
+          ? politiciansError.message
+          : "Failed to load more politicians",
+      );
+    }
+  }, [allPoliticians.length, politiciansError]);
 
   const governmentLevels = useMemo(
     () => governmentLevelsData || [],
@@ -140,15 +185,32 @@ export const usePoliticians = () => {
   );
   const parties = useMemo(() => partiesData || [], [partiesData]);
   const positions = useMemo(() => positionsData || [], [positionsData]);
-  const politicians = useMemo(() => politiciansData || [], [politiciansData]);
+  const politicians = useMemo(() => allPoliticians, [allPoliticians]);
+
+  const pagination = politiciansData?.pagination;
+  const hasMore = useMemo(() => {
+    if (!pagination) {
+      return false;
+    }
+
+    if (typeof pagination.totalPages === "number") {
+      return currentPage < pagination.totalPages;
+    }
+
+    return politicians.length < pagination.total;
+  }, [currentPage, pagination, politicians.length]);
+  const loadingMore = politiciansFetching && currentPage > 1;
 
   const loading =
     governmentLevelsLoading ||
     partiesLoading ||
     positionsLoading ||
-    politiciansLoading;
+    (politiciansLoading && politicians.length === 0);
   const error =
-    governmentLevelsError || partiesError || positionsError || politiciansError;
+    governmentLevelsError ||
+    partiesError ||
+    positionsError ||
+    (politicians.length === 0 ? politiciansError : null);
 
   const fetchPoliticianById = async (politicianId: string) => {
     try {
@@ -176,29 +238,7 @@ export const usePoliticians = () => {
         });
 
         if (response.success && response.data) {
-          return response.data.map((politician: IPolitician) => ({
-            id: politician.id,
-            fullName: politician.fullName,
-            biography: politician.biography,
-            contact: politician.contact,
-            socialMedia: politician.socialMedia,
-            education: politician.education,
-            experienceYears: politician.experienceYears,
-            profession: politician.profession,
-            party: politician.isIndependent
-              ? "Independent"
-              : politician.sourceCategories?.party || "",
-            rating: politician.rating || 0,
-            totalVotes: politician.totalVotes,
-            totalReports: politician.totalReports,
-            verifiedReports: politician.verifiedReports,
-            isIndependent: politician.isIndependent,
-            sourceCategories: politician.sourceCategories,
-            promises: politician.promises || [],
-            achievements: politician.achievements || [],
-            createdAt: politician.createdAt,
-            updatedAt: politician.updatedAt,
-          }));
+          return response.data.map(mapPolitician);
         }
         return [];
       } catch (err) {
@@ -214,24 +254,34 @@ export const usePoliticians = () => {
   );
 
   const fetchPoliticians = useCallback(async (filter: IPoliticianFilter) => {
+    setAllPoliticians([]);
+    setCurrentPage(1);
     setCurrentFilter(filter);
-    // The query will automatically refetch when currentFilter changes
   }, []);
 
-  // Auto-load politicians when component mounts if no filter is set
-  useEffect(() => {
-    if (!currentFilter) {
-      setCurrentFilter({ level: [], position: [], party: [] });
-    }
-  }, [currentFilter]);
-
   const refresh = useCallback(() => {
+    setAllPoliticians([]);
+    setCurrentPage(1);
     queryClient.invalidateQueries({ queryKey: ["politicians"] });
   }, [queryClient]);
 
   const loadAllPoliticians = useCallback(() => {
-    setCurrentFilter({ level: [], position: [], party: [] });
+    setAllPoliticians([]);
+    setCurrentPage(1);
+    setCurrentFilter({
+      level: [],
+      position: [],
+      party: [],
+    });
   }, []);
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || politiciansFetching) {
+      return;
+    }
+
+    setCurrentPage((previousPage) => previousPage + 1);
+  }, [hasMore, politiciansFetching]);
 
   return {
     politicians,
@@ -245,5 +295,8 @@ export const usePoliticians = () => {
     fetchPoliticiansByParty,
     fetchPoliticians,
     loadAllPoliticians,
+    loadMore,
+    hasMore,
+    loadingMore,
   };
 };

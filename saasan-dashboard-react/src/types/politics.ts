@@ -26,7 +26,6 @@ export interface IPosition {
 export interface IPolitician {
   id: string;
   fullName: string;
-  party: string;
   experienceYears: number;
   createdAt: Date;
   updatedAt: Date;

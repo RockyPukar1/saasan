@@ -5,6 +5,16 @@ export class PollOptionSerializer {
   @Expose() text: string;
   @Expose() voteCount: number;
   @Expose() isVoted: boolean;
+  @Expose()
+  @Transform(({ obj }) => {
+    const totalVotes = obj?.totalVotes ?? 0;
+    if (!totalVotes) {
+      return 0;
+    }
+
+    return Math.round(((obj.voteCount || 0) / totalVotes) * 100);
+  })
+  percentage: number;
 }
 
 export class PollSerializer {
@@ -21,6 +31,15 @@ export class PollSerializer {
   @Expose() updatedAt: string;
   @Expose() totalVotes: number;
   @Expose()
+  @Transform(({ obj }) => obj.createdBy?.toString?.() || obj.createdBy)
+  createdBy?: string;
+  @Expose()
+  @Transform(({ obj }) =>
+    (obj.options || []).map((option: any) => ({
+      ...option,
+      totalVotes: obj.totalVotes || 0,
+    })),
+  )
   @Type(() => PollOptionSerializer)
   options: PollOptionSerializer[];
 }

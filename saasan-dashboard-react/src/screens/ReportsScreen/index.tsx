@@ -44,6 +44,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PERMISSIONS } from "@/constants/permission.constants";
 import { PermissionGate } from "@/components/PermissionGate";
 import { Textarea } from "@/components/ui/textarea";
+import RenderPagination from "@/components/geography/RenderPagination";
 
 export interface IReportFilter {
   status: string[];
@@ -59,6 +60,8 @@ const initialFilter: IReportFilter = {
   type: [],
 };
 
+const PAGE_SIZE = 10;
+
 export default function ReportsScreen() {
   const { hasPermission } = useAuth();
 
@@ -73,6 +76,7 @@ export default function ReportsScreen() {
   const [showActivities, setShowActivities] = useState<string | null>(null);
   const [editingReport, setEditingReport] = useState<IReport | null>(null);
   const [threadReply, setThreadReply] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const queryClient = useQueryClient();
 
@@ -108,9 +112,13 @@ export default function ReportsScreen() {
     }
   };
 
-  const { data: reports = [], isLoading } = useQuery({
-    queryKey: ["reports", toApplyFilter],
-    queryFn: () => reportsApi.getAll(toApplyFilter),
+  const { data: reportsData, isLoading } = useQuery({
+    queryKey: ["reports", toApplyFilter, currentPage],
+    queryFn: () =>
+      reportsApi.getAll(toApplyFilter, {
+        page: currentPage,
+        limit: PAGE_SIZE,
+      }),
     enabled: true,
   });
 
@@ -159,6 +167,7 @@ export default function ReportsScreen() {
 
   // Apply filter function
   const applyFilters = () => {
+    setCurrentPage(1);
     setToApplyFilter(filter);
     queryClient.invalidateQueries({ queryKey: ["reports"] });
   };
@@ -284,7 +293,8 @@ export default function ReportsScreen() {
     }
   };
 
-  const total = reports.length || 0;
+  const reports = reportsData?.data || [];
+  const total = reportsData?.total || 0;
 
   return (
     <div className="space-y-6">
@@ -350,6 +360,7 @@ export default function ReportsScreen() {
                 <Button
                   onClick={() => {
                     setFilter(initialFilter);
+                    setCurrentPage(1);
                     setToApplyFilter(initialFilter);
                   }}
                   variant="outline"
@@ -565,6 +576,16 @@ export default function ReportsScreen() {
                   </div>
                 </div>
               ))}
+              {reportsData && reportsData.totalPages > 1 && (
+                <RenderPagination
+                  currentPage={currentPage}
+                  totalPages={reportsData.totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={reportsData.total}
+                  pageSize={PAGE_SIZE}
+                  itemName="reports"
+                />
+              )}
             </div>
           )}
         </CardContent>
