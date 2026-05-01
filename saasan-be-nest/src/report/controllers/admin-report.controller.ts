@@ -29,6 +29,7 @@ import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
 import { PermissionGuard } from 'src/common/guards/permission.guard';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { GetReportActivitiesDto } from '../dtos/get-report-activities.dto';
 
 @UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
 @Roles(UserRole.ADMIN)
@@ -60,6 +61,48 @@ export class AdminReportController {
       await this.reportService.getApprovalSuggestions(param.reportId),
       'Politician suggestions fetched successfully',
     );
+  }
+
+  @Permissions(PERMISSIONS.reports.view)
+  @Get('activities/recent')
+  async getRecentActivities(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    return await this.reportService.getRecentActivities(parsedLimit);
+  }
+
+  @Permissions(PERMISSIONS.reports.view)
+  @Get(':reportId/activities')
+  async getReportActivities(
+    @Param() param: ReportIdDto,
+    @Query() query: GetReportActivitiesDto,
+  ) {
+    return await this.reportService.getActivities(
+      param.reportId,
+      query.page,
+      query.limit,
+    );
+  }
+
+  @Permissions(PERMISSIONS.reports.resolve)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':reportId/reject')
+  async rejectReport(
+    @Param() param: ReportIdDto,
+    @Req() req: Request,
+    @Body('comment') comment?: string,
+  ) {
+    await this.reportService.reject(param.reportId, req.user.id, comment);
+  }
+
+  @Permissions(PERMISSIONS.reports.resolve)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':reportId/resolve')
+  async resolveReport(
+    @Param() param: ReportIdDto,
+    @Req() req: Request,
+    @Body('comment') comment?: string,
+  ) {
+    await this.reportService.resolve(param.reportId, req.user.id, comment);
   }
 
   // Report Types CRUD

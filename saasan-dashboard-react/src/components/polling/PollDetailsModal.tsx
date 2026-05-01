@@ -34,12 +34,13 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
   );
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
+    switch (status?.toLowerCase()) {
+      case "active":
         return "bg-green-100 text-green-800";
-      case "ENDED":
+      case "ended":
+      case "inactive":
         return "bg-gray-100 text-gray-800";
-      case "DRAFT":
+      case "draft":
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -47,12 +48,13 @@ export const PollDetailsModal: React.FC<PollDetailsModalProps> = ({
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
+    switch (status?.toLowerCase()) {
+      case "active":
         return "Active";
-      case "ENDED":
+      case "ended":
+      case "inactive":
         return "Ended";
-      case "DRAFT":
+      case "draft":
         return "Draft";
       default:
         return status;

@@ -20,6 +20,12 @@ export const HttpErrorCodeMessage = {
   /** Report */
   report404: 'Report does not exist',
 
+  /** Event */
+  event404: 'Event does not exist',
+
+  /** Case */
+  case404: 'Case does not exist',
+
   /** Politics */
   politician404: 'Politician does not exist',
 

@@ -28,11 +28,23 @@ import {
   reportVisibilitiesApi,
   reportTypesApi,
   politicsApi,
+  messageThreadApi,
 } from "@/services/api";
-import { Save, X, Flag, Eye, FileText, CheckCircle } from "lucide-react";
+import {
+  Save,
+  X,
+  Flag,
+  Eye,
+  FileText,
+  CheckCircle,
+  MessageSquare,
+  Send,
+} from "lucide-react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { IReport } from "@/types/report";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSIONS } from "@/constants/permission.constants";
 
 interface IReportEditForm {
   editingReport: IReport | null;
@@ -54,10 +66,15 @@ export default function ReportEditForm({
   setEditingReport,
 }: IReportEditForm) {
   const { confirm } = useConfirmDialog();
+  const { hasPermission } = useAuth();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [selectedPoliticianIds, setSelectedPoliticianIds] = useState<string[]>(
     editingReport?.assignedPoliticianIds || [],
   );
+  const [threadReply, setThreadReply] = useState("");
+
+  const canViewMessages = hasPermission(PERMISSIONS.messages.view);
+  const canReplyMessages = hasPermission(PERMISSIONS.messages.reply);
 
   // Fetch filter options from backend
   const { data: statusesData } = useQuery({
@@ -90,6 +107,17 @@ export default function ReportEditForm({
     queryFn: () => reportsApi.getApprovalSuggestions(editingReport!.id),
     enabled: !!editingReport?.id,
   });
+
+  const { data: reportThreadResponse, isLoading: reportThreadLoading } =
+    useQuery({
+      queryKey: ["report-thread-edit", editingReport?.id],
+      queryFn: () => messageThreadApi.getByReportId(editingReport!.id),
+      enabled:
+        !!editingReport?.id &&
+        !!editingReport?.autoConvertedToMessage &&
+        canViewMessages,
+      retry: false,
+    });
 
   const {
     register,
@@ -195,6 +223,26 @@ export default function ReportEditForm({
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to approve report");
+    },
+  });
+
+  const replyToThreadMutation = useMutation({
+    mutationFn: ({
+      messageId,
+      content,
+    }: {
+      messageId: string;
+      content: string;
+    }) => messageThreadApi.addReply(messageId, content),
+    onSuccess: async () => {
+      setThreadReply("");
+      await queryClient.invalidateQueries({
+        queryKey: ["report-thread-edit", editingReport?.id],
+      });
+      toast.success("Reply added to thread");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to send reply");
     },
   });
 
@@ -436,6 +484,121 @@ export default function ReportEditForm({
                           </CardContent>
                         </Card>
                       )}
+
+                    {editingReport.autoConvertedToMessage && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center">
+                            <MessageSquare className="mr-2 h-5 w-5" />
+                            Converted Message Thread
+                          </CardTitle>
+                          <CardDescription>
+                            Review the linked citizen-politician thread without
+                            leaving report editing.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          {!canViewMessages ? (
+                            <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                              You do not have permission to view message
+                              threads.
+                            </div>
+                          ) : reportThreadLoading ? (
+                            <div className="space-y-3">
+                              {[...Array(3)].map((_, index) => (
+                                <div
+                                  key={index}
+                                  className="h-20 animate-pulse rounded-lg bg-gray-100"
+                                />
+                              ))}
+                            </div>
+                          ) : reportThreadResponse?.data ? (
+                            <div className="space-y-4">
+                              <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                                Status: {reportThreadResponse.data.status} •
+                                Citizen:{" "}
+                                {reportThreadResponse.data.participants.citizen
+                                  .name || "Citizen"}{" "}
+                                • Politician:{" "}
+                                {reportThreadResponse.data.participants
+                                  .politician.name || "Representative"}
+                              </div>
+
+                              <div className="space-y-3">
+                                {reportThreadResponse.data.messages?.map(
+                                  (message, index) => (
+                                    <div
+                                      key={message.id || message._id || index}
+                                      className={`rounded-lg border p-3 ${
+                                        message.senderType === "STAFF"
+                                          ? "border-purple-100 bg-purple-50/70"
+                                          : message.senderType === "POLITICIAN"
+                                            ? "border-blue-100 bg-blue-50/70"
+                                            : "border-red-100 bg-red-50/70"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="text-sm font-medium text-gray-900">
+                                          {message.senderType === "STAFF"
+                                            ? "Admin / Staff"
+                                            : message.senderType ===
+                                                "POLITICIAN"
+                                              ? "Politician"
+                                              : "Citizen"}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {new Date(
+                                            message.createdAt,
+                                          ).toLocaleString()}
+                                        </p>
+                                      </div>
+                                      <p className="mt-2 text-sm text-gray-700">
+                                        {message.content}
+                                      </p>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+
+                              {canReplyMessages && (
+                                <div className="space-y-3">
+                                  <Textarea
+                                    value={threadReply}
+                                    onChange={(e) =>
+                                      setThreadReply(e.target.value)
+                                    }
+                                    placeholder="Add an admin note or reply into this thread..."
+                                    className="min-h-[100px]"
+                                  />
+                                  <div className="flex justify-end">
+                                    <Button
+                                      type="button"
+                                      onClick={() =>
+                                        replyToThreadMutation.mutate({
+                                          messageId: reportThreadResponse.data.id,
+                                          content: threadReply.trim(),
+                                        })
+                                      }
+                                      disabled={
+                                        replyToThreadMutation.isPending ||
+                                        !threadReply.trim()
+                                      }
+                                    >
+                                      <Send className="mr-2 h-4 w-4" />
+                                      Reply to Thread
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                              No converted thread was found for this report yet.
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
 
                   {/* Edit Form - Right Columns */}

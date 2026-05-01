@@ -18,7 +18,19 @@ export class CaseSeeder {
   async seed() {
     console.log('Seeding case...');
 
-    await this.caseModel.insertMany(reportData);
+    await this.caseModel.insertMany(
+      reportData.map((item, index) => ({
+        title: item.title,
+        description: item.description,
+        amountInvolved: 0,
+        dateOccurred: new Date(),
+        peopleAffectedCount: 0,
+        priority: 'medium',
+        status: 'unsolved',
+        locationDescription: 'Seeded case record',
+        isPublic: true,
+      })),
+    );
 
     console.log('Case seeded successfully');
   }

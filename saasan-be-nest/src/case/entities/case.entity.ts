@@ -6,6 +6,13 @@ export enum CaseStatus {
   ONGOING = 'ongoing',
   SOLVED = 'solved',
 }
+
+export enum CasePriority {
+  URGENT = 'urgent',
+  HIGH = 'high',
+  MEDIUM = 'medium',
+  LOW = 'low',
+}
 @Schema({ timestamps: true, collection: CaseEntity.collection })
 export class CaseEntity {
   static readonly collection = 'cases';
@@ -27,6 +34,13 @@ export class CaseEntity {
   status: CaseStatus;
 
   @Prop({
+    type: String,
+    enum: CasePriority,
+    default: CasePriority.MEDIUM,
+  })
+  priority: CasePriority;
+
+  @Prop({
     type: Types.Decimal128,
     required: true,
     default: 0,
@@ -36,6 +50,27 @@ export class CaseEntity {
 
   @Prop({ type: Date, required: true })
   dateOccurred: Date;
+
+  @Prop({ type: String, unique: true })
+  referenceNumber: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'ProvinceEntity' })
+  provinceId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'DistrictEntity' })
+  districtId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'ConstituencyEntity' })
+  constituencyId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'MunicipalityEntity' })
+  municipalityId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'WardEntity' })
+  wardId?: Types.ObjectId;
+
+  @Prop({ type: String })
+  locationDescription?: string;
 
   @Prop({ type: Number, default: 0 })
   peopleAffectedCount: number;
@@ -57,4 +92,16 @@ export class CaseEntity {
 }
 
 export const CaseEntitySchema = SchemaFactory.createForClass(CaseEntity);
+
+CaseEntitySchema.pre('save', function () {
+  if (!this.referenceNumber) {
+    const ymd = new Date(Date.now())
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, '');
+    const shortId = this._id.toString().slice(-6).toUpperCase();
+    this.referenceNumber = `CASE-${ymd}-${shortId}`;
+  }
+});
+
 export type CaseEntityDocument = Document & CaseEntity;

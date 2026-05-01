@@ -23,6 +23,14 @@ export class PollOptionRepository {
     return await this.model.findById(optionId);
   }
 
+  async findByPollId(pollId: string) {
+    return await this.model.find({ pollId });
+  }
+
+  async deleteByPollId(pollId: string) {
+    await this.model.deleteMany({ pollId });
+  }
+
   async incrVoteCount({ pollId, optionId }: VoteDto, session: ClientSession) {
     return await this.model.findByIdAndUpdate(
       optionId,

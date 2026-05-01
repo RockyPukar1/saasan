@@ -69,6 +69,18 @@ export class RolePermissionService {
           role,
           DEFAULT_ROLE_PERMISSIONS[role] ?? [],
         );
+      } else {
+        const mergedPermissions = [
+          ...new Set([
+            ...(existing.permissions || []),
+            ...(DEFAULT_ROLE_PERMISSIONS[role] ?? []),
+          ]),
+        ];
+
+        await this.rolePermissionRepo.upsertRolePermissions(
+          role,
+          mergedPermissions,
+        );
       }
 
       await this.redisCache.del(this.getCacheKey(role));

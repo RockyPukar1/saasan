@@ -82,6 +82,16 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 
     PERMISSIONS.sessions.view,
     PERMISSIONS.sessions.revoke,
+
+    PERMISSIONS.jobs.view,
+    PERMISSIONS.jobs.retry,
+
+    PERMISSIONS.budget.view,
+
+    PERMISSIONS.cases.view,
+    PERMISSIONS.cases.create,
+    PERMISSIONS.cases.update,
+    PERMISSIONS.cases.delete,
   ],
   [UserRole.CITIZEN]: [
     PERMISSIONS.dashboard.view,

@@ -702,4 +702,16 @@ export class ReportRepository {
       .findByIdAndUpdate(reportId, updateData, { new: true })
       .exec();
   }
+
+  async updateFields(reportId: string, updateData: Record<string, any>) {
+    return await this.model
+      .findByIdAndUpdate(
+        reportId,
+        {
+          $set: updateData,
+        },
+        { new: true },
+      )
+      .exec();
+  }
 }

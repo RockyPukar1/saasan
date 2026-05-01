@@ -6,15 +6,24 @@ import {
   IsNumber,
   IsNumberString,
   IsOptional,
+  IsString,
 } from 'class-validator';
-import { CaseStatus } from '../entities/case.entity';
+import { CasePriority, CaseStatus } from '../entities/case.entity';
 
 export class CreateCaseDto {
+  @IsString()
   title: string;
 
+  @IsString()
   description: string;
 
+  @IsOptional()
+  @IsEnum(CaseStatus)
   status: CaseStatus;
+
+  @IsOptional()
+  @IsEnum(CasePriority)
+  priority?: CasePriority;
 
   @IsNumberString()
   amountInvolved: number;
@@ -41,6 +50,10 @@ export class CreateCaseDto {
 
   @IsDate()
   dateOccurred: Date;
+
+  @IsOptional()
+  @IsString()
+  locationDescription?: string;
 
   @IsNumber()
   peopleAffectedCount: number;

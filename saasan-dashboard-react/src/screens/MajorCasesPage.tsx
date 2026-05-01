@@ -1,19 +1,20 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
-  Plus,
-  Search,
-  Upload,
-  Edit,
-  Trash2,
   AlertTriangle,
-  Filter,
-  Download,
+  Calendar,
   CheckCircle,
   Clock,
+  Edit,
+  Filter,
+  MapPin,
+  Plus,
+  Search,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +33,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { majorCasesApi } from "@/services/api";
 import { majorCaseSchema, type MajorCaseFormData } from "@/lib/validations";
 import type { IMajorCase } from "@/types/case";
+
+const DEFAULT_FORM_VALUES: MajorCaseFormData = {
+  title: "",
+  description: "",
+  status: "unsolved",
+  priority: "medium",
+  amountInvolved: 0,
+  dateOccurred: new Date().toISOString().slice(0, 10),
+  peopleAffectedCount: 0,
+  locationDescription: "",
+  isPublic: true,
+};
 
 export const MajorCasesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,20 +56,27 @@ export const MajorCasesPage: React.FC = () => {
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingCase, setEditingCase] = useState<IMajorCase | null>(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const queryClient = useQueryClient();
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm<MajorCaseFormData>({
     resolver: zodResolver(majorCaseSchema),
+    defaultValues: DEFAULT_FORM_VALUES,
   });
 
-  // Fetch major cases
+  useEffect(() => {
+    if (!showForm) {
+      reset(DEFAULT_FORM_VALUES);
+      setEditingCase(null);
+    }
+  }, [reset, showForm]);
+
   const { data: casesData, isLoading } = useQuery({
     queryKey: [
       "major-cases",
@@ -67,6 +88,7 @@ export const MajorCasesPage: React.FC = () => {
     ],
     queryFn: () =>
       majorCasesApi.getAll({
+        search: searchQuery || undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         priority: selectedPriority !== "all" ? selectedPriority : undefined,
         page: 1,
@@ -74,65 +96,58 @@ export const MajorCasesPage: React.FC = () => {
       }),
   });
 
-  // Create case mutation
   const createMutation = useMutation({
     mutationFn: majorCasesApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["major-cases"] });
-      toast.success("Major case created successfully!");
+      void queryClient.invalidateQueries({ queryKey: ["major-cases"] });
+      toast.success("Major case created successfully");
       setShowForm(false);
-      reset();
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to create major case"
+        error?.response?.data?.message || "Failed to create major case",
       );
     },
   });
 
-  // Update case mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<IMajorCase> }) =>
       majorCasesApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["major-cases"] });
-      toast.success("Major case updated successfully!");
-      setEditingCase(null);
+      void queryClient.invalidateQueries({ queryKey: ["major-cases"] });
+      toast.success("Major case updated successfully");
       setShowForm(false);
-      reset();
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to update major case"
+        error?.response?.data?.message || "Failed to update major case",
       );
     },
   });
 
-  // Delete case mutation
   const deleteMutation = useMutation({
     mutationFn: majorCasesApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["major-cases"] });
-      toast.success("Major case deleted successfully!");
+      void queryClient.invalidateQueries({ queryKey: ["major-cases"] });
+      toast.success("Major case deleted successfully");
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to delete major case"
+        error?.response?.data?.message || "Failed to delete major case",
       );
     },
   });
 
-  // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       majorCasesApi.updateStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["major-cases"] });
-      toast.success("Case status updated successfully!");
+      void queryClient.invalidateQueries({ queryKey: ["major-cases"] });
+      toast.success("Case status updated successfully");
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to update case status"
+        error?.response?.data?.message || "Failed to update case status",
       );
     },
   });
@@ -140,17 +155,31 @@ export const MajorCasesPage: React.FC = () => {
   const handleFormSubmit = (data: MajorCaseFormData) => {
     if (editingCase) {
       updateMutation.mutate({ id: editingCase.id, data });
-    } else {
-      createMutation.mutate(data);
+      return;
     }
+
+    createMutation.mutate(data);
   };
 
-  const handleEdit = (case_: IMajorCase) => {
-    setEditingCase(case_);
+  const handleEdit = (caseRecord: IMajorCase) => {
+    setEditingCase(caseRecord);
     reset({
-      ...case_,
-      assigned_to_officer_id: case_.assigned_to_officer_id || undefined,
-      resolved_at: case_.resolved_at || undefined,
+      title: caseRecord.title,
+      description: caseRecord.description,
+      status: caseRecord.status,
+      priority: caseRecord.priority,
+      amountInvolved: caseRecord.amountInvolved || 0,
+      dateOccurred:
+        caseRecord.dateOccurred?.slice(0, 10) ||
+        new Date().toISOString().slice(0, 10),
+      peopleAffectedCount: caseRecord.peopleAffectedCount || 0,
+      locationDescription: caseRecord.locationDescription || "",
+      provinceId: caseRecord.provinceId || "",
+      districtId: caseRecord.districtId || "",
+      constituencyId: caseRecord.constituencyId || "",
+      municipalityId: caseRecord.municipalityId || "",
+      wardId: caseRecord.wardId || "",
+      isPublic: caseRecord.isPublic,
     });
     setShowForm(true);
   };
@@ -198,43 +227,37 @@ export const MajorCasesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Major Cases</h1>
           <p className="text-gray-600">
-            Manage major corruption cases and their status
+            Track high-impact cases from intake through resolution
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowUploadModal(true)}
-            disabled={false}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload CSV
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Case
-          </Button>
-        </div>
+        <Button
+          onClick={() => {
+            setEditingCase(null);
+            reset(DEFAULT_FORM_VALUES);
+            setShowForm(true);
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Case
+        </Button>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div>
               <Label htmlFor="search">Search</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
-                  placeholder="Search cases..."
+                  placeholder="Search title, reference, location..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -246,7 +269,7 @@ export const MajorCasesPage: React.FC = () => {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="unsolved">Unsolved</SelectItem>
                   <SelectItem value="ongoing">Ongoing</SelectItem>
                   <SelectItem value="solved">Solved</SelectItem>
@@ -272,127 +295,138 @@ export const MajorCasesPage: React.FC = () => {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
-                <Filter className="h-4 w-4 mr-2" />
-                Apply Filters
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedStatus("all");
+                  setSelectedPriority("all");
+                }}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Reset Filters
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Cases List */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Major Cases ({total})</CardTitle>
-              <CardDescription>
-                Manage major corruption cases and their progress
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </div>
+          <CardTitle>Major Cases ({total})</CardTitle>
+          <CardDescription>
+            Review case progress, financial scope, and public visibility
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-24 bg-gray-200 rounded"></div>
-                </div>
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="h-24 animate-pulse rounded bg-gray-200" />
               ))}
             </div>
           ) : cases.length === 0 ? (
-            <div className="text-center py-8">
-              <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <p className="text-gray-500">No major cases found</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {cases.map((case_) => (
+              {cases.map((caseRecord) => (
                 <div
-                  key={case_.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  key={caseRecord.id}
+                  className="rounded-lg border p-4 transition-colors hover:bg-gray-50"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
                         <h3 className="text-lg font-medium text-gray-900">
-                          {case_.title}
+                          {caseRecord.title}
                         </h3>
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                            case_.status
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                            caseRecord.status,
                           )}`}
                         >
-                          {case_.status}
+                          {caseRecord.status}
                         </span>
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(
-                            case_.priority
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${getPriorityColor(
+                            caseRecord.priority,
                           )}`}
                         >
-                          {case_.priority}
+                          {caseRecord.priority}
+                        </span>
+                        {!caseRecord.isPublic && (
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                            Private
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mb-3 line-clamp-2 text-sm text-gray-600">
+                        {caseRecord.description}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                        <span>Ref: {caseRecord.referenceNumber}</span>
+                        <span>Rs. {caseRecord.amountInvolved.toLocaleString()}</span>
+                        <span>{caseRecord.peopleAffectedCount} affected</span>
+                        <span>{caseRecord.upvotesCount} upvotes</span>
+                        {caseRecord.dateOccurred && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(caseRecord.dateOccurred).toLocaleDateString()}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(caseRecord.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                        {case_.description}
-                      </p>
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <span>Ref: {case_.referenceNumber}</span>
+
+                      {caseRecord.locationDescription && (
+                        <div className="mt-3 flex items-start gap-2 text-sm text-gray-600">
+                          <MapPin className="mt-0.5 h-4 w-4 text-gray-400" />
+                          <span>{caseRecord.locationDescription}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <span>
-                            ₹{(case_.amountInvolved || 0).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span>{case_.upvotesCount} upvotes</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {new Date(case_.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2 ml-4">
+
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit(case_)}
+                        onClick={() => handleEdit(caseRecord)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(case_.id)}
+                        onClick={() => handleDelete(caseRecord.id)}
                         disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                      {case_.status !== "solved" && (
+                      {caseRecord.status !== "solved" && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             handleStatusUpdate(
-                              case_.id,
-                              case_.status === "unsolved" ? "ongoing" : "solved"
+                              caseRecord.id,
+                              caseRecord.status === "unsolved"
+                                ? "ongoing"
+                                : "solved",
                             )
                           }
                           disabled={updateStatusMutation.isPending}
                           className="text-green-600 hover:text-green-700"
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          {case_.status === "unsolved" ? "Start" : "Solve"}
+                          <CheckCircle className="mr-1 h-4 w-4" />
+                          {caseRecord.status === "unsolved" ? "Start" : "Solve"}
                         </Button>
                       )}
                     </div>
@@ -404,39 +438,32 @@ export const MajorCasesPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Form Modal */}
       {showForm && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
           onClick={() => setShowForm(false)}
         >
           <Card
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-gray-200 bg-white shadow-xl"
+            onClick={(event) => event.stopPropagation()}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>
-                  {editingCase ? "Edit Major Case" : "Add New Major Case"}
-                </CardTitle>
-                <button
+                <div>
+                  <CardTitle>
+                    {editingCase ? "Edit Major Case" : "Add Major Case"}
+                  </CardTitle>
+                  <CardDescription>
+                    Capture the core details the backend already supports
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setShowForm(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -452,21 +479,17 @@ export const MajorCasesPage: React.FC = () => {
                     className={errors.title ? "border-red-500" : ""}
                   />
                   {errors.title && (
-                    <p className="text-sm text-red-600">
-                      {errors.title.message}
-                    </p>
+                    <p className="text-sm text-red-600">{errors.title.message}</p>
                   )}
                 </div>
 
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <textarea
+                  <Textarea
                     id="description"
-                    rows={3}
+                    rows={4}
                     {...register("description")}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      errors.description ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={errors.description ? "border-red-500" : ""}
                   />
                   {errors.description && (
                     <p className="text-sm text-red-600">
@@ -475,25 +498,72 @@ export const MajorCasesPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <Label htmlFor="referenceNumber">Reference Number</Label>
-                    <Input
-                      id="referenceNumber"
-                      {...register("referenceNumber")}
-                      className={errors.referenceNumber ? "border-red-500" : ""}
+                    <Label>Status</Label>
+                    <Controller
+                      control={control}
+                      name="status"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unsolved">Unsolved</SelectItem>
+                            <SelectItem value="ongoing">Ongoing</SelectItem>
+                            <SelectItem value="solved">Solved</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     />
-                    {errors.referenceNumber && (
+                    {errors.status && (
                       <p className="text-sm text-red-600">
-                        {errors.referenceNumber.message}
+                        {errors.status.message}
                       </p>
                     )}
                   </div>
+                  <div>
+                    <Label>Priority</Label>
+                    <Controller
+                      control={control}
+                      name="priority"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.priority && (
+                      <p className="text-sm text-red-600">
+                        {errors.priority.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <Label htmlFor="amountInvolved">Amount Involved</Label>
                     <Input
                       id="amountInvolved"
                       type="number"
+                      min="0"
+                      step="0.01"
                       {...register("amountInvolved", { valueAsNumber: true })}
                       className={errors.amountInvolved ? "border-red-500" : ""}
                     />
@@ -503,139 +573,73 @@ export const MajorCasesPage: React.FC = () => {
                       </p>
                     )}
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select {...register("status")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unsolved">Unsolved</SelectItem>
-                        <SelectItem value="ongoing">Ongoing</SelectItem>
-                        <SelectItem value="solved">Solved</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.status && (
-                      <p className="text-sm text-red-600">
-                        {errors.status.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select {...register("priority")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.priority && (
-                      <p className="text-sm text-red-600">
-                        {errors.priority.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="upvotesCount">Upvotes Count</Label>
-                    <Input
-                      id="upvotesCount"
-                      type="number"
-                      {...register("upvotesCount", { valueAsNumber: true })}
-                      className={errors.upvotesCount ? "border-red-500" : ""}
-                    />
-                    {errors.upvotesCount && (
-                      <p className="text-sm text-red-600">
-                        {errors.upvotesCount.message}
-                      </p>
-                    )}
-                  </div>
                   <div>
                     <Label htmlFor="peopleAffectedCount">People Affected</Label>
                     <Input
                       id="peopleAffectedCount"
                       type="number"
-                      {...register("people_affected_count", {
+                      min="0"
+                      {...register("peopleAffectedCount", {
                         valueAsNumber: true,
                       })}
                       className={
-                        errors.people_affected_count ? "border-red-500" : ""
+                        errors.peopleAffectedCount ? "border-red-500" : ""
                       }
                     />
-                    {errors.people_affected_count && (
+                    {errors.peopleAffectedCount && (
                       <p className="text-sm text-red-600">
-                        {errors.people_affected_count.message}
+                        {errors.peopleAffectedCount.message}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <Label htmlFor="district">District</Label>
+                    <Label htmlFor="dateOccurred">Date Occurred</Label>
                     <Input
-                      id="district"
-                      {...register("district")}
-                      className={errors.district ? "border-red-500" : ""}
+                      id="dateOccurred"
+                      type="date"
+                      {...register("dateOccurred")}
+                      className={errors.dateOccurred ? "border-red-500" : ""}
                     />
-                    {errors.district && (
+                    {errors.dateOccurred && (
                       <p className="text-sm text-red-600">
-                        {errors.district.message}
+                        {errors.dateOccurred.message}
                       </p>
                     )}
                   </div>
-                  <div>
-                    <Label htmlFor="municipality">Municipality</Label>
-                    <Input
-                      id="municipality"
-                      {...register("municipality")}
-                      className={errors.municipality ? "border-red-500" : ""}
+                  <div className="flex items-center gap-3 pt-8">
+                    <input
+                      id="isPublic"
+                      type="checkbox"
+                      {...register("isPublic")}
+                      className="h-4 w-4 rounded border-gray-300"
                     />
-                    {errors.municipality && (
-                      <p className="text-sm text-red-600">
-                        {errors.municipality.message}
-                      </p>
-                    )}
+                    <Label htmlFor="isPublic">Visible publicly</Label>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="locationDescription">
-                    Location Description
-                  </Label>
-                  <Input
+                  <Label htmlFor="locationDescription">Location Description</Label>
+                  <Textarea
                     id="locationDescription"
-                    {...register("location_description")}
-                    className={
-                      errors.location_description ? "border-red-500" : ""
-                    }
+                    rows={3}
+                    {...register("locationDescription")}
+                    className={errors.locationDescription ? "border-red-500" : ""}
                   />
-                  {errors.location_description && (
+                  {errors.locationDescription && (
                     <p className="text-sm text-red-600">
-                      {errors.location_description.message}
+                      {errors.locationDescription.message}
                     </p>
                   )}
                 </div>
 
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end gap-2 pt-2">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      setShowForm(false);
-                      setEditingCase(null);
-                      reset();
-                    }}
+                    onClick={() => setShowForm(false)}
                   >
                     Cancel
                   </Button>
@@ -645,91 +649,10 @@ export const MajorCasesPage: React.FC = () => {
                       createMutation.isPending || updateMutation.isPending
                     }
                   >
-                    {createMutation.isPending || updateMutation.isPending
-                      ? "Saving..."
-                      : editingCase
-                      ? "Update"
-                      : "Create"}
+                    {editingCase ? "Save Changes" : "Create Case"}
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Upload Modal */}
-      {showUploadModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={() => setShowUploadModal(false)}
-        >
-          <Card
-            className="w-full max-w-md bg-white border border-gray-200 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Upload Major Cases CSV</CardTitle>
-                <button
-                  onClick={() => setShowUploadModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <CardDescription>
-                Upload a CSV file with major cases data. Make sure the file has
-                the correct format.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="csvFile">CSV File</Label>
-                  <Input
-                    id="csvFile"
-                    type="file"
-                    accept=".csv"
-                    disabled={false}
-                  />
-                </div>
-                <div className="text-sm text-gray-500">
-                  <p>CSV should include columns:</p>
-                  <ul className="list-disc list-inside mt-1">
-                    <li>title</li>
-                    <li>description</li>
-                    <li>referenceNumber</li>
-                    <li>status</li>
-                    <li>priority</li>
-                    <li>amountInvolved</li>
-                    <li>upvotesCount</li>
-                    <li>district</li>
-                    <li>municipality</li>
-                  </ul>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowUploadModal(false)}
-                    disabled={false}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

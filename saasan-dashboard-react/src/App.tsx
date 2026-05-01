@@ -29,6 +29,9 @@ import UsersScreen from "./screens/UsersScreen";
 import { PERMISSIONS } from "./constants/permission.constants";
 import SessionsPage from "./screens/SessionsScreen";
 import RolePermissionsPage from "./screens/RolePermissionsScreen";
+import JobsScreen from "./screens/JobsScreen";
+import BudgetScreen from "./screens/BudgetScreen";
+import { MajorCasesPage } from "./screens/MajorCasesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +66,22 @@ function App() {
                       requiredPermission={PERMISSIONS.sessions.view}
                     >
                       <SessionsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="jobs"
+                  element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.jobs.view}>
+                      <JobsScreen />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="budget"
+                  element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.budget.view}>
+                      <BudgetScreen />
                     </ProtectedRoute>
                   }
                 />
@@ -169,6 +188,16 @@ function App() {
                       requiredPermission={PERMISSIONS.dashboard.view}
                     >
                       <HistoricalEventsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="major-cases"
+                  element={
+                    <ProtectedRoute
+                      requiredPermission={PERMISSIONS.cases.view}
+                    >
+                      <MajorCasesPage />
                     </ProtectedRoute>
                   }
                 />

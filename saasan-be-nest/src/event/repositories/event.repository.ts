@@ -14,6 +14,26 @@ export class EventRepository {
     return await this.model.find();
   }
 
+  async getById(id: string) {
+    return await this.model.findById(id);
+  }
+
+  async create(data: Partial<EventEntity>) {
+    return await this.model.create(data);
+  }
+
+  async update(id: string, data: Partial<EventEntity>) {
+    return await this.model.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true },
+    );
+  }
+
+  async delete(id: string) {
+    return await this.model.findByIdAndDelete(id);
+  }
+
   async getRecentEvents() {
     return await this.model.find().sort({ createdAt: -1 }).limit(5);
   }

@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
   Post,
+  Put,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import { VoteDto } from '../dtos/vote.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { type Request } from 'express';
 import { CreatePollDto } from '../dtos/create-poll.dto';
+import { UpdatePollDto } from '../dtos/update-poll.dto';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('poll')
@@ -27,7 +30,21 @@ export class PollController {
   @HttpCode(201)
   @Post()
   async create(@Body() data: CreatePollDto) {
-    this.pollService.create(data);
+    return await this.pollService.create(data);
+  }
+
+  @Put(':pollId')
+  async update(
+    @Param('pollId') pollId: string,
+    @Body() data: UpdatePollDto,
+  ) {
+    return await this.pollService.update(pollId, data);
+  }
+
+  @HttpCode(204)
+  @Delete(':pollId')
+  async delete(@Param('pollId') pollId: string) {
+    await this.pollService.delete(pollId);
   }
 
   @HttpCode(204)
@@ -38,7 +55,7 @@ export class PollController {
 
   @Get('analytics')
   async getAnalytics() {
-    return [];
+    return await this.pollService.getAnalytics();
   }
 
   @Get('categories')

@@ -117,4 +117,20 @@ export const PERMISSIONS = {
     view: "sessions.view",
     revoke: "sessions.revoke",
   },
+
+  jobs: {
+    view: "jobs.view",
+    retry: "jobs.retry",
+  },
+
+  budget: {
+    view: "budget.view",
+  },
+
+  cases: {
+    view: "cases.view",
+    create: "cases.create",
+    update: "cases.update",
+    delete: "cases.delete",
+  },
 } as const;

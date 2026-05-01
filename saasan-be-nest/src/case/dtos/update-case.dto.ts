@@ -8,20 +8,28 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { CaseStatus } from '../entities/case.entity';
+import { CasePriority, CaseStatus } from '../entities/case.entity';
 
 export class UpdateCaseDto {
+  @IsOptional()
   @IsString()
-  title: string;
+  title?: string;
 
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
+  @IsOptional()
   @IsEnum(CaseStatus)
-  status: CaseStatus;
+  status?: CaseStatus;
 
+  @IsOptional()
+  @IsEnum(CasePriority)
+  priority?: CasePriority;
+
+  @IsOptional()
   @IsNumberString()
-  amountInvolved: number;
+  amountInvolved?: number;
 
   @IsMongoId()
   @IsOptional()
@@ -43,11 +51,17 @@ export class UpdateCaseDto {
   @IsOptional()
   wardId?: string;
 
+  @IsOptional()
   @IsDate()
-  dateOccurred: Date;
+  dateOccurred?: Date;
 
+  @IsOptional()
+  @IsString()
+  locationDescription?: string;
+
+  @IsOptional()
   @IsNumber()
-  peopleAffectedCount: number;
+  peopleAffectedCount?: number;
 
   @IsBoolean()
   @IsOptional()

@@ -41,4 +41,24 @@ export class PollVoteRepository {
   async getTotalVotes(pollId: string) {
     return await this.model.countDocuments({ pollId });
   }
+
+  async deleteByPollId(pollId: string) {
+    await this.model.deleteMany({ pollId: new Types.ObjectId(pollId) });
+  }
+
+  async getAnalyticsSummary() {
+    const pollsCollection = this.model.collection.conn.db!.collection('polls');
+
+    const [totalPolls, activePolls, totalVotes] = await Promise.all([
+      pollsCollection.countDocuments(),
+      pollsCollection.countDocuments({ status: 'active' }),
+      this.model.countDocuments(),
+    ]);
+
+    return {
+      totalPolls,
+      activePolls,
+      totalVotes,
+    };
+  }
 }

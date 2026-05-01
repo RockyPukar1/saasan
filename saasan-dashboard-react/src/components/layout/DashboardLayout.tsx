@@ -18,6 +18,8 @@ import {
   Shield,
   MapPin,
   Building,
+  Wallet,
+  Workflow,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,12 +48,14 @@ const navigation = [
     ],
   },
   { name: "Historical Events", href: "/historical-events", icon: Calendar },
-  // { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
+  { name: "Major Cases", href: "/major-cases", icon: AlertTriangle },
   { name: "Geography", href: "/geography", icon: MapPin },
   { name: "Polling", href: "/polling", icon: BarChart3 },
   { name: "Users", href: "/users", icon: Users },
   { name: "Role Permissions", href: "/role-permissions", icon: Shield },
   { name: "Sessions", href: "/sessions", icon: Shield },
+  { name: "Jobs", href: "/jobs", icon: Workflow },
+  { name: "Budget", href: "/budget", icon: Wallet },
   // { name: "Viral Management", href: "/viral-management", icon: TrendingUp },
 ];
 

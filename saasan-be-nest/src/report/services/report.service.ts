@@ -283,9 +283,100 @@ export class ReportService {
 
   async approve() {}
 
-  async reject() {}
+  async reject(reportId: string, modifiedById: string, comment?: string) {
+    const report = await this.reportRepo.findById({ reportId });
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
 
-  async resolve() {}
+    const user = await this.userRepo.findById({ userId: modifiedById });
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+    const adminProfile = await this.adminRepo
+      .findByUserId({ userId: modifiedById })
+      .lean();
+    const rejectedStatus = await this.reportStatusRepo.findByTitle('rejected');
+
+    if (!rejectedStatus) {
+      throw new Error('Rejected report status is not configured.');
+    }
+
+    const previousStatus = await this.reportStatusRepo.findById(report.statusId);
+
+    await this.reportRepo.updateFields(reportId, {
+      statusId: rejectedStatus._id,
+      isResolved: false,
+      resolvedAt: null,
+    });
+
+    await this.reportActivityRepo.create({
+      reportId,
+      category: 'status',
+      modifiedBy: {
+        id: modifiedById,
+        fullName: adminProfile?.fullName || user?.email || 'Admin',
+      },
+      oldValue: previousStatus?.title || 'submitted',
+      newValue: rejectedStatus.title,
+      comment: comment || 'Report rejected',
+    });
+  }
+
+  async resolve(reportId: string, modifiedById: string, comment?: string) {
+    const report = await this.reportRepo.findById({ reportId });
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
+    const user = await this.userRepo.findById({ userId: modifiedById });
+    if (!user) throw new GlobalHttpException('user404', HttpStatus.NOT_FOUND);
+    const adminProfile = await this.adminRepo
+      .findByUserId({ userId: modifiedById })
+      .lean();
+    const resolvedStatus = await this.reportStatusRepo.findByTitle('resolved');
+
+    if (!resolvedStatus) {
+      throw new Error('Resolved report status is not configured.');
+    }
+
+    const previousStatus = await this.reportStatusRepo.findById(report.statusId);
+
+    await this.reportRepo.updateFields(reportId, {
+      statusId: resolvedStatus._id,
+      isResolved: true,
+      resolvedAt: new Date(),
+    });
+
+    await this.reportActivityRepo.create({
+      reportId,
+      category: 'status',
+      modifiedBy: {
+        id: modifiedById,
+        fullName: adminProfile?.fullName || user?.email || 'Admin',
+      },
+      oldValue: previousStatus?.title || 'verified',
+      newValue: resolvedStatus.title,
+      comment: comment || 'Report resolved',
+    });
+  }
+
+  async getActivities(reportId: string, page = 1, limit = 20) {
+    const report = await this.reportRepo.findById({ reportId });
+    if (!report) {
+      throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
+    }
+
+    return ResponseHelper.success(
+      await this.reportActivityRepo.getByReportId(reportId, page, limit),
+      'Report activities fetched successfully',
+    );
+  }
+
+  async getRecentActivities(limit = 10) {
+    return ResponseHelper.success(
+      await this.reportActivityRepo.getRecent(limit),
+      'Recent report activities fetched successfully',
+    );
+  }
 
   // Admin
   async adminUpdateReport(

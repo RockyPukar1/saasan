@@ -182,12 +182,50 @@ export class PollRepository {
   }
 
   async updateOne(id: string, data: any) {
-    return await this.model.findByIdAndUpdate(id, {
-      $set: data,
-    });
+    return await this.model.findByIdAndUpdate(
+      id,
+      {
+        $set: data,
+      },
+      { new: true },
+    );
   }
 
-  async getAnalytics() {}
+  async deleteById(pollId: string) {
+    return await this.model.findByIdAndDelete(pollId);
+  }
+
+  async getAnalytics() {
+    const [categoryBreakdown] = await Promise.all([
+      this.model.aggregate([
+        {
+          $group: {
+            _id: {
+              $ifNull: ['$category', 'general'],
+            },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            category: '$_id',
+            count: 1,
+          },
+        },
+        {
+          $sort: { count: -1, category: 1 },
+        },
+      ]),
+    ]);
+
+    return {
+      categoryBreakdown,
+      districtBreakdown: [],
+      politicianPerformance: [],
+      partyPerformance: [],
+    };
+  }
 
   async getCategories() {
     const categories = await this.model.aggregate([

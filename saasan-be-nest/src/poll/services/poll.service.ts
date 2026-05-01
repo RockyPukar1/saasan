@@ -8,6 +8,7 @@ import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 import { PollSerializer } from '../serializers/poll.serializer';
 import { RedisCacheService } from 'src/common/cache/services/redis-cache.service';
+import { UpdatePollDto } from '../dtos/update-poll.dto';
 
 @Injectable()
 export class PollService {
@@ -61,6 +62,8 @@ export class PollService {
         options: createdOptionsIds,
       });
     }
+
+    return this.getPollById(poll._id.toString(), poll._id.toString());
   }
 
   async vote(userId: string, { pollId, optionId }: VoteDto) {
@@ -84,7 +87,79 @@ export class PollService {
     }
   }
 
-  async getAnalytics() {}
+  async update(pollId: string, { options, ...pollData }: UpdatePollDto) {
+    const existingPoll = await this.pollRepo.findById(pollId);
+    if (!existingPoll) {
+      throw new GlobalHttpException('poll404', HttpStatus.NOT_FOUND);
+    }
+
+    await this.pollRepo.updateOne(pollId, pollData);
+
+    if (Array.isArray(options)) {
+      await this.pollOptionRepo.deleteByPollId(pollId);
+      await this.pollVoteRepo.deleteByPollId(pollId);
+
+      const createdOptionsIds = (
+        await Promise.all(
+          options.map((text) =>
+            this.pollOptionRepo.create({
+              pollId,
+              text,
+            }),
+          ),
+        )
+      ).map((option) => option._id.toString());
+
+      await this.pollRepo.updateOne(pollId, {
+        options: createdOptionsIds,
+      });
+    }
+
+    return this.getPollById(existingPoll.createdBy?.toString() || pollId, pollId);
+  }
+
+  async delete(pollId: string) {
+    const existingPoll = await this.pollRepo.findById(pollId);
+    if (!existingPoll) {
+      throw new GlobalHttpException('poll404', HttpStatus.NOT_FOUND);
+    }
+
+    await Promise.all([
+      this.pollVoteRepo.deleteByPollId(pollId),
+      this.pollOptionRepo.deleteByPollId(pollId),
+      this.pollRepo.deleteById(pollId),
+    ]);
+  }
+
+  async getAnalytics() {
+    const [summary, analytics] = await Promise.all([
+      this.pollVoteRepo.getAnalyticsSummary(),
+      this.pollRepo.getAnalytics(),
+    ]);
+
+    const participationRate =
+      summary.totalPolls > 0
+        ? Number(((summary.totalVotes / summary.totalPolls) * 100).toFixed(2))
+        : 0;
+
+    return ResponseHelper.success({
+      total_polls: summary.totalPolls,
+      active_polls: summary.activePolls,
+      total_votes: summary.totalVotes,
+      participation_rate: participationRate,
+      category_breakdown: analytics.categoryBreakdown.map((item) => ({
+        category: item.category,
+        count: item.count,
+        percentage:
+          summary.totalPolls > 0
+            ? Number(((item.count / summary.totalPolls) * 100).toFixed(2))
+            : 0,
+      })),
+      district_breakdown: analytics.districtBreakdown,
+      politician_performance: analytics.politicianPerformance,
+      party_performance: analytics.partyPerformance,
+    });
+  }
 
   async getCategories() {
     const cacheKey = 'polls:categories';
