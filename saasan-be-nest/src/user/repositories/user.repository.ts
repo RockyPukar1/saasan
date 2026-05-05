@@ -5,6 +5,10 @@ import { UserIdDto } from '../dtos/user-id.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { ChangeEmailDto } from '../dtos/change-email.dto';
 import { ChangePasswordDto } from '../dtos/change-password.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 
 export class UserRepository {
   constructor(
@@ -20,14 +24,21 @@ export class UserRepository {
     });
   }
 
-  async findAll({ page = 1, limit = 10 }) {
-    const skip = (page - 1) * limit;
+  async findAll({ cursor, limit = 10 }: { cursor?: string; limit?: number }) {
+    const baseFilter = {};
+    const cursorFilter = descendingObjectIdCursorFilter(cursor);
     const [data, total] = await Promise.all([
-      this.model.find().skip(skip).limit(limit),
-      this.model.countDocuments(),
+      this.model
+        .find({
+          ...baseFilter,
+          ...cursorFilter,
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1),
+      this.model.countDocuments(baseFilter),
     ]);
 
-    return { data, total, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   findOne(filter: any) {

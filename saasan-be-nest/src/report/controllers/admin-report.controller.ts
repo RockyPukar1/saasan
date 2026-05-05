@@ -29,6 +29,7 @@ import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
 import { PermissionGuard } from 'src/common/guards/permission.guard';
 import { GetReportActivitiesDto } from '../dtos/get-report-activities.dto';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 @UseGuards(HttpAccessTokenGuard, RoleGuard, PermissionGuard)
 @Roles(UserRole.ADMIN)
@@ -74,7 +75,7 @@ export class AdminReportController {
   ) {
     return await this.reportService.getActivities(
       param.reportId,
-      query.page,
+      query.cursor,
       query.limit,
     );
   }
@@ -104,8 +105,8 @@ export class AdminReportController {
   // Report Types CRUD
   @Permissions(PERMISSIONS.reports.types.view)
   @Get('types')
-  async getReportTypes() {
-    return await this.reportService.getReportTypes();
+  async getReportTypes(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.reportService.getReportTypes(paginationQuery);
   }
 
   @Permissions(PERMISSIONS.reports.types.create)
@@ -134,8 +135,8 @@ export class AdminReportController {
   // Report Statuses CRUD
   @Permissions(PERMISSIONS.reports.statuses.view)
   @Get('statuses')
-  async getReportStatuses() {
-    return await this.reportService.getReportStatuses();
+  async getReportStatuses(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.reportService.getReportStatuses(paginationQuery);
   }
 
   @Permissions(PERMISSIONS.reports.statuses.create)
@@ -166,8 +167,8 @@ export class AdminReportController {
   // Report Priorities CRUD
   @Permissions(PERMISSIONS.reports.priorities.view)
   @Get('priorities')
-  async getReportPriorities() {
-    return await this.reportService.getReportPriorities();
+  async getReportPriorities(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.reportService.getReportPriorities(paginationQuery);
   }
 
   @Permissions(PERMISSIONS.reports.priorities.create)
@@ -200,8 +201,8 @@ export class AdminReportController {
   // Report Visibilities CRUD
   @Permissions(PERMISSIONS.reports.visibilities.view)
   @Get('visibilities')
-  async getReportVisibilities() {
-    return await this.reportService.getReportVisibilities();
+  async getReportVisibilities(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.reportService.getReportVisibilities(paginationQuery);
   }
 
   @Permissions(PERMISSIONS.reports.visibilities.create)

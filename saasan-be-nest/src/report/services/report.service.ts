@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ReportRepository } from '../repositories/report.repository';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { ReportSerializer } from '../serializers/report.serializer';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { CloudinaryService } from 'src/common/cloudinary/services/cloudinary.service';
@@ -34,6 +35,7 @@ import { AdminRepository } from 'src/user/repositories/admin.repository';
 import { ReportVoteRepository } from '../repositories/report-vote.repository';
 import { ReportDiscussionService } from './report-discussion.service';
 import { ReportApprovalSuggestionsSerializer } from '../serializers/report-approval-suggestions.serializer';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 
 @Injectable()
 export class ReportService {
@@ -361,7 +363,7 @@ export class ReportService {
     });
   }
 
-  async getActivities(reportId: string, page = 1, limit = 20) {
+  async getActivities(reportId: string, cursor?: string, limit = 20) {
     const report = await this.reportRepo.findById({ reportId });
     if (!report) {
       throw new GlobalHttpException('report404', HttpStatus.NOT_FOUND);
@@ -369,7 +371,7 @@ export class ReportService {
 
     return ResponseHelper.response(
       ReportActivitySerializer,
-      await this.reportActivityRepo.getByReportId(reportId, page, limit),
+      await this.reportActivityRepo.getByReportId(reportId, cursor, limit),
       'Report activities fetched successfully',
     );
   }
@@ -461,14 +463,15 @@ export class ReportService {
   }
 
   // Report Types CRUD
-  async getReportTypes() {
+  async getReportTypes({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'report:types';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedTypes = cached as any[];
       return ResponseHelper.response(
         ReportTypeSerializer,
-        cached,
+        paginateArrayByCursor(cachedTypes, cursor, limit),
         'Report types fetched successfully',
       );
     }
@@ -479,7 +482,7 @@ export class ReportService {
 
     return ResponseHelper.response(
       ReportTypeSerializer,
-      types,
+      paginateArrayByCursor(types, cursor, limit),
       'Report types fetched successfully',
     );
   }
@@ -519,14 +522,15 @@ export class ReportService {
   }
 
   // Report Statuses CRUD
-  async getReportStatuses() {
+  async getReportStatuses({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'report:statuses';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedStatuses = cached as any[];
       return ResponseHelper.response(
-        ReportTypeSerializer,
-        cached,
+        ReportStatusSerializer,
+        paginateArrayByCursor(cachedStatuses, cursor, limit),
         'Report statuses fetched successfully',
       );
     }
@@ -536,7 +540,7 @@ export class ReportService {
     await this.redisCache.set(cacheKey, statuses);
     return ResponseHelper.response(
       ReportStatusSerializer,
-      statuses,
+      paginateArrayByCursor(statuses, cursor, limit),
       'Report statuses fetched successfully',
     );
   }
@@ -576,14 +580,15 @@ export class ReportService {
   }
 
   // Report Priorities CRUD
-  async getReportPriorities() {
+  async getReportPriorities({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'report:priorities';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedPriorities = cached as any[];
       return ResponseHelper.response(
         ReportPrioritySerializer,
-        cached,
+        paginateArrayByCursor(cachedPriorities, cursor, limit),
         'Report priorities fetched successfully',
       );
     }
@@ -594,7 +599,7 @@ export class ReportService {
 
     return ResponseHelper.response(
       ReportPrioritySerializer,
-      priorities,
+      paginateArrayByCursor(priorities, cursor, limit),
       'Report priorities fetched successfully',
     );
   }
@@ -636,14 +641,15 @@ export class ReportService {
   }
 
   // Report Visibilities CRUD
-  async getReportVisibilities() {
+  async getReportVisibilities({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'report:visibilities';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedVisibilities = cached as any[];
       return ResponseHelper.response(
         ReportVisibilitySerializer,
-        cached,
+        paginateArrayByCursor(cachedVisibilities, cursor, limit),
         'Report visibilities fetched successfully',
       );
     }
@@ -654,7 +660,7 @@ export class ReportService {
 
     return ResponseHelper.response(
       ReportVisibilitySerializer,
-      visibilities,
+      paginateArrayByCursor(visibilities, cursor, limit),
       'Report visibilities fetched successfully',
     );
   }

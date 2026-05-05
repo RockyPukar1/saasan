@@ -71,7 +71,6 @@ export const HistoricalEventsPage: React.FC = () => {
       historicalEventsApi.getAll({
         category: selectedCategory !== "all" ? selectedCategory : undefined,
         year: selectedYear !== "all" ? parseInt(selectedYear) : undefined,
-        page: 1,
         limit: 50,
       }),
   });

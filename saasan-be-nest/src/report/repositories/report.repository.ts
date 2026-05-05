@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ReportEntity, ReportEntityDocument } from '../entities/report.entity';
-import { ClientSession, Model, Types } from 'mongoose';
+import { ClientSession, Model, PipelineStage, Types } from 'mongoose';
 import { CreateReportDto } from '../dtos/create-report.dto';
 import { ReportIdDto } from '../dtos/report-id.dto';
 import { AdminUpdateReportDto } from '../dtos/admin-update-report.dto';
 import { ReportFilterDto } from '../dtos/report-filter.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 
 @Injectable()
 export class ReportRepository {
@@ -143,8 +147,7 @@ export class ReportRepository {
   }
 
   async getAll(reportFilterDto: ReportFilterDto, requesterId?: string) {
-    const { page = 1, limit = 10 } = reportFilterDto;
-    const skip = (page - 1) * limit;
+    const { cursor, limit = 10 } = reportFilterDto;
     const priorityIds = (reportFilterDto?.priority || []).map(
       (id) => new Types.ObjectId(id),
     );
@@ -164,164 +167,41 @@ export class ReportRepository {
       typeIds.length > 0 ||
       visibilityIds.length > 0;
 
-    const [result] = await this.model.aggregate([
-      {
-        $lookup: {
-          from: 'report_evidences',
-          localField: '_id',
-          foreignField: 'reportId',
-          as: 'evidenceData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'report_types',
-          localField: 'typeId',
-          foreignField: '_id',
-          as: 'typeData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'report_visibilities',
-          localField: 'visibilityId',
-          foreignField: '_id',
-          as: 'visibilityData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'report_statuses',
-          localField: 'statusId',
-          foreignField: '_id',
-          as: 'statusData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'report_priorities',
-          localField: 'priorityId',
-          foreignField: '_id',
-          as: 'priorityData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'report_votes',
-          localField: '_id',
-          foreignField: 'reportId',
-          as: 'voteData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'messages',
-          localField: '_id',
-          foreignField: 'sourceReportId',
-          as: 'discussionThreadData',
-        },
-      },
-      ...(hasFilters
-        ? [
-            {
-              $match: {
-                $or: [
-                  { typeId: { $in: typeIds } },
-                  { visibilityId: { $in: visibilityIds } },
-                  { statusId: { $in: statusIds } },
-                  { priorityId: { $in: priorityIds } },
-                ],
-              },
-            },
-          ]
-        : []),
-      {
-        $addFields: {
-          evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
-          discussionThread: { $arrayElemAt: ['$discussionThreadData', 0] },
-          sourceCategories: {
-            type: { $arrayElemAt: ['$typeData.title', 0] },
-            visibility: { $arrayElemAt: ['$visibilityData.title', 0] },
-            status: { $arrayElemAt: ['$statusData.title', 0] },
-            priority: { $arrayElemAt: ['$priorityData.title', 0] },
-          },
-          currentUserVote: requesterId
-            ? {
-                $first: {
-                  $filter: {
-                    input: '$voteData',
-                    as: 'vote',
-                    cond: {
-                      $eq: ['$$vote.userId', new Types.ObjectId(requesterId)],
-                    },
-                  },
-                },
-              }
-            : null,
-        },
-      },
-      {
-        $addFields: {
-          userVote: '$currentUserVote.direction',
-          hasVoted: {
-            $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
-          },
-          politicianReplyCount: {
-            $size: {
-              $filter: {
-                input: { $ifNull: ['$discussionThread.messages', []] },
-                as: 'message',
-                cond: {
-                  $eq: ['$$message.senderType', 'POLITICIAN'],
-                },
-              },
-            },
-          },
-          awaitingPoliticianReply: {
-            $cond: [
-              '$autoConvertedToMessage',
-              { $eq: ['$politicianReplyCount', 0] },
-              false,
-            ],
-          },
-        },
-      },
-      {
-        $project: {
-          typeData: 0,
-          visibilityData: 0,
-          statusData: 0,
-          priorityData: 0,
-          evidenceData: 0,
-          voteData: 0,
-          currentUserVote: 0,
-          discussionThreadData: 0,
-          discussionThread: 0,
-          politicianReplyCount: 0,
-        },
-      },
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
-          meta: [{ $count: 'total' }],
-        },
-      },
-      {
-        $project: {
-          data: 1,
-          total: {
-            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
-          },
-          page: { $literal: page },
-          limit: { $literal: limit },
-        },
-      },
+    const matchStage = hasFilters
+      ? {
+          $or: [
+            { typeId: { $in: typeIds } },
+            { visibilityId: { $in: visibilityIds } },
+            { statusId: { $in: statusIds } },
+            { priorityId: { $in: priorityIds } },
+          ],
+        }
+      : undefined;
+
+    const [data, totalResult] = await Promise.all([
+      this.model.aggregate([
+        ...this.buildReportListPipeline(requesterId, matchStage),
+        ...(cursor ? [{ $match: descendingObjectIdCursorFilter(cursor) }] : []),
+        { $sort: { _id: -1 } },
+        { $limit: limit + 1 },
+      ]),
+      this.model.aggregate([
+        ...(matchStage
+          ? [
+              {
+                $match: matchStage,
+              } as PipelineStage,
+            ]
+          : []),
+        { $count: 'total' },
+      ]),
     ]);
 
-    return result || { data: [], total: 0, page, limit };
+    return toCursorPaginatedResult(
+      data,
+      limit,
+      totalResult[0]?.total || 0,
+    );
   }
 
   async getMyReports(reporterId: string, requesterId?: string) {
@@ -736,5 +616,141 @@ export class ReportRepository {
         { new: true },
       )
       .exec();
+  }
+
+  private buildReportListPipeline(
+    requesterId?: string,
+    matchStage?: Record<string, unknown>,
+  ): PipelineStage[] {
+    return [
+      {
+        $lookup: {
+          from: 'report_evidences',
+          localField: '_id',
+          foreignField: 'reportId',
+          as: 'evidenceData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_types',
+          localField: 'typeId',
+          foreignField: '_id',
+          as: 'typeData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_visibilities',
+          localField: 'visibilityId',
+          foreignField: '_id',
+          as: 'visibilityData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_statuses',
+          localField: 'statusId',
+          foreignField: '_id',
+          as: 'statusData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_priorities',
+          localField: 'priorityId',
+          foreignField: '_id',
+          as: 'priorityData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'report_votes',
+          localField: '_id',
+          foreignField: 'reportId',
+          as: 'voteData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'messages',
+          localField: '_id',
+          foreignField: 'sourceReportId',
+          as: 'discussionThreadData',
+        },
+      },
+      ...(matchStage
+        ? [
+            {
+              $match: matchStage,
+            } as PipelineStage,
+          ]
+        : []),
+      {
+        $addFields: {
+          evidences: { $arrayElemAt: ['$evidenceData.evidences', 0] },
+          discussionThread: { $arrayElemAt: ['$discussionThreadData', 0] },
+          sourceCategories: {
+            type: { $arrayElemAt: ['$typeData.title', 0] },
+            visibility: { $arrayElemAt: ['$visibilityData.title', 0] },
+            status: { $arrayElemAt: ['$statusData.title', 0] },
+            priority: { $arrayElemAt: ['$priorityData.title', 0] },
+          },
+          currentUserVote: requesterId
+            ? {
+                $first: {
+                  $filter: {
+                    input: '$voteData',
+                    as: 'vote',
+                    cond: {
+                      $eq: ['$$vote.userId', new Types.ObjectId(requesterId)],
+                    },
+                  },
+                },
+              }
+            : null,
+        },
+      },
+      {
+        $addFields: {
+          userVote: '$currentUserVote.direction',
+          hasVoted: {
+            $cond: [{ $ifNull: ['$currentUserVote', false] }, true, false],
+          },
+          politicianReplyCount: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$discussionThread.messages', []] },
+                as: 'message',
+                cond: {
+                  $eq: ['$$message.senderType', 'POLITICIAN'],
+                },
+              },
+            },
+          },
+          awaitingPoliticianReply: {
+            $cond: [
+              '$autoConvertedToMessage',
+              { $eq: ['$politicianReplyCount', 0] },
+              false,
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          typeData: 0,
+          visibilityData: 0,
+          statusData: 0,
+          priorityData: 0,
+          evidenceData: 0,
+          voteData: 0,
+          currentUserVote: 0,
+          discussionThreadData: 0,
+          discussionThread: 0,
+          politicianReplyCount: 0,
+        },
+      },
+    ];
   }
 }

@@ -59,7 +59,7 @@ export interface PollFilters {
   ward?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  cursor?: string | null;
   politician_id?: string;
   party_id?: string;
 }

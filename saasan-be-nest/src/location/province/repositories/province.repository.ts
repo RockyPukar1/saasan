@@ -5,6 +5,10 @@ import {
   ProvinceEntityDocument,
 } from '../entities/province.entity';
 import { CreateProvinceDto } from '../dtos/create-province.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 
 export class ProvinceRepository {
   constructor(
@@ -16,13 +20,20 @@ export class ProvinceRepository {
     return this.model.findOne(filter);
   }
 
-  async find({ page = 1, limit = 10 }) {
-    const skip = (page - 1) * limit;
+  async find({ cursor, limit = 10 }: { cursor?: string; limit?: number }) {
+    const baseFilter = {};
+    const cursorFilter = descendingObjectIdCursorFilter(cursor);
     const [data, total] = await Promise.all([
-      this.model.find().skip(skip).limit(limit),
-      this.model.countDocuments(),
+      this.model
+        .find({
+          ...baseFilter,
+          ...cursorFilter,
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1),
+      this.model.countDocuments(baseFilter),
     ]);
-    return { data, total, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   async findById(provinceId: string) {

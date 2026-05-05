@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 import { LevelNameDto } from 'src/politics/level/dtos/level-name.dto';
 import { CreatePoliticianDto } from '../dtos/create-politician.dto';
 import { PoliticianFilterDto } from '../dtos/politician-filter.dto';
@@ -104,8 +108,7 @@ export class PoliticianRepository {
   }
 
   async getAll(politicianFilterDto: PoliticianFilterDto) {
-    const { page = 1, limit = 10 } = politicianFilterDto;
-    const skip = (page - 1) * limit;
+    const { cursor, limit = 10 } = politicianFilterDto;
     const partyIds = (politicianFilterDto?.party || []).map(
       (id) => new Types.ObjectId(id),
     );
@@ -119,109 +122,49 @@ export class PoliticianRepository {
     const hasFilters =
       partyIds.length > 0 || positionIds.length > 0 || levelIds.length > 0;
 
-    const [result] = await this.model.aggregate([
-      {
-        $lookup: {
-          from: 'parties',
-          localField: 'partyId',
-          foreignField: '_id',
-          as: 'partyData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'positions',
-          localField: 'positionIds',
-          foreignField: '_id',
-          as: 'positionData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'levels',
-          localField: 'positionData.levelId',
-          foreignField: '_id',
-          as: 'levelData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'accountData',
-        },
-      },
-      ...(hasFilters
-        ? [
-            {
-              $match: {
-                $or: [
-                  { partyId: { $in: partyIds } },
-                  { positionIds: { $in: positionIds } },
-                  { 'positionData.levelId': { $in: levelIds } },
-                ],
+    const basePipeline = this.buildPoliticianListPipeline(
+      hasFilters
+        ? {
+            $or: [
+              { partyId: { $in: partyIds } },
+              { positionIds: { $in: positionIds } },
+              { 'positionData.levelId': { $in: levelIds } },
+            ],
+          }
+        : undefined,
+    );
+
+    const [data, totalResult] = await Promise.all([
+      this.model.aggregate([
+        ...basePipeline,
+        ...(cursor ? [{ $match: descendingObjectIdCursorFilter(cursor) }] : []),
+        { $sort: { _id: -1 } },
+        { $limit: limit + 1 },
+      ]),
+      this.model.aggregate([
+        ...this.buildPoliticianLookupStages(),
+        ...(hasFilters
+          ? [
+              {
+                $match: {
+                  $or: [
+                    { partyId: { $in: partyIds } },
+                    { positionIds: { $in: positionIds } },
+                    { 'positionData.levelId': { $in: levelIds } },
+                  ],
+                },
               },
-            },
-          ]
-        : []),
-      {
-        $addFields: {
-          sourceCategories: {
-            party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
-            positions: {
-              $map: {
-                input: '$positionData',
-                as: 'pos',
-                in: '$$pos.abbreviation',
-              },
-            },
-            levels: {
-              $map: {
-                input: '$levelData',
-                as: 'lvl',
-                in: '$$lvl.name',
-              },
-            },
-          },
-          hasAccount: {
-            $gt: [{ $size: '$accountData' }, 0],
-          },
-          accountCreatedAt: {
-            $arrayElemAt: ['$accountData.createdAt', 0],
-          },
-        },
-      },
-      {
-        $project: {
-          partyData: 0,
-          positionData: 0,
-          levelData: 0,
-          accountData: 0,
-        },
-      },
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
-          meta: [{ $count: 'total' }],
-        },
-      },
-      {
-        $project: {
-          data: 1,
-          total: {
-            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
-          },
-          page: { $literal: page },
-          limit: { $literal: limit },
-        },
-      },
+            ]
+          : []),
+        { $count: 'total' },
+      ]),
     ]);
 
-    return result || { data: [], total: 0, page, limit };
+    return toCursorPaginatedResult(
+      data,
+      limit,
+      totalResult[0]?.total || 0,
+    );
   }
 
   findOne(filter: any) {
@@ -335,7 +278,7 @@ export class PoliticianRepository {
       .find({
         politicianId: new Types.ObjectId(politicianId),
       })
-      .sort({ publishedAt: -1, scheduledAt: -1, createdAt: -1 })
+      .sort({ _id: -1 })
       .lean();
   }
 
@@ -403,208 +346,59 @@ export class PoliticianRepository {
 
   async getByLevel(
     { levelName }: LevelNameDto,
-    { page = 1, limit = 10 }: PaginationQueryDto,
+    { cursor, limit = 10 }: PaginationQueryDto,
   ) {
-    const skip = (page - 1) * limit;
+    const matchStage = {
+      'levelData.name': { $regex: levelName, $options: 'i' },
+    };
 
-    const [result] = await this.model.aggregate([
-      {
-        $lookup: {
-          from: 'parties',
-          localField: 'partyId',
-          foreignField: '_id',
-          as: 'partyData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'positions',
-          localField: 'positionIds',
-          foreignField: '_id',
-          as: 'positionData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'levels',
-          localField: 'positionData.levelId',
-          foreignField: '_id',
-          as: 'levelData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'accountData',
-        },
-      },
-      {
-        $match: {
-          'levelData.name': { $regex: levelName, $options: 'i' },
-        },
-      },
-      {
-        $addFields: {
-          sourceCategories: {
-            party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
-            positions: {
-              $map: {
-                input: '$positionData',
-                as: 'pos',
-                in: '$$pos.abbreviation',
-              },
-            },
-            levels: {
-              $map: {
-                input: '$levelData',
-                as: 'lvl',
-                in: '$$lvl.name',
-              },
-            },
-          },
-          hasAccount: {
-            $gt: [{ $size: '$accountData' }, 0],
-          },
-          accountCreatedAt: {
-            $arrayElemAt: ['$accountData.createdAt', 0],
-          },
-        },
-      },
-      {
-        $project: {
-          partyData: 0,
-          positionData: 0,
-          levelData: 0,
-          accountData: 0,
-        },
-      },
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
-          meta: [{ $count: 'total' }],
-        },
-      },
-      {
-        $project: {
-          data: 1,
-          total: {
-            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
-          },
-          page: { $literal: page },
-          limit: { $literal: limit },
-        },
-      },
+    const [data, totalResult] = await Promise.all([
+      this.model.aggregate([
+        ...this.buildPoliticianListPipeline(matchStage),
+        ...(cursor ? [{ $match: descendingObjectIdCursorFilter(cursor) }] : []),
+        { $sort: { _id: -1 } },
+        { $limit: limit + 1 },
+      ]),
+      this.model.aggregate([
+        ...this.buildPoliticianLookupStages(),
+        { $match: matchStage },
+        { $count: 'total' },
+      ]),
     ]);
 
-    return result || { data: [], total: 0, page, limit };
+    return toCursorPaginatedResult(
+      data,
+      limit,
+      totalResult[0]?.total || 0,
+    );
   }
 
   async getByPartyId(
     partyId: string,
-    { page = 1, limit = 10 }: PaginationQueryDto,
+    { cursor, limit = 10 }: PaginationQueryDto,
   ) {
-    const skip = (page - 1) * limit;
+    const matchStage = {
+      partyId: new Types.ObjectId(partyId),
+    };
 
-    const [result] = await this.model.aggregate([
-      {
-        $match: {
-          partyId: new Types.ObjectId(partyId),
-        },
-      },
-      {
-        $lookup: {
-          from: 'parties',
-          localField: 'partyId',
-          foreignField: '_id',
-          as: 'partyData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'positions',
-          localField: 'positionIds',
-          foreignField: '_id',
-          as: 'positionData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'levels',
-          localField: 'positionData.levelId',
-          foreignField: '_id',
-          as: 'levelData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'accountData',
-        },
-      },
-      {
-        $addFields: {
-          sourceCategories: {
-            party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
-            positions: {
-              $map: {
-                input: '$positionData',
-                as: 'pos',
-                in: '$$pos.abbreviation',
-              },
-            },
-            levels: {
-              $map: {
-                input: '$levelData',
-                as: 'lvl',
-                in: '$$lvl.name',
-              },
-            },
-          },
-          hasAccount: {
-            $gt: [{ $size: '$accountData' }, 0],
-          },
-          accountCreatedAt: {
-            $arrayElemAt: ['$accountData.createdAt', 0],
-          },
-        },
-      },
-      {
-        $project: {
-          partyData: 0,
-          positionData: 0,
-          levelData: 0,
-          accountData: 0,
-        },
-      },
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
-          meta: [{ $count: 'total' }],
-        },
-      },
-      {
-        $project: {
-          data: 1,
-          total: {
-            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
-          },
-          page: { $literal: page },
-          limit: { $literal: limit },
-        },
-      },
+    const [data, totalResult] = await Promise.all([
+      this.model.aggregate([
+        ...this.buildPoliticianListPipeline(matchStage),
+        ...(cursor ? [{ $match: descendingObjectIdCursorFilter(cursor) }] : []),
+        { $sort: { _id: -1 } },
+        { $limit: limit + 1 },
+      ]),
+      this.model.aggregate([
+        { $match: matchStage },
+        { $count: 'total' },
+      ]),
     ]);
 
-    return result || { data: [], total: 0, page, limit };
+    return toCursorPaginatedResult(
+      data,
+      limit,
+      totalResult[0]?.total || 0,
+    );
   }
 
   async findByIdWithRelations({ politicianId }: PoliticianIdDto) {
@@ -770,5 +564,92 @@ export class PoliticianRepository {
 
   private async countDocuments(filter?: any) {
     return await this.model.countDocuments(filter);
+  }
+
+  private buildPoliticianLookupStages(): PipelineStage[] {
+    return [
+      {
+        $lookup: {
+          from: 'parties',
+          localField: 'partyId',
+          foreignField: '_id',
+          as: 'partyData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'positions',
+          localField: 'positionIds',
+          foreignField: '_id',
+          as: 'positionData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'levels',
+          localField: 'positionData.levelId',
+          foreignField: '_id',
+          as: 'levelData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'accountData',
+        },
+      },
+    ];
+  }
+
+  private buildPoliticianListPipeline(
+    match?: Record<string, unknown>,
+  ): PipelineStage[] {
+    return [
+      ...this.buildPoliticianLookupStages(),
+      ...(match
+        ? [
+            {
+              $match: match,
+            } as PipelineStage,
+          ]
+        : []),
+      {
+        $addFields: {
+          sourceCategories: {
+            party: { $arrayElemAt: ['$partyData.abbreviation', 0] },
+            positions: {
+              $map: {
+                input: '$positionData',
+                as: 'pos',
+                in: '$$pos.abbreviation',
+              },
+            },
+            levels: {
+              $map: {
+                input: '$levelData',
+                as: 'lvl',
+                in: '$$lvl.name',
+              },
+            },
+          },
+          hasAccount: {
+            $gt: [{ $size: '$accountData' }, 0],
+          },
+          accountCreatedAt: {
+            $arrayElemAt: ['$accountData.createdAt', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          partyData: 0,
+          positionData: 0,
+          levelData: 0,
+          accountData: 0,
+        },
+      },
+    ];
   }
 }

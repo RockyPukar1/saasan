@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
@@ -20,6 +21,7 @@ import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permission.constants';
 import { CreateEventDto } from '../dtos/create-event.dto';
 import { UpdateEventDto } from '../dtos/update-event.dto';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 @UseGuards(HttpAccessTokenGuard)
 @Controller('event')
@@ -27,8 +29,8 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @Get()
-  async getAll() {
-    return this.eventService.getAll();
+  async getAll(@Query() paginationQuery: PaginationQueryDto) {
+    return this.eventService.getAll(paginationQuery);
   }
 
   @Get(':eventId')

@@ -49,9 +49,9 @@ interface ApiResponse<T> {
   meta?: {
     pagination?: {
       total: number;
-      page: number;
       limit: number;
-      totalPages?: number;
+      nextCursor?: string | null;
+      hasNext?: boolean;
     };
   };
 }
@@ -59,8 +59,9 @@ interface ApiResponse<T> {
 interface ApiData<T> {
   data: T;
   total?: number;
-  page?: number;
   limit?: number;
+  nextCursor?: string | null;
+  hasNext?: boolean;
 }
 
 interface LoginData {
@@ -68,7 +69,8 @@ interface LoginData {
   password: string;
 }
 
-const DEFAULT_LIST_LIMIT = 1000;
+const DEFAULT_LIST_LIMIT = 50;
+const CURSOR_BATCH_LIMIT = 100;
 
 const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
   if (
@@ -93,8 +95,26 @@ const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
 const toApiData = <T>(response: ApiResponse<T>): ApiData<T> => ({
   data: response.data,
   total: response.meta?.pagination?.total,
-  page: response.meta?.pagination?.page,
   limit: response.meta?.pagination?.limit,
+  nextCursor: response.meta?.pagination?.nextCursor,
+  hasNext: response.meta?.pagination?.hasNext,
+});
+
+const toPaginatedApiResponse = <T>(
+  data: T[],
+  message = "Success",
+): ApiResponse<T[]> => ({
+  success: true,
+  data,
+  message,
+  meta: {
+    pagination: {
+      total: data.length,
+      limit: data.length || 1,
+      nextCursor: null,
+      hasNext: false,
+    },
+  },
 });
 
 export interface BudgetItem {
@@ -374,6 +394,25 @@ class ApiService {
     }
   }
 
+  private async fetchAllCursorPages<T>(
+    fetchPage: (cursor?: string | null) => Promise<ApiResponse<T[]>>,
+  ): Promise<ApiResponse<T[]>> {
+    const allItems: T[] = [];
+    let cursor: string | null | undefined = null;
+    let hasNext = true;
+    let message = "Success";
+
+    while (hasNext) {
+      const response = await fetchPage(cursor);
+      allItems.push(...response.data);
+      cursor = response.meta?.pagination?.nextCursor ?? null;
+      hasNext = Boolean(response.meta?.pagination?.hasNext && cursor);
+      message = response.message || message;
+    }
+
+    return toPaginatedApiResponse(allItems, message);
+  }
+
   // Auth APIs
   async login(data: LoginData): Promise<ApiResponse<AuthPayload>> {
     const response = await this.request<AuthPayload>(
@@ -531,7 +570,12 @@ class ApiService {
   }
 
   async getBudgets(): Promise<ApiResponse<BudgetItem[]>> {
-    const response = await this.request<any[]>("GET", "/budget");
+    const response = await this.fetchAllCursorPages<any>((cursor) =>
+      this.request<any[]>(
+        "GET",
+        `/budget?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
+    );
     return {
       ...response,
       data:
@@ -550,11 +594,10 @@ class ApiService {
 
   // Politicians APIs
   async getPoliticiansByFilter(
-    filter: IPoliticianFilter & { page?: number; limit?: number },
+    filter: IPoliticianFilter & { cursor?: string | null; limit?: number },
   ): Promise<ApiResponse<IPolitician[]>> {
     try {
       return this.request<IPolitician[]>("POST", "/politician/filter", {
-        page: 1,
         limit: DEFAULT_LIST_LIMIT,
         ...filter,
       });
@@ -572,9 +615,11 @@ class ApiService {
     partyId: string,
   ): Promise<ApiResponse<IPolitician[]>> {
     try {
-      return this.request<IPolitician[]>(
-        "GET",
-        `/politician?partyId=${partyId}&page=1&limit=${DEFAULT_LIST_LIMIT}`,
+      return this.fetchAllCursorPages<IPolitician>((cursor) =>
+        this.request<IPolitician[]>(
+          "GET",
+          `/politician?partyId=${partyId}&limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+        ),
       );
     } catch (error) {
       console.error("Error fetching politicians by party:", error);
@@ -583,15 +628,30 @@ class ApiService {
   }
 
   async getGovernmentLevels(): Promise<ApiResponse<IGovernmentLevel[]>> {
-    return this.request<IGovernmentLevel[]>("GET", "/level");
+    return this.fetchAllCursorPages<IGovernmentLevel>((cursor) =>
+      this.request<IGovernmentLevel[]>(
+        "GET",
+        `/level?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
+    );
   }
 
   async getPositions(): Promise<ApiResponse<IPosition[]>> {
-    return this.request<IPosition[]>("GET", "/position");
+    return this.fetchAllCursorPages<IPosition>((cursor) =>
+      this.request<IPosition[]>(
+        "GET",
+        `/position?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
+    );
   }
 
   async getParties(): Promise<ApiResponse<IParty[]>> {
-    return this.request<IParty[]>("GET", "/party");
+    return this.fetchAllCursorPages<IParty>((cursor) =>
+      this.request<IParty[]>(
+        "GET",
+        `/party?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
+    );
   }
 
   async ratePolitician(
@@ -603,9 +663,11 @@ class ApiService {
 
   // Location APIs
   async getAllProvinces(): Promise<ApiData<IProvince[]>> {
-    const response = await this.request<IProvince[]>(
-      "GET",
-      `/province?page=1&limit=${DEFAULT_LIST_LIMIT}`,
+    const response = await this.fetchAllCursorPages<IProvince>((cursor) =>
+      this.request<IProvince[]>(
+        "GET",
+        `/province?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
     );
 
     return toApiData(response);
@@ -614,9 +676,11 @@ class ApiService {
   async getDistrictsByProvinceId(
     provinceId: string,
   ): Promise<ApiData<IDistrict[]>> {
-    const response = await this.request<IDistrict[]>(
-      "GET",
-      `/district/province/${provinceId}?page=1&limit=${DEFAULT_LIST_LIMIT}`,
+    const response = await this.fetchAllCursorPages<IDistrict>((cursor) =>
+      this.request<IDistrict[]>(
+        "GET",
+        `/district/province/${provinceId}?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
     );
 
     return toApiData(response);
@@ -631,9 +695,11 @@ class ApiService {
   async getMunicipalitiesByDistrictId(
     districtId: string,
   ): Promise<ApiData<IMunicipality[]>> {
-    const response = await this.request<IMunicipality[]>(
-      "GET",
-      `/municipality/district/${districtId}?page=1&limit=${DEFAULT_LIST_LIMIT}`,
+    const response = await this.fetchAllCursorPages<IMunicipality>((cursor) =>
+      this.request<IMunicipality[]>(
+        "GET",
+        `/municipality/district/${districtId}?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
     );
     return toApiData(response);
   }
@@ -641,9 +707,11 @@ class ApiService {
   async getWardsByMunicipalityId(
     municipalityId: string,
   ): Promise<ApiData<IWard[]>> {
-    const response = await this.request<IWard[]>(
-      "GET",
-      `/ward/municipality/${municipalityId}?page=1&limit=${DEFAULT_LIST_LIMIT}`,
+    const response = await this.fetchAllCursorPages<IWard>((cursor) =>
+      this.request<IWard[]>(
+        "GET",
+        `/ward/municipality/${municipalityId}?limit=${CURSOR_BATCH_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      ),
     );
     return toApiData(response);
   }
@@ -669,10 +737,12 @@ class ApiService {
   }
 
   async getAllReports(): Promise<ApiResponse<IReport[]>> {
-    return this.request<IReport[]>("POST", `/report/filter`, {
-      page: 1,
-      limit: DEFAULT_LIST_LIMIT,
-    });
+    return this.fetchAllCursorPages<IReport>((cursor) =>
+      this.request<IReport[]>("POST", `/report/filter`, {
+        ...(cursor ? { cursor } : {}),
+        limit: CURSOR_BATCH_LIMIT,
+      }),
+    );
   }
 
   async getReportById(id: string): Promise<ApiResponse<IReport>> {
@@ -739,21 +809,28 @@ class ApiService {
   }
 
   async getAllPolls(filters?: PollFilters): Promise<Poll[]> {
-    const queryParams = filters
-      ? "?" +
-        Object.entries(filters)
-          .filter(([_, value]) => value)
-          .map(
-            ([key, value]) =>
-              `${key}=${encodeURIComponent(JSON.stringify(value))}`,
-          )
-          .join("&")
-      : "";
+    const serializeFilters = (cursor?: string | null) => {
+      const params = new URLSearchParams();
 
-    const response = await this.request<any[]>(
-      "GET",
-      `/poll${queryParams}`,
+      Object.entries(filters || {}).forEach(([key, value]) => {
+        if (value) {
+          params.set(key, JSON.stringify(value));
+        }
+      });
+
+      params.set("limit", String(CURSOR_BATCH_LIMIT));
+
+      if (cursor) {
+        params.set("cursor", cursor);
+      }
+
+      return params.toString();
+    };
+
+    const response = await this.fetchAllCursorPages<any>((cursor) =>
+      this.request<any[]>("GET", `/poll?${serializeFilters(cursor)}`),
     );
+
     return response.data || [];
   }
 
@@ -978,10 +1055,10 @@ class ApiService {
 
   async getTransparencyFeed(
     limit: number = 20,
-    offset: number = 0,
+    cursor?: string | null,
   ): Promise<ApiResponse<any[]>> {
     void limit;
-    void offset;
+    void cursor;
     return unsupportedRoute("Viral transparency feed");
   }
 

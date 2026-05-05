@@ -99,7 +99,7 @@ export default function ReportEditForm({
 
   const { data: politiciansResponse } = useQuery({
     queryKey: ["politicians-approval-options"],
-    queryFn: () => politicsApi.getAll(undefined, { page: 1, limit: 100 }),
+    queryFn: () => politicsApi.getAllList(),
   });
 
   const { data: approvalSuggestionsResponse } = useQuery({
@@ -138,7 +138,7 @@ export default function ReportEditForm({
 
   const politicianOptions = useMemo(
     () =>
-      (politiciansResponse?.data || []).map((politician) => ({
+      (politiciansResponse || []).map((politician) => ({
         label: politician.fullName,
         value: politician.id,
       })),

@@ -37,8 +37,14 @@ export class MunicipalityService {
     await this.redisCache.del('location:municipalities');
   }
 
-  async getMunicipalities({ page = 1, limit = 10 }) {
-    const cacheKey = `location:municipalities:${page}:${limit}`;
+  async getMunicipalities({
+    cursor,
+    limit = 10,
+  }: {
+    cursor?: string;
+    limit?: number;
+  }) {
+    const cacheKey = `location:municipalities:${cursor || 'initial'}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
@@ -49,7 +55,7 @@ export class MunicipalityService {
       );
     }
 
-    const data = await this.municipalityRepo.find({ page, limit });
+    const data = await this.municipalityRepo.find({ cursor, limit });
 
     await this.redisCache.set(cacheKey, data);
 
@@ -62,10 +68,10 @@ export class MunicipalityService {
 
   async getMunicipalitiesByProvinceId(
     provinceIdDto: ProvinceIdDto,
-    { page, limit },
+    { cursor, limit }: { cursor?: string; limit?: number },
   ) {
     const data = await this.municipalityRepo.findByProvinceId(provinceIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(
@@ -77,10 +83,10 @@ export class MunicipalityService {
 
   async getMunicipalitiesByDistrictId(
     districtIdDto: DistrictIdDto,
-    { page, limit },
+    { cursor, limit }: { cursor?: string; limit?: number },
   ) {
     const data = await this.municipalityRepo.findByDistrictId(districtIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(

@@ -154,9 +154,9 @@ interface ApiResponse<T> {
   meta?: {
     pagination?: {
       total: number;
-      page: number;
       limit: number;
-      totalPages?: number;
+      nextCursor?: string | null;
+      hasNext?: boolean;
     };
   };
 }
@@ -182,13 +182,13 @@ const unwrapPaginatedResponse = <T>(response: {
   const payload = response.data as
     | (ApiResponse<T[]> & {
         meta?: {
-          pagination?: {
-            total: number;
-            page: number;
-            limit: number;
-            totalPages?: number;
+            pagination?: {
+              total: number;
+              limit: number;
+              nextCursor?: string | null;
+              hasNext?: boolean;
+            };
           };
-        };
       })
     | PaginatedResponse<T>;
 
@@ -202,17 +202,9 @@ const unwrapPaginatedResponse = <T>(response: {
     return {
       data: payload.data,
       total: pagination?.total ?? payload.data.length,
-      page: pagination?.page ?? 1,
       limit: pagination?.limit ?? Math.max(payload.data.length, 1),
-      totalPages:
-        pagination?.totalPages ??
-        Math.max(
-          1,
-          Math.ceil(
-            (pagination?.total ?? payload.data.length) /
-              Math.max(pagination?.limit ?? Math.max(payload.data.length, 1), 1),
-          ),
-        ),
+      nextCursor: pagination?.nextCursor ?? null,
+      hasNext: pagination?.hasNext ?? false,
     };
   }
 
@@ -365,7 +357,7 @@ export interface MessageQueryParams {
   constituencyId?: string;
   municipalityId?: string;
   wardId?: string;
-  page?: number;
+  cursor?: string;
   limit?: number;
 }
 
@@ -492,11 +484,14 @@ export const reportsApi = {
 
 export const promisesApi = {
   getAll: async (
-    page = 1,
+    cursor?: string | null,
     limit = DEFAULT_LIST_LIMIT,
   ): Promise<PaginatedResponse<PromiseDto>> => {
     const response = await api.get("/politician/portal/promises", {
-      params: { page, limit },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit,
+      },
     });
     return unwrapPaginatedResponse<PromiseDto>(response);
   },
@@ -530,11 +525,14 @@ export const promisesApi = {
 
 export const announcementsApi = {
   getAll: async (
-    page = 1,
+    cursor?: string | null,
     limit = DEFAULT_LIST_LIMIT,
   ): Promise<PaginatedResponse<AnnouncementDto>> => {
     const response = await api.get("/politician/portal/announcements", {
-      params: { page, limit },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit,
+      },
     });
     return unwrapPaginatedResponse<AnnouncementDto>(response);
   },

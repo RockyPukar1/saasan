@@ -7,6 +7,7 @@ import {
 import { Model, Types } from 'mongoose';
 import { CreateReportActivityDto } from '../dtos/create-report-activity.dto';
 import { ClientSession } from 'mongoose';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 
 @Injectable()
 export class ReportActivityRepository {
@@ -56,7 +57,7 @@ export class ReportActivityRepository {
     });
   }
 
-  async getByReportId(reportId: string, page = 1, limit = 20) {
+  async getByReportId(reportId: string, cursor?: string, limit = 20) {
     const record = await this.model.findOne({
       reportId: new Types.ObjectId(reportId),
     });
@@ -66,15 +67,7 @@ export class ReportActivityRepository {
         new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime(),
     );
 
-    const start = (page - 1) * limit;
-    const data = activities.slice(start, start + limit);
-
-    return {
-      data,
-      total: activities.length,
-      page,
-      limit,
-    };
+    return paginateArrayByCursor(activities, cursor, limit);
   }
 
   async getRecent(limit = 10) {

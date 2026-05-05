@@ -73,22 +73,21 @@ export class CacheWarmupService implements OnModuleInit {
   }
 
   private async warmupLocationData() {
-    const page = 1;
     const limit = 10;
     const [provinces, districts, municipalities, wards] = await Promise.all([
-      this.provinceRepository.find({ page, limit }),
-      this.districtRepository.find({ page, limit }),
-      this.municipalityRepository.find({ page, limit }),
-      this.wardRepository.find({ page, limit }),
+      this.provinceRepository.find({ limit }),
+      this.districtRepository.find({ limit }),
+      this.municipalityRepository.find({ limit }),
+      this.wardRepository.find({ limit }),
     ]);
 
-    await this.redisCache.set(`location:provinces:${page}:${limit}`, provinces);
-    await this.redisCache.set(`location:districts:${page}:${limit}`, districts);
+    await this.redisCache.set(`location:provinces:initial:${limit}`, provinces);
+    await this.redisCache.set(`location:districts:initial:${limit}`, districts);
     await this.redisCache.set(
-      `location:municipalities:${page}:${limit}`,
+      `location:municipalities:initial:${limit}`,
       municipalities,
     );
-    await this.redisCache.set(`location:wards:${page}:${limit}`, wards);
+    await this.redisCache.set(`location:wards:initial:${limit}`, wards);
 
     this.logger.log(
       `Warmed up location data: ${provinces.data.length} provinces, ${districts.data.length} districts, ${municipalities.data.length} municipalities, ${wards.data.length} wards`,

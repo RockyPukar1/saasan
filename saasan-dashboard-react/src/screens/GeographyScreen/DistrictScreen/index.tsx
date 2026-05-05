@@ -21,34 +21,71 @@ export default function DistrictScreen() {
   const [activeTab, setActiveTab] = useState<EntityType>("municipality");
 
   const PAGE_SIZE = 10;
-  const [municipalityPage, setMunicipalityPage] = useState(1);
-  const [wardPage, setWardPage] = useState(1);
-  const [constituencyPage, setConstituencyPage] = useState(1);
+  const [cursorHistories, setCursorHistories] = useState<
+    Record<"municipality" | "ward" | "constituency", Array<string | null>>
+  >({
+    municipality: [null],
+    ward: [null],
+    constituency: [null],
+  });
+
+  const currentCursor = (entity: "municipality" | "ward" | "constituency") =>
+    cursorHistories[entity][cursorHistories[entity].length - 1] || null;
+  const currentPage = (entity: "municipality" | "ward" | "constituency") =>
+    cursorHistories[entity].length;
+  const goToNextPage = (
+    entity: "municipality" | "ward" | "constituency",
+    nextCursor?: string | null,
+  ) => {
+    if (!nextCursor) {
+      return;
+    }
+
+    setCursorHistories((previous) => ({
+      ...previous,
+      [entity]: [...previous[entity], nextCursor],
+    }));
+  };
+  const goToPreviousPage = (
+    entity: "municipality" | "ward" | "constituency",
+  ) => {
+    setCursorHistories((previous) => ({
+      ...previous,
+      [entity]:
+        previous[entity].length > 1
+          ? previous[entity].slice(0, -1)
+          : previous[entity],
+    }));
+  };
 
   const { data: municipalitiesData, isLoading: municipalitiesLoading } =
     useQuery({
-      queryKey: ["municipalities", municipalityPage, districtId],
+      queryKey: ["municipalities", currentCursor("municipality"), districtId],
       queryFn: () =>
         geographicApi.getMunicipalitiesByDistrictId(
           districtId!,
-          municipalityPage,
+          currentCursor("municipality"),
           PAGE_SIZE,
         ),
     });
 
   const { data: wardsData, isLoading: wardsLoading } = useQuery({
-    queryKey: ["wards", wardPage, districtId],
+    queryKey: ["wards", currentCursor("ward"), districtId],
     queryFn: () =>
-      geographicApi.getWardsByDistrictId(districtId!, wardPage, PAGE_SIZE),
+      geographicApi.getWardsByDistrictId(
+        districtId!,
+        currentCursor("ward"),
+        PAGE_SIZE,
+      ),
   });
 
   const { data: constituenciesData, isLoading: constituenciesLoading } =
     useQuery({
-      queryKey: ["constituencies", constituencyPage, districtId],
+      queryKey: ["constituencies", currentCursor("constituency"), districtId],
       queryFn: () =>
         geographicApi.getConstituenciesByDistrictId(
           districtId!,
-          constituencyPage,
+          currentCursor("constituency"),
           PAGE_SIZE,
         ),
     });
@@ -111,8 +148,11 @@ export default function DistrictScreen() {
             isLoading: municipalitiesLoading,
             tabData: municipalities,
             columns: [{ key: "name", label: "Name" }],
-            page: municipalityPage,
-            setPage: setMunicipalityPage,
+            page: currentPage("municipality"),
+            hasNext: municipalitiesData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("municipality"),
+            goToNextPage: () =>
+              goToNextPage("municipality", municipalitiesData?.nextCursor),
           },
           ward: {
             detailsPage: "/geography/ward",
@@ -128,8 +168,10 @@ export default function DistrictScreen() {
                 label: "Constituency",
               },
             ],
-            page: wardPage,
-            setPage: setWardPage,
+            page: currentPage("ward"),
+            hasNext: wardsData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("ward"),
+            goToNextPage: () => goToNextPage("ward", wardsData?.nextCursor),
           },
           constituency: {
             detailsPage: "/geography/constituency",
@@ -141,8 +183,11 @@ export default function DistrictScreen() {
               { key: "constituencyNumber", label: "Constituency Number" },
               { key: "district.name", label: "District" },
             ],
-            page: constituencyPage,
-            setPage: setConstituencyPage,
+            page: currentPage("constituency"),
+            hasNext: constituenciesData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("constituency"),
+            goToNextPage: () =>
+              goToNextPage("constituency", constituenciesData?.nextCursor),
           },
         }}
       />

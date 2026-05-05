@@ -21,17 +21,31 @@ export default function MunicipalityScreen() {
   const [activeTab, setActiveTab] = useState<EntityType>("ward");
 
   const PAGE_SIZE = 10;
-  const [wardPage, setWardPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
+  const currentCursor = cursorHistory[cursorHistory.length - 1] || null;
+  const currentPage = cursorHistory.length;
 
   const { data: wardsData, isLoading: wardsLoading } = useQuery({
-    queryKey: ["wards", wardPage, municipalityId],
+    queryKey: ["wards", currentCursor, municipalityId],
     queryFn: () =>
       geographicApi.getWardsByMunicipalityId(
         municipalityId!,
-        wardPage,
+        currentCursor,
         PAGE_SIZE,
       ),
   });
+  const goToPreviousPage = () => {
+    setCursorHistory((previous) =>
+      previous.length > 1 ? previous.slice(0, -1) : previous,
+    );
+  };
+  const goToNextPage = () => {
+    if (!wardsData?.nextCursor) {
+      return;
+    }
+
+    setCursorHistory((previous) => [...previous, wardsData.nextCursor]);
+  };
   const wards = wardsData?.data || [];
   const wardsTotal = wardsData?.total || 0;
 
@@ -93,8 +107,10 @@ export default function MunicipalityScreen() {
                 label: "Constituency",
               },
             ],
-            page: wardPage,
-            setPage: setWardPage,
+            page: currentPage,
+            hasNext: wardsData?.hasNext || false,
+            goToPreviousPage,
+            goToNextPage,
           },
         }}
       />

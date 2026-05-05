@@ -2,6 +2,10 @@ import { ClientSession, Model, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 import { PollEntity, PollEntityDocument } from '../entities/poll.entity';
 import { CreatePollDto } from '../dtos/create-poll.dto';
 
@@ -14,98 +18,92 @@ export class PollRepository {
 
   async getAll(
     userId: string,
-    { page = 1, limit = 10 }: PaginationQueryDto,
+    { cursor, limit = 10 }: PaginationQueryDto,
   ) {
-    const skip = (page - 1) * limit;
+    const baseMatch = { status: 'active' };
+    const cursorMatch = descendingObjectIdCursorFilter(cursor);
 
-    const [result] = await this.model.aggregate([
-      {
-        $match: { status: 'active' },
-      },
-      {
-        $lookup: {
-          from: 'poll_options',
-          localField: '_id',
-          foreignField: 'pollId',
-          as: 'options',
+    const [data, total] = await Promise.all([
+      this.model.aggregate([
+        {
+          $match: {
+            ...baseMatch,
+            ...cursorMatch,
+          },
         },
-      },
-      {
-        $lookup: {
-          from: 'poll_votes',
-          foreignField: 'pollId',
-          localField: '_id',
-          as: 'allVotes',
+        {
+          $lookup: {
+            from: 'poll_options',
+            localField: '_id',
+            foreignField: 'pollId',
+            as: 'options',
+          },
         },
-      },
-      {
-        $addFields: {
-          totalVotes: { $size: '$allVotes' },
-          options: {
-            $map: {
-              input: '$options',
-              as: 'opt',
-              in: {
-                $mergeObjects: [
-                  '$$opt',
-                  {
-                    voteCount: {
-                      $size: {
-                        $filter: {
-                          input: '$allVotes',
-                          as: 'v',
-                          cond: { $eq: ['$$v.optionId', '$$opt._id'] },
+        {
+          $lookup: {
+            from: 'poll_votes',
+            foreignField: 'pollId',
+            localField: '_id',
+            as: 'allVotes',
+          },
+        },
+        {
+          $addFields: {
+            totalVotes: { $size: '$allVotes' },
+            options: {
+              $map: {
+                input: '$options',
+                as: 'opt',
+                in: {
+                  $mergeObjects: [
+                    '$$opt',
+                    {
+                      voteCount: {
+                        $size: {
+                          $filter: {
+                            input: '$allVotes',
+                            as: 'v',
+                            cond: { $eq: ['$$v.optionId', '$$opt._id'] },
+                          },
                         },
                       },
-                    },
-                    isVoted: {
-                      $anyElementTrue: {
-                        $map: {
-                          input: '$allVotes',
-                          as: 'v',
-                          in: {
-                            $and: [
-                              {
-                                $eq: ['$$v.userId', new Types.ObjectId(userId)],
-                              },
-                              { $eq: ['$$v.optionId', '$$opt._id'] },
-                            ],
+                      isVoted: {
+                        $anyElementTrue: {
+                          $map: {
+                            input: '$allVotes',
+                            as: 'v',
+                            in: {
+                              $and: [
+                                {
+                                  $eq: ['$$v.userId', new Types.ObjectId(userId)],
+                                },
+                                { $eq: ['$$v.optionId', '$$opt._id'] },
+                              ],
+                            },
                           },
                         },
                       },
                     },
-                  },
-                ],
+                  ],
+                },
               },
             },
           },
         },
-      },
-      {
-        $project: { allVotes: 0 },
-      },
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
-          meta: [{ $count: 'total' }],
+        {
+          $project: { allVotes: 0 },
         },
-      },
-      {
-        $project: {
-          data: 1,
-          total: {
-            $ifNull: [{ $arrayElemAt: ['$meta.total', 0] }, 0],
-          },
-          page: { $literal: page },
-          limit: { $literal: limit },
+        {
+          $sort: { _id: -1 },
         },
-      },
+        {
+          $limit: limit + 1,
+        },
+      ]),
+      this.model.countDocuments(baseMatch),
     ]);
 
-    return result || { data: [], total: 0, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   async create(pollData: Omit<CreatePollDto, 'options'>) {

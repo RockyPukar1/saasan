@@ -33,8 +33,14 @@ export class ProvinceService {
     await this.redisCache.del('location:provinces');
   }
 
-  async getProvinces({ page = 1, limit = 10 }) {
-    const cacheKey = `location:provinces:${page}:${limit}`;
+  async getProvinces({
+    cursor,
+    limit = 10,
+  }: {
+    cursor?: string;
+    limit?: number;
+  }) {
+    const cacheKey = `location:provinces:${cursor || 'initial'}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
@@ -45,7 +51,7 @@ export class ProvinceService {
       );
     }
 
-    const provinces = await this.provinceRepo.find({ page, limit });
+    const provinces = await this.provinceRepo.find({ cursor, limit });
 
     await this.redisCache.set(cacheKey, provinces);
 

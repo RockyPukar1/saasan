@@ -1,9 +1,9 @@
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
-  page: number;
   limit: number;
-  totalPages: number;
+  nextCursor: string | null;
+  hasNext: boolean;
 }
 
 // API Response types

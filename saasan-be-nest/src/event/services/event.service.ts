@@ -1,4 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 import { EventRepository } from '../repositories/event.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { CreateEventDto } from '../dtos/create-event.dto';
@@ -10,11 +12,11 @@ import { EventSerializer } from '../serializers/event.serializer';
 export class EventService {
   constructor(private readonly eventRepo: EventRepository) {}
 
-  async getAll() {
+  async getAll({ cursor, limit }: PaginationQueryDto) {
     const events = await this.eventRepo.getAll();
     return ResponseHelper.response(
       EventSerializer,
-      events,
+      paginateArrayByCursor(events, cursor, limit),
       'Events fetched successfully',
     );
   }

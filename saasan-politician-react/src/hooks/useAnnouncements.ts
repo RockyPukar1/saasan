@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { announcementsApi } from "@/services/api";
 
-export const useAnnouncements = (page = 1, limit = 10) => {
+export const useAnnouncements = (cursor?: string | null, limit = 10) => {
   return useQuery({
-    queryKey: ["announcements", page, limit],
-    queryFn: () => announcementsApi.getAll(page, limit),
+    queryKey: ["announcements", cursor, limit],
+    queryFn: () => announcementsApi.getAll(cursor, limit),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 10 * 60 * 1000, // 10 minutes
   });

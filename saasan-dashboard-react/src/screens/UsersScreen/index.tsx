@@ -51,17 +51,36 @@ export default function UsersScreen() {
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+  const currentCursor = cursorHistory[cursorHistory.length - 1] || null;
+  const currentPage = cursorHistory.length;
+
   const queryClient = useQueryClient();
 
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ["users", currentPage],
-    queryFn: () => userApi.getAll(currentPage, PAGE_SIZE),
+    queryKey: ["users", currentCursor],
+    queryFn: () => userApi.getAll(currentCursor, PAGE_SIZE),
   });
+
+  const resetPagination = () => setCursorHistory([null]);
+
+  const goToNextPage = () => {
+    if (!usersData?.nextCursor) {
+      return;
+    }
+
+    setCursorHistory((previous) => [...previous, usersData.nextCursor]);
+  };
+
+  const goToPreviousPage = () => {
+    setCursorHistory((previous) =>
+      previous.length > 1 ? previous.slice(0, -1) : previous,
+    );
+  };
 
   // Delete user mutation
   const deleteMutation = useMutation({
@@ -215,7 +234,7 @@ export default function UsersScreen() {
               <div className="flex items-end">
                 <Button
                   onClick={() => {
-                    setCurrentPage(1);
+                    resetPagination();
                     setToApplyFilter({ search: searchQuery });
                   }}
                   variant="outline"
@@ -229,7 +248,7 @@ export default function UsersScreen() {
                 <Button
                   onClick={() => {
                     setSearchQuery("");
-                    setCurrentPage(1);
+                    resetPagination();
                     setToApplyFilter(initialFilter);
                   }}
                   variant="outline"
@@ -371,13 +390,15 @@ export default function UsersScreen() {
                   </div>
                 </div>
               ))}
-              {usersData && usersData.totalPages > 1 && (
+              {usersData && (currentPage > 1 || usersData.hasNext) && (
                 <RenderPagination
                   currentPage={currentPage}
-                  totalPages={usersData.totalPages}
-                  onPageChange={setCurrentPage}
+                  hasNext={usersData.hasNext}
+                  onPrevious={goToPreviousPage}
+                  onNext={goToNextPage}
                   totalItems={usersData.total}
                   pageSize={PAGE_SIZE}
+                  currentItemCount={filteredUsers.length}
                   itemName="users"
                 />
               )}

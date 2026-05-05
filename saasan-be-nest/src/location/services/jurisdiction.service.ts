@@ -30,6 +30,12 @@ export interface PoliticianJurisdiction {
   jurisdictionLevel: JurisdictionLevel;
 }
 
+type CursorPage<T> = {
+  data: T[];
+  nextCursor: string | null;
+  hasNext: boolean;
+};
+
 @Injectable()
 export class JurisdictionService {
   constructor(
@@ -128,6 +134,23 @@ export class JurisdictionService {
     });
   }
 
+  private async fetchAllCursorPages<T>(
+    fetchPage: (cursor?: string) => Promise<CursorPage<T>>,
+  ) {
+    const allItems: T[] = [];
+    let cursor: string | undefined;
+    let hasNext = true;
+
+    while (hasNext) {
+      const page = await fetchPage(cursor);
+      allItems.push(...page.data);
+      cursor = page.nextCursor || undefined;
+      hasNext = Boolean(page.hasNext && cursor);
+    }
+
+    return allItems;
+  }
+
   private async getJurisdictionLevel(
     positionsIds: string[],
   ): Promise<JurisdictionLevel> {
@@ -195,57 +218,65 @@ export class JurisdictionService {
 
       case 'municipality':
         if (jurisdiction.municipalityId) {
+          const municipalityId = jurisdiction.municipalityId.toString();
           const municipality = await this.municipalityRepo.findById(
-            jurisdiction.municipalityId.toString(),
+            municipalityId,
           );
           if (municipality) accessibleAreas.push(municipality);
           // Add all wards in this municipality
-          const wards = await this.wardRepo.findByMunicipalityId(
-            { municipalityId: jurisdiction.municipalityId.toString() },
-            { page: 1, limit: 1000 },
+          const wards = await this.fetchAllCursorPages((cursor) =>
+            this.wardRepo.findByMunicipalityId(
+              { municipalityId },
+              { cursor, limit: 100 },
+            ),
           );
-          accessibleAreas.push(...wards.data);
+          accessibleAreas.push(...wards);
         }
         break;
 
       case 'district':
         if (jurisdiction.districtId) {
+          const districtId = jurisdiction.districtId.toString();
           const district = await this.districtRepo.findById(
-            jurisdiction.districtId.toString(),
+            districtId,
           );
           if (district) {
             accessibleAreas.push(district);
             // Add all municipalities and constituencies in this district
-            const municipalities = await this.municipalityRepo.findByDistrictId(
-              { districtId: jurisdiction.districtId.toString() },
-              { page: 1, limit: 1000 },
+            const municipalities = await this.fetchAllCursorPages((cursor) =>
+              this.municipalityRepo.findByDistrictId(
+                { districtId },
+                { cursor, limit: 100 },
+              ),
             );
 
-            const constituencies = await this.constituencyRepo.findByDistrictId(
-              { districtId: jurisdiction.districtId.toString() },
-              { page: 1, limit: 1000 },
+            const constituencies = await this.fetchAllCursorPages((cursor) =>
+              this.constituencyRepo.findByDistrictId(
+                { districtId },
+                { cursor, limit: 100 },
+              ),
             );
-            accessibleAreas.push(
-              ...municipalities.data,
-              ...constituencies.data,
-            );
+            accessibleAreas.push(...municipalities, ...constituencies);
           }
         }
         break;
 
       case 'province':
         if (jurisdiction.provinceId) {
+          const provinceId = jurisdiction.provinceId.toString();
           const province = await this.provinceRepo.findById(
-            jurisdiction.provinceId.toString(),
+            provinceId,
           );
           if (province) {
             accessibleAreas.push(province);
             // Add all districts in this province
-            const districts = await this.districtRepo.findByProvinceId(
-              { provinceId: jurisdiction.provinceId.toString() },
-              { page: 1, limit: 1000 },
+            const districts = await this.fetchAllCursorPages((cursor) =>
+              this.districtRepo.findByProvinceId(
+                { provinceId },
+                { cursor, limit: 100 },
+              ),
             );
-            accessibleAreas.push(...districts.data);
+            accessibleAreas.push(...districts);
           }
         }
         break;
@@ -261,11 +292,13 @@ export class JurisdictionService {
 
       case 'federal':
         // Add all provinces for federal level
-        const provinces = await this.provinceRepo.find({
-          page: 1,
-          limit: 1000,
-        });
-        accessibleAreas.push(...provinces.data);
+        const provinces = await this.fetchAllCursorPages((cursor) =>
+          this.provinceRepo.find({
+            cursor,
+            limit: 100,
+          }),
+        );
+        accessibleAreas.push(...provinces);
         break;
     }
 

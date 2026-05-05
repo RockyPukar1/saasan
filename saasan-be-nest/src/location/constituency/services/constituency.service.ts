@@ -30,8 +30,14 @@ export class ConstituencyService {
     this.constituencyRepo.create(constituencyData);
   }
 
-  async getConstituencies({ page = 1, limit = 10 }) {
-    const data = await this.constituencyRepo.find({ page, limit });
+  async getConstituencies({
+    cursor,
+    limit = 10,
+  }: {
+    cursor?: string;
+    limit?: number;
+  }) {
+    const data = await this.constituencyRepo.find({ cursor, limit });
     return ResponseHelper.response(
       ConstituencySerializer,
       data,
@@ -55,10 +61,10 @@ export class ConstituencyService {
 
   async getConstituenciesByProvinceId(
     provinceIdDto: ProvinceIdDto,
-    { page, limit },
+    { cursor, limit }: { cursor?: string; limit?: number },
   ) {
     const data = await this.constituencyRepo.findByProvinceId(provinceIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(
@@ -70,10 +76,10 @@ export class ConstituencyService {
 
   async getConstituenciesByDistrictId(
     districtIdDto: DistrictIdDto,
-    { page, limit },
+    { cursor, limit }: { cursor?: string; limit?: number },
   ) {
     const data = await this.constituencyRepo.findByDistrictId(districtIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(

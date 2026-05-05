@@ -7,6 +7,10 @@ import {
 import { CreateMunicipalityDto } from '../dtos/create-municipality.dto';
 import { DistrictIdDto } from 'src/location/district/dtos/district-id.dto';
 import { ProvinceIdDto } from 'src/location/province/dtos/province-id.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 
 export class MunicipalityRepository {
   constructor(
@@ -14,17 +18,21 @@ export class MunicipalityRepository {
     private readonly model: Model<MunicipalityEntityDocument>,
   ) {}
 
-  async find({ page = 1, limit = 10 }) {
-    const skip = (page - 1) * limit;
+  async find({ cursor, limit = 10 }: { cursor?: string; limit?: number }) {
+    const baseFilter = {};
+    const cursorFilter = descendingObjectIdCursorFilter(cursor);
     const [data, total] = await Promise.all([
       this.model
-        .find()
-        .skip(skip)
-        .limit(limit)
+        .find({
+          ...baseFilter,
+          ...cursorFilter,
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1)
         .populate(['provinceId', 'districtId']),
-      this.model.countDocuments(),
+      this.model.countDocuments(baseFilter),
     ]);
-    return { data, total, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   findOne(filter: any) {
@@ -37,32 +45,45 @@ export class MunicipalityRepository {
 
   async findByDistrictId(
     { districtId }: DistrictIdDto,
-    { page = 1, limit = 10 },
+    { cursor, limit = 10 }: { cursor?: string; limit?: number },
   ) {
-    const skip = (page - 1) * limit;
-    const filter = {
+    const baseFilter = {
       districtId: new Types.ObjectId(districtId),
     };
+    const cursorFilter = descendingObjectIdCursorFilter(cursor);
     const [data, total] = await Promise.all([
-      this.model.find(filter).skip(skip).limit(limit),
-      this.model.countDocuments(filter),
+      this.model
+        .find({
+          ...baseFilter,
+          ...cursorFilter,
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1),
+      this.model.countDocuments(baseFilter),
     ]);
-    return { data, total, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   async findByProvinceId(
     { provinceId }: ProvinceIdDto,
-    { page = 1, limit = 10 },
+    { cursor, limit = 10 }: { cursor?: string; limit?: number },
   ) {
-    const skip = (page - 1) * limit;
-    const filter = {
+    const baseFilter = {
       provinceId: new Types.ObjectId(provinceId),
     };
+    const cursorFilter = descendingObjectIdCursorFilter(cursor);
     const [data, total] = await Promise.all([
-      this.model.find(filter).skip(skip).limit(limit).populate('districtId'),
-      this.model.countDocuments(filter),
+      this.model
+        .find({
+          ...baseFilter,
+          ...cursorFilter,
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .populate('districtId'),
+      this.model.countDocuments(baseFilter),
     ]);
-    return { data, total, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   async create(municipalityData: CreateMunicipalityDto) {

@@ -33,8 +33,14 @@ export class DistrictService {
     await this.redisCache.del('location:districts');
   }
 
-  async getDistricts({ page, limit }) {
-    const cacheKey = `location:districts:${page}:${limit}`;
+  async getDistricts({
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  }) {
+    const cacheKey = `location:districts:${cursor || 'initial'}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
@@ -45,7 +51,7 @@ export class DistrictService {
       );
     }
 
-    const districts = await this.districtRepo.find({ page, limit });
+    const districts = await this.districtRepo.find({ cursor, limit });
 
     await this.redisCache.set(cacheKey, districts);
 
@@ -58,10 +64,10 @@ export class DistrictService {
 
   async getDistrictsByProvinceId(
     provinceIdDto: ProvinceIdDto,
-    { page, limit },
+    { cursor, limit }: { cursor?: string; limit?: number },
   ) {
     const data = await this.districtRepo.findByProvinceId(provinceIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(

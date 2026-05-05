@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 import { LevelRepository } from '../repositories/level.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { LevelSerializer } from '../serializers/level.serializer';
@@ -13,14 +15,15 @@ export class LevelService {
     private readonly redisCache: RedisCacheService,
   ) {}
 
-  async getLevels() {
+  async getLevels({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'politics:levels';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedLevels = cached as any[];
       return ResponseHelper.response(
         LevelSerializer,
-        cached,
+        paginateArrayByCursor(cachedLevels, cursor, limit),
         'Levels fetched successfully',
       );
     }
@@ -31,7 +34,7 @@ export class LevelService {
 
     return ResponseHelper.response(
       LevelSerializer,
-      levels,
+      paginateArrayByCursor(levels, cursor, limit),
       'Levels fetched successfully',
     );
   }

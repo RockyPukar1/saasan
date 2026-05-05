@@ -92,14 +92,12 @@ type ApprovalSuggestionsResponse = {
 
 type ApiPaginationMeta = {
   total: number;
-  page: number;
   limit: number;
-  totalPages?: number;
+  nextCursor?: string | null;
   hasNext?: boolean;
-  hasPrev?: boolean;
 };
 
-const DEFAULT_LIST_LIMIT = 1000;
+const DEFAULT_LIST_LIMIT = 50;
 
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
@@ -241,17 +239,9 @@ const unwrapPaginatedResponse = <T>(response: {
     return toPagination({
       data: payload.data,
       total: pagination?.total ?? payload.data.length,
-      page: pagination?.page ?? 1,
       limit: pagination?.limit ?? Math.max(payload.data.length, 1),
-      totalPages:
-        pagination?.totalPages ??
-        Math.max(
-          1,
-          Math.ceil(
-            (pagination?.total ?? payload.data.length) /
-              Math.max(pagination?.limit ?? Math.max(payload.data.length, 1), 1),
-          ),
-        ),
+      nextCursor: pagination?.nextCursor ?? null,
+      hasNext: pagination?.hasNext ?? false,
     });
   }
 
@@ -268,18 +258,18 @@ const unwrapPaginatedResponse = <T>(response: {
     return toPagination({
       data: payload,
       total: payload.length,
-      page: 1,
       limit: Math.max(payload.length, 1),
-      totalPages: 1,
+      nextCursor: null,
+      hasNext: false,
     });
   }
 
   return toPagination({
     data: [],
     total: 0,
-    page: 1,
     limit: 1,
-    totalPages: 1,
+    nextCursor: null,
+    hasNext: false,
   });
 };
 
@@ -305,15 +295,24 @@ const toApiResponse = <T>(rawPayload: any, data: T): ApiResponse<T> => {
 
 const toPagination = <T>(
   payload: PaginatedResponse<T>,
-): PaginatedResponse<T> => ({
-  ...payload,
-  totalPages:
-    payload.totalPages ||
-    Math.max(
-      1,
-      Math.ceil((payload.total || 0) / Math.max(payload.limit || 1, 1)),
-    ),
-});
+): PaginatedResponse<T> => payload;
+
+const fetchAllCursorPages = async <T>(
+  fetchPage: (cursor?: string | null) => Promise<PaginatedResponse<T>>,
+): Promise<T[]> => {
+  const allItems: T[] = [];
+  let cursor: string | null | undefined = null;
+  let hasNext = true;
+
+  while (hasNext) {
+    const page = await fetchPage(cursor);
+    allItems.push(...page.data);
+    cursor = page.nextCursor;
+    hasNext = page.hasNext && Boolean(page.nextCursor);
+  }
+
+  return allItems;
+};
 
 const toPollPayload = (
   data: ICreatePollData | IUpdatePollData,
@@ -610,8 +609,16 @@ export const jobsApi = {
 
 export const budgetApi = {
   getAll: async (): Promise<ApiResponse<IBudget[]>> => {
-    const response = await api.get("/budget");
-    return toApiResponse(response.data, unwrapResponseData<IBudget[]>(response));
+    const data = await fetchAllCursorPages<IBudget>(async (cursor) => {
+      const response = await api.get("/budget", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IBudget>(response);
+    });
+    return toApiResponse(undefined, data);
   },
 };
 
@@ -638,7 +645,7 @@ export const dashboardApi = {
   },
 
   getMajorCases: async (): Promise<ApiResponse<IMajorCase[]>> => {
-    const response = await majorCasesApi.getAll({ page: 1, limit: 5 });
+    const response = await majorCasesApi.getAll({ limit: 5 });
     return {
       success: true,
       data: response.data,
@@ -656,12 +663,12 @@ export const politicsApi = {
   getAll: async (
     body?: IPoliticianFilter,
     pagination?: {
-      page?: number;
+      cursor?: string | null;
       limit?: number;
     },
   ): Promise<PaginatedResponse<IPolitician>> => {
     const response = await api.post("/politician/filter", {
-      page: pagination?.page || 1,
+      ...(pagination?.cursor ? { cursor: pagination.cursor } : {}),
       limit: pagination?.limit || DEFAULT_LIST_LIMIT,
       ...(body || {}),
     });
@@ -675,31 +682,61 @@ export const politicsApi = {
 
   getByLevel: async (
     level: string,
-    params?: Partial<IPolitician>,
+    params?: {
+      cursor?: string | null;
+      limit?: number;
+    },
   ): Promise<PaginatedResponse<IPolitician>> => {
     const response = await api.get(`/politician/level/${level}`, {
       params: {
-        page: 1,
-        limit: DEFAULT_LIST_LIMIT,
+        ...(params?.cursor ? { cursor: params.cursor } : {}),
+        limit: params?.limit || DEFAULT_LIST_LIMIT,
         ...(params || {}),
       },
     });
     return unwrapPaginatedResponse<IPolitician>(response);
   },
 
+  getAllList: async (body?: IPoliticianFilter): Promise<IPolitician[]> => {
+    return fetchAllCursorPages<IPolitician>((cursor) =>
+      politicsApi.getAll(body, { cursor, limit: 100 }),
+    );
+  },
+
   getGovernmentLevels: async (): Promise<IGovernmentLevel[]> => {
-    const response = await api.get("/level");
-    return response.data.data;
+    return fetchAllCursorPages<IGovernmentLevel>(async (cursor) => {
+      const response = await api.get("/level", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IGovernmentLevel>(response);
+    });
   },
 
   getPositions: async (): Promise<IPosition[]> => {
-    const response = await api.get("/position");
-    return response.data.data;
+    return fetchAllCursorPages<IPosition>(async (cursor) => {
+      const response = await api.get("/position", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IPosition>(response);
+    });
   },
 
   getParties: async (): Promise<IParty[]> => {
-    const response = await api.get("/party");
-    return response.data.data;
+    return fetchAllCursorPages<IParty>(async (cursor) => {
+      const response = await api.get("/party", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IParty>(response);
+    });
   },
 
   create: async (politicianData: any): Promise<ApiResponse<IPolitician>> => {
@@ -755,8 +792,7 @@ export const politicsApi = {
 // Party API
 export const partyApi = {
   getAll: async (): Promise<IParty[]> => {
-    const response = await api.get("/party");
-    return response.data.data;
+    return politicsApi.getParties();
   },
 
   getById: async (id: string): Promise<ApiResponse<IParty>> => {
@@ -782,14 +818,17 @@ export const partyApi = {
   getPoliticiansByParty: async (
     partyId: string,
   ): Promise<ApiResponse<IPolitician[]>> => {
-    const response = await api.get(`/politician`, {
-      params: {
-        partyId,
-        page: 1,
-        limit: DEFAULT_LIST_LIMIT,
-      },
+    const data = await fetchAllCursorPages<IPolitician>(async (cursor) => {
+      const response = await api.get(`/politician`, {
+        params: {
+          partyId,
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IPolitician>(response);
     });
-    return toApiResponse(response.data, unwrapResponseData<IPolitician[]>(response));
+    return toApiResponse(undefined, data);
   },
 };
 
@@ -797,11 +836,14 @@ export const partyApi = {
 export const geographicApi = {
   // Provinces
   getProvinces: async (
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IProvince>> => {
     const response = await api.get("/province", {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IProvince>(response);
   },
@@ -816,6 +858,12 @@ export const geographicApi = {
     return { data: unwrapResponseData<IProvince>(response) };
   },
 
+  getAllProvincesList: async (): Promise<IProvince[]> => {
+    return fetchAllCursorPages<IProvince>((cursor) =>
+      geographicApi.getProvinces(cursor, 100),
+    );
+  },
+
   createProvince: async (provinceData: any): Promise<{ data: IProvince }> => {
     const response = await api.post("/admin/province", provinceData);
     return response.data;
@@ -823,22 +871,28 @@ export const geographicApi = {
 
   // Districts
   getDistricts: async (
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IDistrict>> => {
     const response = await api.get("/district", {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IDistrict>(response);
   },
 
   getDistrictsByProvinceId: async (
     provinceId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IDistrict>> => {
     const response = await api.get(`/district/province/${provinceId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IDistrict>(response);
   },
@@ -853,79 +907,116 @@ export const geographicApi = {
     return response.data;
   },
 
+  getAllDistrictsByProvinceIdList: async (
+    provinceId: string,
+  ): Promise<IDistrict[]> => {
+    return fetchAllCursorPages<IDistrict>((cursor) =>
+      geographicApi.getDistrictsByProvinceId(provinceId, cursor, 100),
+    );
+  },
+
   // Municipalities
   getMunicipalities: async (
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IMunicipality>> => {
     const response = await api.get("/municipality", {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IMunicipality>(response);
   },
 
   getMunicipalitiesByProvinceId: async (
     provinceId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IMunicipality>> => {
     const response = await api.get(`/municipality/province/${provinceId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IMunicipality>(response);
   },
 
   getMunicipalitiesByDistrictId: async (
     districtId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IMunicipality>> => {
     const response = await api.get(`/municipality/district/${districtId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IMunicipality>(response);
   },
 
+  getAllMunicipalitiesByDistrictIdList: async (
+    districtId: string,
+  ): Promise<IMunicipality[]> => {
+    return fetchAllCursorPages<IMunicipality>((cursor) =>
+      geographicApi.getMunicipalitiesByDistrictId(districtId, cursor, 100),
+    );
+  },
+
   // Wards
   getWards: async (
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
     const response = await api.get("/ward", {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardsByProvinceId: async (
     provinceId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
     const response = await api.get(`/ward/province/${provinceId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardsByDistrictId: async (
     districtId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
     const response = await api.get(`/ward/district/${districtId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IWard>(response);
   },
 
   getWardsByMunicipalityId: async (
     municipalityId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IWard>> => {
     const response = await api.get(`/ward/municipality/${municipalityId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IWard>(response);
   },
@@ -940,35 +1031,52 @@ export const geographicApi = {
     return response.data;
   },
 
+  getAllWardsByMunicipalityIdList: async (
+    municipalityId: string,
+  ): Promise<IWard[]> => {
+    return fetchAllCursorPages<IWard>((cursor) =>
+      geographicApi.getWardsByMunicipalityId(municipalityId, cursor, 100),
+    );
+  },
+
   // Constituencies
   getConstituencies: async (
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
     const response = await api.get("/constituency", {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IConstituency>(response);
   },
 
   getConstituenciesByProvinceId: async (
     provinceId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
     const response = await api.get(`/constituency/province/${provinceId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IConstituency>(response);
   },
 
   getConstituenciesByDistrictId: async (
     districtId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
     const response = await api.get(`/constituency/district/${districtId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IConstituency>(response);
   },
@@ -989,11 +1097,14 @@ export const geographicApi = {
 
   getConstituenciesByDistrict: async (
     districtId: string,
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IConstituency>> => {
     const response = await api.get(`/constituency/district/${districtId}`, {
-      params: { page: page || 1, limit: limit || DEFAULT_LIST_LIMIT },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit: limit || DEFAULT_LIST_LIMIT,
+      },
     });
     return unwrapPaginatedResponse<IConstituency>(response);
   },
@@ -1015,11 +1126,11 @@ export const reportsApi = {
     type?: string[];
   },
   pagination?: {
-    page?: number;
+    cursor?: string | null;
     limit?: number;
   }): Promise<PaginatedResponse<IReport>> => {
     const response = await api.post("/admin/report/filter", {
-      page: pagination?.page || 1,
+      ...(pagination?.cursor ? { cursor: pagination.cursor } : {}),
       limit: pagination?.limit || DEFAULT_LIST_LIMIT,
       ...(_params || {}),
     });
@@ -1115,11 +1226,14 @@ export const reportsApi = {
 
   getActivities: async (
     id: string,
-    page = 1,
+    cursor?: string | null,
     limit = 20,
   ): Promise<PaginatedResponse<any>> => {
     const response = await api.get(`/admin/report/${id}/activities`, {
-      params: { page, limit },
+      params: {
+        ...(cursor ? { cursor } : {}),
+        limit,
+      },
     });
     return unwrapPaginatedResponse<any>(response);
   },
@@ -1159,8 +1273,15 @@ export const reportsApi = {
 // Report Types API
 export const reportTypesApi = {
   getAll: async (): Promise<IReportType[]> => {
-    const response = await api.get("/admin/report/types");
-    return response.data.data;
+    return fetchAllCursorPages<IReportType>(async (cursor) => {
+      const response = await api.get("/admin/report/types", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IReportType>(response);
+    });
   },
 
   create: async (data: {
@@ -1188,8 +1309,15 @@ export const reportTypesApi = {
 // Report Statuses API
 export const reportStatusesApi = {
   getAll: async (): Promise<IReportStatus[]> => {
-    const response = await api.get("/admin/report/statuses");
-    return response.data.data;
+    return fetchAllCursorPages<IReportStatus>(async (cursor) => {
+      const response = await api.get("/admin/report/statuses", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IReportStatus>(response);
+    });
   },
 
   create: async (data: {
@@ -1217,8 +1345,15 @@ export const reportStatusesApi = {
 // Report Priorities API
 export const reportPrioritiesApi = {
   getAll: async (): Promise<IReportPriority[]> => {
-    const response = await api.get("/admin/report/priorities");
-    return response.data.data;
+    return fetchAllCursorPages<IReportPriority>(async (cursor) => {
+      const response = await api.get("/admin/report/priorities", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IReportPriority>(response);
+    });
   },
 
   create: async (data: {
@@ -1246,8 +1381,15 @@ export const reportPrioritiesApi = {
 // Report Visibilities API
 export const reportVisibilitiesApi = {
   getAll: async (): Promise<IReportVisibility[]> => {
-    const response = await api.get("/admin/report/visibilities");
-    return response.data.data;
+    return fetchAllCursorPages<IReportVisibility>(async (cursor) => {
+      const response = await api.get("/admin/report/visibilities", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IReportVisibility>(response);
+    });
   },
 
   create: async (data: {
@@ -1277,11 +1419,17 @@ export const historicalEventsApi = {
   getAll: async (params?: {
     year?: number;
     category?: string;
-    page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<IHistoricalEvent>> => {
-    const response = await api.get("/event", { params });
-    const allEvents = unwrapResponseData<IHistoricalEvent[]>(response) || [];
+    const allEvents = await fetchAllCursorPages<IHistoricalEvent>(async (cursor) => {
+      const response = await api.get("/event", {
+        params: {
+          ...(cursor ? { cursor } : {}),
+          limit: params?.limit || 100,
+        },
+      });
+      return unwrapPaginatedResponse<IHistoricalEvent>(response);
+    });
     const data = allEvents.filter((event) => {
       const matchesCategory =
         !params?.category || event.category === params.category;
@@ -1292,9 +1440,9 @@ export const historicalEventsApi = {
     return {
       data,
       total: data.length,
-      page: params?.page || 1,
       limit: params?.limit || data.length || 1,
-      totalPages: 1,
+      nextCursor: null,
+      hasNext: false,
     };
   },
 
@@ -1330,7 +1478,7 @@ export const majorCasesApi = {
     status?: string;
     priority?: string;
     search?: string;
-    page?: number;
+    cursor?: string | null;
     limit?: number;
   }): Promise<PaginatedResponse<IMajorCase>> => {
     const response = await api.get("/admin/case", { params });
@@ -1377,8 +1525,24 @@ export const majorCasesApi = {
 // Polling API
 export const pollingApi = {
   getAll: async (filters?: IPollFilters): Promise<PaginatedResponse<IPoll>> => {
-    const response = await api.get("/poll", { params: filters });
-    return toPagination(unwrapPaginatedResponse<IPoll>(response));
+    const data = await fetchAllCursorPages<IPoll>(async (cursor) => {
+      const response = await api.get("/poll", {
+        params: {
+          ...(filters || {}),
+          ...(cursor ? { cursor } : {}),
+          limit: 100,
+        },
+      });
+      return unwrapPaginatedResponse<IPoll>(response);
+    });
+
+    return toPagination({
+      data,
+      total: data.length,
+      limit: data.length || 1,
+      nextCursor: null,
+      hasNext: false,
+    });
   },
 
   getById: async (id: string): Promise<ApiResponse<IPoll>> => {
@@ -1512,12 +1676,12 @@ export const pollingApi = {
 // User API
 export const userApi = {
   getAll: async (
-    page?: number,
+    cursor?: string | null,
     limit?: number,
   ): Promise<PaginatedResponse<IUser>> => {
     const response = await api.get("/admin/user", {
       params: {
-        page: page || 1,
+        ...(cursor ? { cursor } : {}),
         limit: limit || DEFAULT_LIST_LIMIT,
       },
     });

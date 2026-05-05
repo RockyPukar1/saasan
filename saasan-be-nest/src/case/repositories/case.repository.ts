@@ -4,6 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { CaseEntity, CaseEntityDocument } from '../entities/case.entity';
 import { CreateCaseDto } from '../dtos/create-case.dto';
 import { UpdateCaseDto } from '../dtos/update-case.dto';
+import {
+  descendingObjectIdCursorFilter,
+  toCursorPaginatedResult,
+} from 'src/common/helpers/cursor-pagination.helper';
 
 @Injectable()
 export class CaseRepository {
@@ -16,35 +20,41 @@ export class CaseRepository {
     search,
     status,
     priority,
-    page = 1,
+    cursor,
     limit = 50,
   }: {
     search?: string;
     status?: string;
     priority?: string;
-    page?: number;
+    cursor?: string;
     limit?: number;
   }) {
-    const skip = (page - 1) * limit;
-    const filter: Record<string, any> = {};
+    const baseFilter: Record<string, any> = {};
 
-    if (status) filter.status = status;
-    if (priority) filter.priority = priority;
+    if (status) baseFilter.status = status;
+    if (priority) baseFilter.priority = priority;
     if (search) {
-      filter.$or = [
+      baseFilter.$or = [
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
         { referenceNumber: { $regex: search, $options: 'i' } },
         { locationDescription: { $regex: search, $options: 'i' } },
       ];
     }
+    const cursorFilter = descendingObjectIdCursorFilter(cursor);
 
     const [data, total] = await Promise.all([
-      this.model.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      this.model.countDocuments(filter),
+      this.model
+        .find({
+          ...baseFilter,
+          ...cursorFilter,
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1),
+      this.model.countDocuments(baseFilter),
     ]);
 
-    return { data, total, page, limit };
+    return toCursorPaginatedResult(data, limit, total);
   }
 
   async findById(caseId: string) {

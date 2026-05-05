@@ -269,8 +269,14 @@ export class UserService {
     );
   }
 
-  async getAllUsers({ page = 1, limit = 10 }) {
-    const cacheKey = `users:${page}:${limit}`;
+  async getAllUsers({
+    cursor,
+    limit = 10,
+  }: {
+    cursor?: string;
+    limit?: number;
+  }) {
+    const cacheKey = `users:${cursor || 'initial'}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
 
@@ -290,7 +296,7 @@ export class UserService {
         'Users fetched successfully from cache',
       );
     }
-    const users = await this.userRepo.findAll({ page, limit });
+    const users = await this.userRepo.findAll({ cursor, limit });
     users.data = await this.attachProfiles(users.data);
 
     this.redisCache.set(cacheKey, users);

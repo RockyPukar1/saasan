@@ -1,11 +1,7 @@
 import { ClassConstructor, plainToInstance } from 'class-transformer';
+import { CursorPaginatedInput } from './cursor-pagination.helper';
 
-type PaginatedInput<T> = {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-};
+type PaginatedInput<T> = CursorPaginatedInput<T>;
 
 export class ResponseHelper {
   static success(data: any, message = 'Success', meta?: any) {
@@ -21,18 +17,17 @@ export class ResponseHelper {
   static paginated(
     data: any[],
     total: number,
-    page: number,
     limit: number,
+    nextCursor: string | null,
+    hasNext: boolean,
     message = 'Data retrieved successfully',
   ) {
     return this.success(data, message, {
       pagination: {
         total,
-        page,
         limit,
-        totalPages: Math.ceil(total / limit),
-        hasNext: page * limit < total,
-        hasPrev: page > 1,
+        nextCursor,
+        hasNext,
       },
     });
   }
@@ -44,8 +39,9 @@ export class ResponseHelper {
       'data' in plain &&
       Array.isArray((plain as PaginatedInput<T>).data) &&
       'total' in plain &&
-      'page' in plain &&
-      'limit' in plain
+      'limit' in plain &&
+      'nextCursor' in plain &&
+      'hasNext' in plain
     );
   }
 
@@ -65,8 +61,9 @@ export class ResponseHelper {
       return this.paginated(
         serializedItems,
         paginatedData.total,
-        paginatedData.page,
         paginatedData.limit,
+        paginatedData.nextCursor,
+        paginatedData.hasNext,
         message,
       );
     }

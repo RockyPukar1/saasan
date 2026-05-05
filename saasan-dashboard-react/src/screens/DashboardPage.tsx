@@ -46,12 +46,12 @@ export const DashboardPage: React.FC = () => {
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ["reports"],
-    queryFn: () => reportsApi.getAll(),
+    queryFn: () => reportsApi.getAll(undefined, { limit: 5 }),
   });
 
   const { data: politicians, isLoading: politiciansLoading } = useQuery({
     queryKey: ["politicians"],
-    queryFn: () => politicsApi.getAll(),
+    queryFn: () => politicsApi.getAll(undefined, { limit: 5 }),
   });
 
   // const { data: viralMetrics, isLoading: viralLoading } = useQuery({

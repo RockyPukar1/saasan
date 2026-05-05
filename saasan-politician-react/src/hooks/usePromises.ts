@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { promisesApi } from "@/services/api";
 
-export const usePromises = (page = 1, limit = 10) => {
+export const usePromises = (cursor?: string | null, limit = 10) => {
   return useQuery({
-    queryKey: ["promises", page, limit],
-    queryFn: () => promisesApi.getAll(page, limit),
+    queryKey: ["promises", cursor, limit],
+    queryFn: () => promisesApi.getAll(cursor, limit),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 10 * 60 * 1000, // 10 minutes
   });

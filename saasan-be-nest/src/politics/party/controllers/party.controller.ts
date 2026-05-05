@@ -6,19 +6,21 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
 import { PartyService } from '../services/party.service';
 import { CreatePartyDto, UpdatePartyDto } from '../serializers/party.dto';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 @Controller('party')
 export class PartyController {
   constructor(private readonly partyService: PartyService) {}
 
   @Get()
-  async getParties() {
-    return await this.partyService.getParties();
+  async getParties(@Query() paginationQuery: PaginationQueryDto) {
+    return await this.partyService.getParties(paginationQuery);
   }
 
   @Get(':id')

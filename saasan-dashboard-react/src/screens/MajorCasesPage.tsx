@@ -59,7 +59,10 @@ export const MajorCasesPage: React.FC = () => {
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingCase, setEditingCase] = useState<IMajorCase | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
+
+  const currentCursor = cursorHistory[cursorHistory.length - 1] || null;
+  const currentPage = cursorHistory.length;
 
   const queryClient = useQueryClient();
 
@@ -88,7 +91,7 @@ export const MajorCasesPage: React.FC = () => {
         search: searchQuery,
         status: selectedStatus,
         priority: selectedPriority,
-        page: currentPage,
+        cursor: currentCursor,
       },
     ],
     queryFn: () =>
@@ -96,10 +99,26 @@ export const MajorCasesPage: React.FC = () => {
         search: searchQuery || undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         priority: selectedPriority !== "all" ? selectedPriority : undefined,
-        page: currentPage,
+        cursor: currentCursor,
         limit: PAGE_SIZE,
       }),
   });
+
+  const resetPagination = () => setCursorHistory([null]);
+
+  const goToNextPage = () => {
+    if (!casesData?.nextCursor) {
+      return;
+    }
+
+    setCursorHistory((previous) => [...previous, casesData.nextCursor]);
+  };
+
+  const goToPreviousPage = () => {
+    setCursorHistory((previous) =>
+      previous.length > 1 ? previous.slice(0, -1) : previous,
+    );
+  };
 
   const createMutation = useMutation({
     mutationFn: majorCasesApi.create,
@@ -263,7 +282,7 @@ export const MajorCasesPage: React.FC = () => {
                   placeholder="Search title, reference, location..."
                   value={searchQuery}
                   onChange={(event) => {
-                    setCurrentPage(1);
+                    resetPagination();
                     setSearchQuery(event.target.value);
                   }}
                   className="pl-10"
@@ -275,7 +294,7 @@ export const MajorCasesPage: React.FC = () => {
               <Select
                 value={selectedStatus}
                 onValueChange={(value) => {
-                  setCurrentPage(1);
+                  resetPagination();
                   setSelectedStatus(value);
                 }}
               >
@@ -295,7 +314,7 @@ export const MajorCasesPage: React.FC = () => {
               <Select
                 value={selectedPriority}
                 onValueChange={(value) => {
-                  setCurrentPage(1);
+                  resetPagination();
                   setSelectedPriority(value);
                 }}
               >
@@ -319,7 +338,7 @@ export const MajorCasesPage: React.FC = () => {
                   setSearchQuery("");
                   setSelectedStatus("all");
                   setSelectedPriority("all");
-                  setCurrentPage(1);
+                  resetPagination();
                 }}
               >
                 <Filter className="mr-2 h-4 w-4" />
@@ -451,13 +470,15 @@ export const MajorCasesPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-              {casesData && casesData.totalPages > 1 && (
+              {casesData && (currentPage > 1 || casesData.hasNext) && (
                 <RenderPagination
                   currentPage={currentPage}
-                  totalPages={casesData.totalPages}
-                  onPageChange={setCurrentPage}
+                  hasNext={casesData.hasNext}
+                  onPrevious={goToPreviousPage}
+                  onNext={goToNextPage}
                   totalItems={casesData.total}
                   pageSize={PAGE_SIZE}
+                  currentItemCount={cases.length}
                   itemName="cases"
                 />
               )}

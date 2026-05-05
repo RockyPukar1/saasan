@@ -118,19 +118,19 @@ export default function UserEditForm({
   // Fetch geographical data
   const { data: provincesData } = useQuery({
     queryKey: ["provinces"],
-    queryFn: () => geographicApi.getProvinces(),
+    queryFn: () => geographicApi.getAllProvincesList(),
   });
 
   const { data: districtsData } = useQuery({
     queryKey: ["districts", selectedProvinceId],
-    queryFn: () => geographicApi.getDistrictsByProvinceId(selectedProvinceId),
+    queryFn: () => geographicApi.getAllDistrictsByProvinceIdList(selectedProvinceId),
     enabled: !!selectedProvinceId,
   });
 
   const { data: municipalitiesData } = useQuery({
     queryKey: ["municipalities", selectedProvinceId, selectedDistrictId],
     queryFn: () =>
-      geographicApi.getMunicipalitiesByDistrictId(selectedDistrictId),
+      geographicApi.getAllMunicipalitiesByDistrictIdList(selectedDistrictId),
     enabled: !!selectedProvinceId && !!selectedDistrictId,
   });
 
@@ -142,7 +142,7 @@ export default function UserEditForm({
       selectedMunicipalityId,
     ],
     queryFn: () =>
-      geographicApi.getWardsByMunicipalityId(selectedMunicipalityId),
+      geographicApi.getAllWardsByMunicipalityIdList(selectedMunicipalityId),
     enabled:
       !!selectedProvinceId && !!selectedDistrictId && !!selectedMunicipalityId,
   });
@@ -164,10 +164,10 @@ export default function UserEditForm({
       !!selectedConstituencyId,
   });
 
-  const provinces = provincesData?.data || [];
-  const districts = districtsData?.data || [];
-  const municipalities = municipalitiesData?.data || [];
-  const wards = wardsData?.data || [];
+  const provinces = provincesData || [];
+  const districts = districtsData || [];
+  const municipalities = municipalitiesData || [];
+  const wards = wardsData || [];
   const constituency = constituencyData?.data || null;
 
   const createMutation = useMutation({

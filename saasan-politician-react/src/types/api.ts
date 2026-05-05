@@ -186,9 +186,9 @@ export interface ApiResponse<T> {
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
-  page: number;
   limit: number;
-  totalPages: number;
+  nextCursor: string | null;
+  hasNext: boolean;
 }
 
 // Citizen message (not in backend yet, but will follow similar pattern)

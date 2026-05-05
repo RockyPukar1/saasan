@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { PositionRepository } from '../repositories/position.repository';
 import { PositionSerializer } from '../serializers/positions.serializer';
@@ -13,14 +15,15 @@ export class PositionService {
     private readonly redisCache: RedisCacheService,
   ) {}
 
-  async getPositions() {
+  async getPositions({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'politics:positions';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedPositions = cached as any[];
       return ResponseHelper.response(
         PositionSerializer,
-        cached,
+        paginateArrayByCursor(cachedPositions, cursor, limit),
         'Positions fetched successfully',
       );
     }
@@ -31,7 +34,7 @@ export class PositionService {
 
     return ResponseHelper.response(
       PositionSerializer,
-      position,
+      paginateArrayByCursor(position, cursor, limit),
       'Positions fetched successfully',
     );
   }

@@ -76,7 +76,10 @@ export default function ReportsScreen() {
   const [showActivities, setShowActivities] = useState<string | null>(null);
   const [editingReport, setEditingReport] = useState<IReport | null>(null);
   const [threadReply, setThreadReply] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
+
+  const currentCursor = cursorHistory[cursorHistory.length - 1] || null;
+  const currentPage = cursorHistory.length;
 
   const queryClient = useQueryClient();
 
@@ -113,10 +116,10 @@ export default function ReportsScreen() {
   };
 
   const { data: reportsData, isLoading } = useQuery({
-    queryKey: ["reports", toApplyFilter, currentPage],
+    queryKey: ["reports", toApplyFilter, currentCursor],
     queryFn: () =>
       reportsApi.getAll(toApplyFilter, {
-        page: currentPage,
+        cursor: currentCursor,
         limit: PAGE_SIZE,
       }),
     enabled: true,
@@ -167,7 +170,7 @@ export default function ReportsScreen() {
 
   // Apply filter function
   const applyFilters = () => {
-    setCurrentPage(1);
+    setCursorHistory([null]);
     setToApplyFilter(filter);
     queryClient.invalidateQueries({ queryKey: ["reports"] });
   };
@@ -177,11 +180,25 @@ export default function ReportsScreen() {
     queryKey: ["report-activities", showActivities],
     queryFn: () => {
       if (!showActivities)
-        return { data: [], page: 1, limit: 50, totalPages: 0, total: 0 };
-      return reportsApi.getActivities(showActivities, 1, 50);
+        return { data: [], limit: 50, nextCursor: null, hasNext: false, total: 0 };
+      return reportsApi.getActivities(showActivities, undefined, 50);
     },
     enabled: !!showActivities,
   });
+
+  const goToNextPage = () => {
+    if (!reportsData?.nextCursor) {
+      return;
+    }
+
+    setCursorHistory((previous) => [...previous, reportsData.nextCursor]);
+  };
+
+  const goToPreviousPage = () => {
+    setCursorHistory((previous) =>
+      previous.length > 1 ? previous.slice(0, -1) : previous,
+    );
+  };
 
   const { data: reportThreadResponse, isLoading: reportThreadLoading } = useQuery(
     {
@@ -360,7 +377,7 @@ export default function ReportsScreen() {
                 <Button
                   onClick={() => {
                     setFilter(initialFilter);
-                    setCurrentPage(1);
+                    setCursorHistory([null]);
                     setToApplyFilter(initialFilter);
                   }}
                   variant="outline"
@@ -576,13 +593,15 @@ export default function ReportsScreen() {
                   </div>
                 </div>
               ))}
-              {reportsData && reportsData.totalPages > 1 && (
+              {reportsData && (currentPage > 1 || reportsData.hasNext) && (
                 <RenderPagination
                   currentPage={currentPage}
-                  totalPages={reportsData.totalPages}
-                  onPageChange={setCurrentPage}
+                  hasNext={reportsData.hasNext}
+                  onPrevious={goToPreviousPage}
+                  onNext={goToNextPage}
                   totalItems={reportsData.total}
                   pageSize={PAGE_SIZE}
+                  currentItemCount={reports.length}
                   itemName="reports"
                 />
               )}

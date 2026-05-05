@@ -1,4 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 import { PartyRepository } from '../repositories/party.repository';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { PartySerializer } from '../serializers/party.serializer';
@@ -14,14 +16,15 @@ export class PartyService {
     private readonly redisCache: RedisCacheService,
   ) {}
 
-  async getParties() {
+  async getParties({ cursor, limit }: PaginationQueryDto) {
     const cacheKey = 'politics:parties';
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
+      const cachedParties = cached as any[];
       return ResponseHelper.response(
         PartySerializer,
-        cached,
+        paginateArrayByCursor(cachedParties, cursor, limit),
         'Parties fetched successfully',
       );
     }
@@ -32,7 +35,7 @@ export class PartyService {
 
     return ResponseHelper.response(
       PartySerializer,
-      parties,
+      paginateArrayByCursor(parties, cursor, limit),
       'Parties fetched successfully',
     );
   }

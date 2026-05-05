@@ -272,9 +272,9 @@ export interface ApiResponse<T> {
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
-  page: number;
   limit: number;
-  totalPages: number;
+  nextCursor: string | null;
+  hasNext: boolean;
 }
 
 // Dashboard stats types
@@ -317,7 +317,7 @@ export interface PollFilters {
   ward?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  cursor?: string | null;
   politician_id?: string;
   party_id?: string;
 }

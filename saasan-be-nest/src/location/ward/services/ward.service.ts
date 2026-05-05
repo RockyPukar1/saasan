@@ -36,8 +36,14 @@ export class WardService {
     await this.redisCache.del('location:wards');
   }
 
-  async getWards({ page = 1, limit = 10 }) {
-    const cacheKey = `location:wards:${page}:${limit}`;
+  async getWards({
+    cursor,
+    limit = 10,
+  }: {
+    cursor?: string;
+    limit?: number;
+  }) {
+    const cacheKey = `location:wards:${cursor || 'initial'}:${limit}`;
 
     const cached = await this.redisCache.get(cacheKey);
     if (cached) {
@@ -48,7 +54,7 @@ export class WardService {
       );
     }
 
-    const data = await this.wardRepo.find({ page, limit });
+    const data = await this.wardRepo.find({ cursor, limit });
 
     await this.redisCache.set(cacheKey, data);
 
@@ -59,9 +65,12 @@ export class WardService {
     );
   }
 
-  async getWardsByProvinceId(provinceIdDto: ProvinceIdDto, { page, limit }) {
+  async getWardsByProvinceId(
+    provinceIdDto: ProvinceIdDto,
+    { cursor, limit }: { cursor?: string; limit?: number },
+  ) {
     const data = await this.wardRepo.findByProvinceId(provinceIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(
@@ -71,9 +80,12 @@ export class WardService {
     );
   }
 
-  async getWardsByDistrictId(districtIdDto: DistrictIdDto, { page, limit }) {
+  async getWardsByDistrictId(
+    districtIdDto: DistrictIdDto,
+    { cursor, limit }: { cursor?: string; limit?: number },
+  ) {
     const data = await this.wardRepo.findByDistrictId(districtIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(
@@ -85,10 +97,10 @@ export class WardService {
 
   async getWardsByMunicipalityId(
     municipalityIdDto: MunicipalityIdDto,
-    { page, limit },
+    { cursor, limit }: { cursor?: string; limit?: number },
   ) {
     const data = await this.wardRepo.findByMunicipalityId(municipalityIdDto, {
-      page,
+      cursor,
       limit,
     });
     return ResponseHelper.response(

@@ -58,7 +58,7 @@ export default function PoliticiansScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(initialFilter);
   const [toApplyFilter, setToApplyFilter] = useState(initialFilter);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
   const [showForm, setShowForm] = useState(false);
   const [editingPolitician, setEditingPolitician] =
     useState<IPolitician | null>(null);
@@ -66,11 +66,14 @@ export default function PoliticiansScreen() {
 
   const queryClient = useQueryClient();
 
+  const currentCursor = cursorHistory[cursorHistory.length - 1] || null;
+  const currentPage = cursorHistory.length;
+
   const { data: politiciansData, isLoading } = useQuery({
-    queryKey: ["politicians", toApplyFilter, currentPage],
+    queryKey: ["politicians", toApplyFilter, currentCursor],
     queryFn: () =>
       politicsApi.getAll(toApplyFilter, {
-        page: currentPage,
+        cursor: currentCursor,
         limit: PAGE_SIZE,
       }),
   });
@@ -185,6 +188,22 @@ export default function PoliticiansScreen() {
     });
   };
 
+  const resetPagination = () => setCursorHistory([null]);
+
+  const goToNextPage = () => {
+    if (!politiciansData?.nextCursor) {
+      return;
+    }
+
+    setCursorHistory((previous) => [...previous, politiciansData.nextCursor]);
+  };
+
+  const goToPreviousPage = () => {
+    setCursorHistory((previous) =>
+      previous.length > 1 ? previous.slice(0, -1) : previous,
+    );
+  };
+
   const politicians = politiciansData?.data || [];
   const total = politiciansData?.total || 0;
 
@@ -259,7 +278,7 @@ export default function PoliticiansScreen() {
               <div className="flex items-end">
                 <Button
                   onClick={() => {
-                    setCurrentPage(1);
+                    resetPagination();
                     setToApplyFilter(filter);
                   }}
                   variant="outline"
@@ -273,7 +292,7 @@ export default function PoliticiansScreen() {
                 <Button
                   onClick={() => {
                     setFilter(initialFilter);
-                    setCurrentPage(1);
+                    resetPagination();
                     setToApplyFilter(initialFilter);
                   }}
                   variant="outline"
@@ -433,13 +452,15 @@ export default function PoliticiansScreen() {
                   </div>
                 </div>
               ))}
-              {politiciansData && politiciansData.totalPages > 1 && (
+              {politiciansData && (currentPage > 1 || politiciansData.hasNext) && (
                 <RenderPagination
                   currentPage={currentPage}
-                  totalPages={politiciansData.totalPages}
-                  onPageChange={setCurrentPage}
+                  hasNext={politiciansData.hasNext}
+                  onPrevious={goToPreviousPage}
+                  onNext={goToNextPage}
                   totalItems={politiciansData.total}
                   pageSize={PAGE_SIZE}
+                  currentItemCount={politicians.length}
                   itemName="politicians"
                 />
               )}

@@ -19,39 +19,66 @@ export default function GeographyScreen() {
   const [activeTab, setActiveTab] = useState<EntityType>("province");
 
   const PAGE_SIZE = 10;
-  const [provincePage, setProvincePage] = useState(1);
-  const [districtPage, setDistrictPage] = useState(1);
-  const [municipalityPage, setMunicipalityPage] = useState(1);
-  const [wardPage, setWardPage] = useState(1);
-  const [constituencyPage, setConstituencyPage] = useState(1);
+  const [cursorHistories, setCursorHistories] = useState<
+    Record<EntityType, Array<string | null>>
+  >({
+    province: [null],
+    district: [null],
+    municipality: [null],
+    ward: [null],
+    constituency: [null],
+  });
+
+  const currentCursor = (entity: EntityType) =>
+    cursorHistories[entity][cursorHistories[entity].length - 1] || null;
+  const currentPage = (entity: EntityType) => cursorHistories[entity].length;
+  const goToNextPage = (entity: EntityType, nextCursor?: string | null) => {
+    if (!nextCursor) {
+      return;
+    }
+
+    setCursorHistories((previous) => ({
+      ...previous,
+      [entity]: [...previous[entity], nextCursor],
+    }));
+  };
+  const goToPreviousPage = (entity: EntityType) => {
+    setCursorHistories((previous) => ({
+      ...previous,
+      [entity]:
+        previous[entity].length > 1
+          ? previous[entity].slice(0, -1)
+          : previous[entity],
+    }));
+  };
 
   const { data: provincesData, isLoading: provincesLoading } = useQuery({
-    queryKey: ["allProvinces", provincePage],
-    queryFn: () => geographicApi.getProvinces(provincePage, PAGE_SIZE),
+    queryKey: ["allProvinces", currentCursor("province")],
+    queryFn: () => geographicApi.getProvinces(currentCursor("province"), PAGE_SIZE),
   });
 
   const { data: districtsData, isLoading: districtsLoading } = useQuery({
-    queryKey: ["allDistricts", districtPage],
-    queryFn: () => geographicApi.getDistricts(districtPage, PAGE_SIZE),
+    queryKey: ["allDistricts", currentCursor("district")],
+    queryFn: () => geographicApi.getDistricts(currentCursor("district"), PAGE_SIZE),
   });
 
   const { data: municipalitiesData, isLoading: municipalitiesLoading } =
     useQuery({
-      queryKey: ["allMunicipalities", municipalityPage],
+      queryKey: ["allMunicipalities", currentCursor("municipality")],
       queryFn: () =>
-        geographicApi.getMunicipalities(municipalityPage, PAGE_SIZE),
+        geographicApi.getMunicipalities(currentCursor("municipality"), PAGE_SIZE),
     });
 
   const { data: wardsData, isLoading: wardsLoading } = useQuery({
-    queryKey: ["allWards", wardPage],
-    queryFn: () => geographicApi.getWards(wardPage, PAGE_SIZE),
+    queryKey: ["allWards", currentCursor("ward")],
+    queryFn: () => geographicApi.getWards(currentCursor("ward"), PAGE_SIZE),
   });
 
   const { data: constituenciesData, isLoading: constituenciesLoading } =
     useQuery({
-      queryKey: ["allConstituencies", constituencyPage],
+      queryKey: ["allConstituencies", currentCursor("constituency")],
       queryFn: () =>
-        geographicApi.getConstituencies(constituencyPage, PAGE_SIZE),
+        geographicApi.getConstituencies(currentCursor("constituency"), PAGE_SIZE),
     });
 
   const provinces = provincesData?.data || [];
@@ -120,8 +147,11 @@ export default function GeographyScreen() {
               { key: "provinceNumber", label: "Province Numer" },
               { key: "capital", label: "Capital" },
             ],
-            page: provincePage,
-            setPage: setProvincePage,
+            page: currentPage("province"),
+            hasNext: provincesData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("province"),
+            goToNextPage: () =>
+              goToNextPage("province", provincesData?.nextCursor),
           },
           district: {
             detailsPage: "/geography/district",
@@ -134,8 +164,11 @@ export default function GeographyScreen() {
               { key: "headquarter", label: "Headquarter" },
               { key: "province.name", label: "Province" },
             ],
-            page: districtPage,
-            setPage: setDistrictPage,
+            page: currentPage("district"),
+            hasNext: districtsData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("district"),
+            goToNextPage: () =>
+              goToNextPage("district", districtsData?.nextCursor),
           },
           municipality: {
             detailsPage: "/geography/municipality",
@@ -148,8 +181,11 @@ export default function GeographyScreen() {
               { key: "district.name", label: "District" },
               { key: "province.name", label: "Province" },
             ],
-            page: municipalityPage,
-            setPage: setMunicipalityPage,
+            page: currentPage("municipality"),
+            hasNext: municipalitiesData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("municipality"),
+            goToNextPage: () =>
+              goToNextPage("municipality", municipalitiesData?.nextCursor),
           },
           ward: {
             detailsPage: "/geography/ward",
@@ -167,8 +203,10 @@ export default function GeographyScreen() {
               },
               { key: "province.name", label: "Province" },
             ],
-            page: wardPage,
-            setPage: setWardPage,
+            page: currentPage("ward"),
+            hasNext: wardsData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("ward"),
+            goToNextPage: () => goToNextPage("ward", wardsData?.nextCursor),
           },
           constituency: {
             detailsPage: "/geography/constituency",
@@ -181,8 +219,11 @@ export default function GeographyScreen() {
               { key: "district.name", label: "District" },
               { key: "province.name", label: "Province" },
             ],
-            page: constituencyPage,
-            setPage: setConstituencyPage,
+            page: currentPage("constituency"),
+            hasNext: constituenciesData?.hasNext || false,
+            goToPreviousPage: () => goToPreviousPage("constituency"),
+            goToNextPage: () =>
+              goToNextPage("constituency", constituenciesData?.nextCursor),
           },
         }}
       />

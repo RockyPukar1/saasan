@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { BudgetRepository } from '../repositories/budget.repository';
 import { BudgetSerializer } from '../serializers/budget.serializer';
@@ -7,11 +9,11 @@ import { BudgetSerializer } from '../serializers/budget.serializer';
 export class BudgetService {
   constructor(private readonly budgetRepo: BudgetRepository) {}
 
-  async getAll() {
+  async getAll({ cursor, limit }: PaginationQueryDto) {
     const budgets = await this.budgetRepo.getAll();
     return ResponseHelper.response(
       BudgetSerializer,
-      budgets,
+      paginateArrayByCursor(budgets, cursor, limit),
       'Budgets fetched successfully',
     );
   }

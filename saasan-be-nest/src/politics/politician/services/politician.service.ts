@@ -7,6 +7,7 @@ import { EMAIL_EVENT_TYPES } from 'src/common/email/events/email.events';
 import { EmailPublisher } from 'src/common/email/publishers/email.publisher';
 import { GlobalHttpException } from 'src/common/exceptions/global-http.exception';
 import { generateRandomPassword } from 'src/common/helpers/generate-password.helper';
+import { paginateArrayByCursor } from 'src/common/helpers/cursor-pagination.helper';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { UserRole, PASSWORD_SALT } from 'src/user/entities/user.entity';
 import { UserRepository } from 'src/user/repositories/user.repository';
@@ -105,21 +106,19 @@ export class PoliticianService {
     );
   }
 
-  async getOwnPromises(userId: string, { page, limit }: PaginationQueryDto) {
+  async getOwnPromises(userId: string, { cursor, limit }: PaginationQueryDto) {
     const politician = await this.getPoliticianForUser(userId);
     const promises = await this.politicianRepo.getPromisesByPoliticianId(
       politician._id.toString(),
     );
 
-    const start = (page - 1) * limit;
     return ResponseHelper.response(
       PromiseSerializer,
-      {
-        data: promises.slice(start, start + limit),
-        total: promises.length,
-        page,
+      paginateArrayByCursor(
+        [...promises].sort((a: any, b: any) => b._id.toString().localeCompare(a._id.toString())),
+        cursor,
         limit,
-      },
+      ),
       'Promises fetched successfully',
     );
   }
@@ -168,7 +167,7 @@ export class PoliticianService {
 
   async getOwnAnnouncements(
     userId: string,
-    { page, limit }: PaginationQueryDto,
+    { cursor, limit }: PaginationQueryDto,
   ) {
     const politician = await this.getPoliticianForUser(userId);
     const announcements =
@@ -176,15 +175,9 @@ export class PoliticianService {
         politician._id.toString(),
       );
 
-    const start = (page - 1) * limit;
     return ResponseHelper.response(
       AnnouncementSerializer,
-      {
-        data: announcements.slice(start, start + limit),
-        total: announcements.length,
-        page,
-        limit,
-      },
+      paginateArrayByCursor(announcements, cursor, limit),
       'Announcements fetched successfully',
     );
   }

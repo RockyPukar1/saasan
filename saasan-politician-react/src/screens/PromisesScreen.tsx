@@ -57,11 +57,10 @@ const statusLabel: Record<PromiseDto["status"], string> = {
 const PAGE_SIZE = 10;
 
 export const PromisesScreen: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const { data: promisesResponse, isLoading } = usePromises(
-    currentPage,
-    PAGE_SIZE,
-  );
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([null]);
+  const currentCursor = cursorHistory[cursorHistory.length - 1] || null;
+  const currentPage = cursorHistory.length;
+  const { data: promisesResponse, isLoading } = usePromises(currentCursor, PAGE_SIZE);
   const createPromise = useCreatePromise();
   const updatePromise = useUpdatePromise();
   const deletePromise = useDeletePromise();
@@ -70,6 +69,18 @@ export const PromisesScreen: React.FC = () => {
   const [form, setForm] = useState<PromiseFormState>(emptyForm);
   const promises = promisesResponse?.data || [];
   const totalPromises = promisesResponse?.total || 0;
+  const goToNextPage = () => {
+    if (!promisesResponse?.nextCursor) {
+      return;
+    }
+
+    setCursorHistory((previous) => [...previous, promisesResponse.nextCursor]);
+  };
+  const goToPreviousPage = () => {
+    setCursorHistory((previous) =>
+      previous.length > 1 ? previous.slice(0, -1) : previous,
+    );
+  };
 
   const groupedPromises = useMemo(
     () => ({
@@ -384,26 +395,22 @@ export const PromisesScreen: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-            {promisesResponse && promisesResponse.totalPages > 1 && (
+            {promisesResponse && (currentPage > 1 || promisesResponse.hasNext) && (
               <div className="flex items-center justify-center gap-4 pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  onClick={goToPreviousPage}
                   disabled={currentPage === 1}
                 >
                   Previous
                 </Button>
                 <span className="text-sm text-gray-600">
-                  Page {currentPage} of {promisesResponse.totalPages}
+                  Page {currentPage}
                 </span>
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    setCurrentPage((page) =>
-                      Math.min(promisesResponse.totalPages, page + 1),
-                    )
-                  }
-                  disabled={currentPage >= promisesResponse.totalPages}
+                  onClick={goToNextPage}
+                  disabled={!promisesResponse.hasNext}
                 >
                   Next
                 </Button>

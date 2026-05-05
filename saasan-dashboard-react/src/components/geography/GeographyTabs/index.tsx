@@ -20,7 +20,9 @@ interface TabularData {
   tabData: any[];
   columns: { key: string; label: string }[];
   page: number;
-  setPage: (page: number) => void;
+  hasNext: boolean;
+  goToPreviousPage: () => void;
+  goToNextPage: () => void;
 }
 
 interface IGeographyTabsProps {
@@ -75,12 +77,12 @@ export default function GeographyTabs({
       </Tabs>
       <RenderPagination
         currentPage={data[activeTab]!.page}
-        totalPages={Math.ceil(data[activeTab]!.total / pageSize)}
-        onPageChange={(page) => {
-          data[activeTab]!.setPage(page);
-        }}
+        hasNext={data[activeTab]!.hasNext}
+        onPrevious={data[activeTab]!.goToPreviousPage}
+        onNext={data[activeTab]!.goToNextPage}
         totalItems={data[activeTab]!.total}
         pageSize={pageSize}
+        currentItemCount={data[activeTab]!.tabData.length}
         itemName={activeTab}
       />
     </>

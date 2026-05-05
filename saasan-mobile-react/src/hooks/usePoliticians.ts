@@ -46,7 +46,8 @@ export const usePoliticians = () => {
   const [currentFilter, setCurrentFilter] = useState<IPoliticianFilter | null>(
     null,
   );
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentCursor, setCurrentCursor] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [allPoliticians, setAllPoliticians] = useState<IPolitician[]>([]);
 
   // Government Levels Query - Long cache as this data rarely changes
@@ -127,11 +128,11 @@ export const usePoliticians = () => {
     isFetching: politiciansFetching,
     error: politiciansError,
   } = useQuery({
-    queryKey: ["politicians", "list", currentFilter, currentPage],
+    queryKey: ["politicians", "list", currentFilter, currentCursor],
     queryFn: () =>
       apiService.getPoliticiansByFilter({
         ...(currentFilter || EMPTY_FILTER),
-        page: currentPage,
+        ...(currentCursor ? { cursor: currentCursor } : {}),
         limit: PAGE_SIZE,
       }),
     enabled: currentFilter !== null,
@@ -154,7 +155,7 @@ export const usePoliticians = () => {
     }
 
     setAllPoliticians((previousPoliticians) => {
-      if (currentPage === 1) {
+      if (!currentCursor) {
         return politiciansData.items;
       }
 
@@ -167,7 +168,8 @@ export const usePoliticians = () => {
 
       return [...previousPoliticians, ...nextPagePoliticians];
     });
-  }, [currentPage, politiciansData]);
+    setNextCursor(politiciansData.pagination?.nextCursor ?? null);
+  }, [currentCursor, politiciansData]);
 
   useEffect(() => {
     if (politiciansError && allPoliticians.length > 0) {
@@ -193,13 +195,9 @@ export const usePoliticians = () => {
       return false;
     }
 
-    if (typeof pagination.totalPages === "number") {
-      return currentPage < pagination.totalPages;
-    }
-
-    return politicians.length < pagination.total;
-  }, [currentPage, pagination, politicians.length]);
-  const loadingMore = politiciansFetching && currentPage > 1;
+    return Boolean(pagination.hasNext && nextCursor);
+  }, [nextCursor, pagination]);
+  const loadingMore = politiciansFetching && currentCursor !== null;
 
   const loading =
     governmentLevelsLoading ||
@@ -255,19 +253,22 @@ export const usePoliticians = () => {
 
   const fetchPoliticians = useCallback(async (filter: IPoliticianFilter) => {
     setAllPoliticians([]);
-    setCurrentPage(1);
+    setCurrentCursor(null);
+    setNextCursor(null);
     setCurrentFilter(filter);
   }, []);
 
   const refresh = useCallback(() => {
     setAllPoliticians([]);
-    setCurrentPage(1);
+    setCurrentCursor(null);
+    setNextCursor(null);
     queryClient.invalidateQueries({ queryKey: ["politicians"] });
   }, [queryClient]);
 
   const loadAllPoliticians = useCallback(() => {
     setAllPoliticians([]);
-    setCurrentPage(1);
+    setCurrentCursor(null);
+    setNextCursor(null);
     setCurrentFilter({
       level: [],
       position: [],
@@ -276,12 +277,12 @@ export const usePoliticians = () => {
   }, []);
 
   const loadMore = useCallback(() => {
-    if (!hasMore || politiciansFetching) {
+    if (!hasMore || politiciansFetching || !nextCursor) {
       return;
     }
 
-    setCurrentPage((previousPage) => previousPage + 1);
-  }, [hasMore, politiciansFetching]);
+    setCurrentCursor(nextCursor);
+  }, [hasMore, nextCursor, politiciansFetching]);
 
   return {
     politicians,

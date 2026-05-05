@@ -1,4 +1,5 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { HttpAccessTokenGuard } from 'src/common/guards/http-access-token.guard';
 import { BudgetService } from '../services/budget.service';
 import { RoleGuard } from 'src/common/guards/role.guard';
@@ -16,7 +17,7 @@ export class BudgetController {
 
   @Permissions(PERMISSIONS.budget.view)
   @Get()
-  async getAll() {
-    return this.budgetService.getAll();
+  async getAll(@Query() paginationQuery: PaginationQueryDto) {
+    return this.budgetService.getAll(paginationQuery);
   }
 }
